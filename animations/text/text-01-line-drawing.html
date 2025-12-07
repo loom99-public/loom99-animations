@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Do It Now - Line Drawing Animation</title>
     <style>
@@ -79,6 +80,16 @@
                 this.folding = false;
                 this.foldComplete = false;
 
+                // Calculate exit direction based on start position
+                const centerX = 350;
+                const centerY = 140;
+                const dx = startX - centerX;
+                const dy = startY - centerY;
+                const angle = Math.atan2(dy, dx);
+                const distance = 1000;
+                this.exitX = centerX + Math.cos(angle) * distance;
+                this.exitY = centerY + Math.sin(angle) * distance;
+
                 this.path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                 this.path.classList.add('line');
                 this.path.style.stroke = color;
@@ -88,6 +99,10 @@
 
             getFirstPoint() {
                 return this.points[0];
+            }
+
+            getLastPoint() {
+                return this.points[this.points.length - 1];
             }
 
             update(elapsed) {
@@ -165,6 +180,45 @@
                         this.foldComplete = true;
                     }
                 }
+            }
+
+            updateExit(progress) {
+                const eased = easeInQuart(progress);
+
+                // Shoot out from current position toward exit point
+                const lastPoint = this.getLastPoint();
+                const exitEndX = lastPoint.x + (this.exitX - lastPoint.x) * eased;
+                const exitEndY = lastPoint.y + (this.exitY - lastPoint.y) * eased;
+
+                let d = `M ${this.points[0].x} ${this.points[0].y}`;
+
+                // Draw the path normally first
+                for (let i = 1; i < this.points.length; i++) {
+                    const point = this.points[i];
+                    if (point.type === 'Q') {
+                        d += ` Q ${point.cx} ${point.cy} ${point.x} ${point.y}`;
+                    } else {
+                        d += ` L ${point.x} ${point.y}`;
+                    }
+                }
+
+                // Extend the line to the exit point
+                d += ` L ${exitEndX} ${exitEndY}`;
+
+                this.path.setAttribute('d', d);
+
+                // Fade out
+                this.path.style.opacity = Math.max(0, 1 - progress * 2);
+            }
+
+            reset() {
+                this.progress = 0;
+                this.foldProgress = 0;
+                this.started = false;
+                this.finished = false;
+                this.folding = false;
+                this.foldComplete = false;
+                this.path.style.opacity = '0';
             }
         }
 
@@ -311,30 +365,49 @@
             {x: 390, y: nowY + 60}
         ], YELLOW, nowStart + 100, nowDur);
 
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let startTime = null;
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
 
         function animate(timestamp) {
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
 
-            lines.forEach(line => line.update(elapsed));
+            if (animationState === 'entrance') {
+                lines.forEach(line => line.update(elapsed));
 
-            const allDone = lines.every(l => l.foldComplete);
-            if (!allDone) {
-                requestAnimationFrame(animate);
+                const allDone = lines.every(l => l.foldComplete);
+                if (allDone) {
+                    animationState = 'hold';
+                } else {
+                    requestAnimationFrame(animate);
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+
+                lines.forEach(line => line.updateExit(progress));
+
+                if (progress >= 1) {
+                    restart();
+                } else {
+                    requestAnimationFrame(animate);
+                }
             }
+        }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
         }
 
         function restart() {
             startTime = null;
+            animationState = 'entrance';
             lines.forEach(line => {
-                line.progress = 0;
-                line.foldProgress = 0;
-                line.started = false;
-                line.finished = false;
-                line.folding = false;
-                line.foldComplete = false;
-                line.path.style.opacity = '0';
+                line.reset();
             });
             requestAnimationFrame(animate);
         }
@@ -358,7 +431,13 @@
             requestAnimationFrame(animate);
         }
 
-        document.body.addEventListener('click', restart);
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance') {
+                restart();
+            }
+        });
     </script>
 </body>
 </html>

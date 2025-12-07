@@ -52,6 +52,10 @@
             return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
         }
 
+        function easeInCubic(t) {
+            return t * t * t;
+        }
+
         // Interpolate between two path commands
         function interpolatePath(path1, path2, t) {
             const eased = easeInOutCubic(t);
@@ -104,6 +108,19 @@
                 this.delay = delay;
                 this.progress = 0;
 
+                // Create exit path - morph to a single dot at center of shape
+                const endPoints = parsePath(endPath);
+                let centerX = 0;
+                let centerY = 0;
+                endPoints.forEach(p => {
+                    centerX += p.x;
+                    centerY += p.y;
+                });
+                centerX /= endPoints.length;
+                centerY /= endPoints.length;
+
+                this.exitPath = endPoints.map(() => `M ${centerX} ${centerY} L ${centerX} ${centerY}`).join(' ');
+
                 this.path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                 this.path.setAttribute('stroke', color);
                 this.path.setAttribute('stroke-width', '4');
@@ -129,6 +146,36 @@
 
                 const d = interpolatePath(this.startPath, this.endPath, this.progress);
                 this.path.setAttribute('d', d);
+            }
+
+            updateExit(progress) {
+                const eased = easeInCubic(progress);
+
+                // Morph from endPath to a point (collapse)
+                const endPoints = parsePath(this.endPath);
+                let centerX = 0;
+                let centerY = 0;
+                endPoints.forEach(p => {
+                    centerX += p.x;
+                    centerY += p.y;
+                });
+                centerX /= endPoints.length;
+                centerY /= endPoints.length;
+
+                let d = '';
+                endPoints.forEach((p, i) => {
+                    const x = p.x + (centerX - p.x) * eased;
+                    const y = p.y + (centerY - p.y) * eased;
+                    d += `${i === 0 ? 'M' : ' L'} ${x} ${y}`;
+                });
+
+                this.path.setAttribute('d', d);
+                this.path.style.opacity = Math.max(0, 1 - progress * 2);
+            }
+
+            reset() {
+                this.progress = 0;
+                this.path.style.opacity = '0';
             }
         }
 
@@ -209,25 +256,49 @@
             '#ffdd00', 700
         ));
 
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let startTime = null;
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
 
         function animate(timestamp) {
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
 
-            shapes.forEach(shape => shape.update(elapsed));
+            if (animationState === 'entrance') {
+                shapes.forEach(shape => shape.update(elapsed));
 
-            const maxTime = 2000;
-            if (elapsed < maxTime) {
-                requestAnimationFrame(animate);
+                const maxTime = 2000;
+                if (elapsed >= maxTime) {
+                    animationState = 'hold';
+                } else {
+                    requestAnimationFrame(animate);
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+
+                shapes.forEach(shape => shape.updateExit(progress));
+
+                if (progress >= 1) {
+                    restart();
+                } else {
+                    requestAnimationFrame(animate);
+                }
             }
+        }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
         }
 
         function restart() {
             startTime = null;
+            animationState = 'entrance';
             shapes.forEach(shape => {
-                shape.progress = 0;
-                shape.path.style.opacity = '0';
+                shape.reset();
             });
             requestAnimationFrame(animate);
         }
@@ -241,7 +312,13 @@
             requestAnimationFrame(animate);
         }
 
-        document.body.addEventListener('click', restart);
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance') {
+                restart();
+            }
+        });
     </script>
 </body>
 </html>

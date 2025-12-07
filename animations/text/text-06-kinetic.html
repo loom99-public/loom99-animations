@@ -82,116 +82,187 @@
             return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
         }
 
-        class Letter {
-            constructor(char, element, delay, angle) {
-                this.char = char;
-                this.element = element;
-                this.delay = delay;
-                this.duration = 1000;
+        function easeInCubic(t) {
+            return t * t * t;
+        }
 
-                // Start position (off-screen at angle)
-                const distance = 500;
-                this.startX = Math.cos(angle) * distance;
-                this.startY = Math.sin(angle) * distance;
-                this.startRotation = (Math.random() - 0.5) * 360;
-                this.startScale = 0;
+        if (!prefersReducedMotion) {
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitStartTime = null;
+            const EXIT_DURATION = 250;
 
-                // Target (final position)
-                this.targetX = 0;
-                this.targetY = 0;
-                this.targetRotation = 0;
-                this.targetScale = 1;
-            }
+            class Letter {
+                constructor(char, element, delay, angle) {
+                    this.char = char;
+                    this.element = element;
+                    this.delay = delay;
+                    this.duration = 1000;
 
-            update(elapsed) {
-                if (elapsed < this.delay) {
-                    return;
+                    // Start position (off-screen at angle)
+                    const distance = 500;
+                    this.startX = Math.cos(angle) * distance;
+                    this.startY = Math.sin(angle) * distance;
+                    this.startRotation = (Math.random() - 0.5) * 360;
+                    this.startScale = 0;
+
+                    // Target (final position)
+                    this.targetX = 0;
+                    this.targetY = 0;
+                    this.targetRotation = 0;
+                    this.targetScale = 1;
+
+                    // Exit position (fly away in opposite direction - even further)
+                    this.exitX = -Math.cos(angle) * 800;
+                    this.exitY = -Math.sin(angle) * 800;
+                    this.exitRotation = (Math.random() - 0.5) * 720;
+                    this.exitScale = 0;
                 }
 
-                const localTime = elapsed - this.delay;
-                const progress = Math.min(1, localTime / this.duration);
+                updateEntrance(elapsed) {
+                    if (elapsed < this.delay) {
+                        return;
+                    }
 
-                // Use elastic easing for bouncy effect
-                const eased = easeOutBack(progress);
+                    const localTime = elapsed - this.delay;
+                    const progress = Math.min(1, localTime / this.duration);
 
-                const x = this.startX + (this.targetX - this.startX) * eased;
-                const y = this.startY + (this.targetY - this.startY) * eased;
-                const rotation = this.startRotation + (this.targetRotation - this.startRotation) * eased;
-                const scale = this.startScale + (this.targetScale - this.startScale) * eased;
+                    // Use elastic easing for bouncy effect
+                    const eased = easeOutBack(progress);
 
-                this.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`;
-                this.element.style.opacity = Math.min(1, progress * 2);
+                    const x = this.startX + (this.targetX - this.startX) * eased;
+                    const y = this.startY + (this.targetY - this.startY) * eased;
+                    const rotation = this.startRotation + (this.targetRotation - this.startRotation) * eased;
+                    const scale = this.startScale + (this.targetScale - this.startScale) * eased;
+
+                    this.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`;
+                    this.element.style.opacity = Math.min(1, progress * 2);
+                }
+
+                updateExit(elapsed) {
+                    const progress = Math.min(1, elapsed / EXIT_DURATION);
+                    const eased = easeInCubic(progress);
+
+                    const x = this.targetX + (this.exitX - this.targetX) * eased;
+                    const y = this.targetY + (this.exitY - this.targetY) * eased;
+                    const rotation = this.targetRotation + (this.exitRotation - this.targetRotation) * eased;
+                    const scale = this.targetScale + (this.exitScale - this.targetScale) * eased;
+
+                    this.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`;
+                    this.element.style.opacity = Math.max(0, 1 - progress * 2);
+                }
+
+                reset() {
+                    this.element.style.opacity = 0;
+                    this.element.style.transform = 'translate(0, 0) rotate(0deg) scale(0)';
+                }
             }
-        }
 
-        const words = [
-            { text: 'DO', element: document.getElementById('word1') },
-            { text: 'IT', element: document.getElementById('word2') },
-            { text: 'NOW', element: document.getElementById('word3') }
-        ];
+            const words = [
+                { text: 'DO', element: document.getElementById('word1') },
+                { text: 'IT', element: document.getElementById('word2') },
+                { text: 'NOW', element: document.getElementById('word3') }
+            ];
 
-        const letters = [];
-        let letterIndex = 0;
-        const baseDelay = 0;
-        const letterDelay = 60;
+            const letters = [];
+            let letterIndex = 0;
+            const baseDelay = 0;
+            const letterDelay = 60;
 
-        words.forEach((word, wordIndex) => {
-            const chars = word.text.split('');
+            words.forEach((word, wordIndex) => {
+                const chars = word.text.split('');
 
-            chars.forEach((char, charIndex) => {
-                const span = document.createElement('span');
-                span.className = 'letter';
-                span.textContent = char;
-                word.element.appendChild(span);
+                chars.forEach((char, charIndex) => {
+                    const span = document.createElement('span');
+                    span.className = 'letter';
+                    span.textContent = char;
+                    word.element.appendChild(span);
 
-                // Calculate angle for this letter (spiral pattern)
-                const angle = (letterIndex / (chars.length * words.length)) * Math.PI * 4 + wordIndex * Math.PI / 2;
+                    // Calculate angle for this letter (spiral pattern)
+                    const angle = (letterIndex / (chars.length * words.length)) * Math.PI * 4 + wordIndex * Math.PI / 2;
 
-                const letter = new Letter(
-                    char,
-                    span,
-                    baseDelay + letterIndex * letterDelay,
-                    angle
-                );
+                    const letter = new Letter(
+                        char,
+                        span,
+                        baseDelay + letterIndex * letterDelay,
+                        angle
+                    );
 
-                letters.push(letter);
-                letterIndex++;
+                    letters.push(letter);
+                    letterIndex++;
+                });
             });
-        });
 
-        let startTime = null;
-        const totalDuration = 2000;
+            let startTime = null;
+            const totalDuration = 2000;
 
-        function animate(timestamp) {
-            if (!startTime) startTime = timestamp;
-            const elapsed = timestamp - startTime;
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
 
-            letters.forEach(letter => letter.update(elapsed));
+                if (animationState === 'entrance') {
+                    letters.forEach(letter => letter.updateEntrance(elapsed));
 
-            if (elapsed < totalDuration) {
+                    if (elapsed < totalDuration) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        animationState = 'hold';
+                    }
+                } else if (animationState === 'exit') {
+                    const exitElapsed = timestamp - exitStartTime;
+                    letters.forEach(letter => letter.updateExit(exitElapsed));
+
+                    if (exitElapsed < EXIT_DURATION) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        // Exit complete - restart
+                        restart();
+                    }
+                }
+            }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = performance.now();
                 requestAnimationFrame(animate);
             }
-        }
 
-        function restart() {
-            startTime = null;
-            letters.forEach(letter => {
-                letter.element.style.opacity = 0;
-                letter.element.style.transform = 'translate(0, 0) rotate(0deg) scale(0)';
-            });
+            function restart() {
+                startTime = null;
+                animationState = 'entrance';
+                letters.forEach(letter => {
+                    letter.reset();
+                });
+                requestAnimationFrame(animate);
+            }
+
             requestAnimationFrame(animate);
-        }
 
-        if (prefersReducedMotion) {
-            letters.forEach(letter => {
-                letter.element.style.opacity = 1;
-                letter.element.style.transform = 'none';
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
             });
         } else {
-            requestAnimationFrame(animate);
-        }
+            const words = [
+                { text: 'DO', element: document.getElementById('word1') },
+                { text: 'IT', element: document.getElementById('word2') },
+                { text: 'NOW', element: document.getElementById('word3') }
+            ];
 
-        document.body.addEventListener('click', restart);
+            words.forEach(word => {
+                const chars = word.text.split('');
+                chars.forEach(char => {
+                    const span = document.createElement('span');
+                    span.className = 'letter';
+                    span.textContent = char;
+                    span.style.opacity = 1;
+                    span.style.transform = 'none';
+                    word.element.appendChild(span);
+                });
+            });
+        }
     </script>
 </body>
 </html>

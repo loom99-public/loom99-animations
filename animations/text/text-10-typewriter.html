@@ -98,10 +98,15 @@
         ];
 
         if (!prefersReducedMotion) {
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
             let currentWordIndex = 0;
             let currentCharIndex = 0;
+            let exitWordIndex = 0;
+            let exitCharIndex = 0;
             let startTime = null;
+            let exitStartTime = null;
             const charDelay = 100;
+            const exitCharDelay = 30; // Faster deletion
 
             words.forEach(word => {
                 const cursor = word.element.querySelector('.cursor');
@@ -110,11 +115,12 @@
 
             function typeCharacter() {
                 if (currentWordIndex >= words.length) {
-                    // Typing complete - hide all cursors
+                    // Typing complete - hide all cursors and enter hold state
                     words.forEach(word => {
                         const cursor = word.element.querySelector('.cursor');
                         cursor.style.display = 'none';
                     });
+                    animationState = 'hold';
                     return;
                 }
 
@@ -150,13 +156,72 @@
                     const nextWord = words[currentWordIndex];
                     if (nextWord) {
                         setTimeout(typeCharacter, nextWord.delay);
+                    } else {
+                        typeCharacter();
                     }
                 }
+            }
+
+            function deleteCharacter() {
+                if (exitWordIndex < 0) {
+                    // Deletion complete - restart entrance
+                    restart();
+                    return;
+                }
+
+                const word = words[exitWordIndex];
+                const letters = word.element.querySelectorAll('.letter');
+
+                if (exitCharIndex < 0) {
+                    // Move to previous word
+                    exitWordIndex--;
+                    if (exitWordIndex >= 0) {
+                        const prevWord = words[exitWordIndex];
+                        const prevLetters = prevWord.element.querySelectorAll('.letter');
+                        exitCharIndex = prevLetters.length - 1;
+
+                        // Show cursor on previous word
+                        const cursor = prevWord.element.querySelector('.cursor');
+                        cursor.style.display = 'inline-block';
+                    }
+                    setTimeout(deleteCharacter, exitCharDelay);
+                } else {
+                    // Delete character
+                    const cursor = word.element.querySelector('.cursor');
+                    cursor.style.display = 'inline-block';
+
+                    if (letters[exitCharIndex]) {
+                        letters[exitCharIndex].remove();
+                    }
+
+                    exitCharIndex--;
+                    setTimeout(deleteCharacter, exitCharDelay);
+                }
+            }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = performance.now();
+
+                // Start from the last word, last character
+                exitWordIndex = words.length - 1;
+                const lastWord = words[exitWordIndex];
+                const lastLetters = lastWord.element.querySelectorAll('.letter');
+                exitCharIndex = lastLetters.length - 1;
+
+                // Hide all cursors first
+                words.forEach(word => {
+                    const cursor = word.element.querySelector('.cursor');
+                    cursor.style.display = 'none';
+                });
+
+                deleteCharacter();
             }
 
             function restart() {
                 currentWordIndex = 0;
                 currentCharIndex = 0;
+                animationState = 'entrance';
 
                 words.forEach(word => {
                     // Remove all letter spans
@@ -172,7 +237,15 @@
             }
 
             setTimeout(typeCharacter, words[0].delay);
-            document.body.addEventListener('click', restart);
+
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    // Restart if clicked during entrance
+                    restart();
+                }
+            });
         } else {
             // Show all text immediately
             words.forEach(word => {

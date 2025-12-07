@@ -75,6 +75,10 @@
             canvas.width = 1000;
             canvas.height = 300;
 
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitStartTime = null;
+            const EXIT_DURATION = 250;
+
             function easeOutCubic(t) {
                 return 1 - Math.pow(1 - t, 3);
             }
@@ -93,6 +97,12 @@
                     this.targetX = targetX;
                     this.targetY = targetY;
 
+                    // Exit position (explode outward from target)
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = 800;
+                    this.exitX = targetX + Math.cos(angle) * distance;
+                    this.exitY = targetY + Math.sin(angle) * distance;
+
                     this.x = this.startX;
                     this.y = this.startY;
                     this.color = color;
@@ -100,7 +110,7 @@
                     this.opacity = 0;
                 }
 
-                update(progress) {
+                updateEntrance(progress) {
                     // Ease into position
                     const eased = easeOutCubic(progress);
                     this.x = this.startX + (this.targetX - this.startX) * eased;
@@ -108,6 +118,16 @@
 
                     // Fade in during movement
                     this.opacity = Math.min(1, progress * 2);
+                }
+
+                updateExit(progress) {
+                    // Ease out from target to exit position
+                    const eased = easeInCubic(progress);
+                    this.x = this.targetX + (this.exitX - this.targetX) * eased;
+                    this.y = this.targetY + (this.exitY - this.targetY) * eased;
+
+                    // Fade out quickly
+                    this.opacity = Math.max(0, 1 - progress * 2);
                 }
 
                 draw() {
@@ -172,30 +192,63 @@
             });
 
             let startTime = null;
-            const duration = 2000;
+            const entranceDuration = 2000;
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
-                const progress = Math.min(1, elapsed / duration);
 
                 // Clear canvas
                 ctx.fillStyle = '#1a1a2e';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Update and draw particles
-                particles.forEach(particle => {
-                    particle.update(progress);
-                    particle.draw();
-                });
+                if (animationState === 'entrance') {
+                    const progress = Math.min(1, elapsed / entranceDuration);
 
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
+                    // Update and draw particles
+                    particles.forEach(particle => {
+                        particle.updateEntrance(progress);
+                        particle.draw();
+                    });
+
+                    if (progress >= 1) {
+                        animationState = 'hold';
+                    } else {
+                        requestAnimationFrame(animate);
+                    }
+                } else if (animationState === 'exit') {
+                    const exitElapsed = timestamp - exitStartTime;
+                    const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+
+                    // Update and draw particles
+                    particles.forEach(particle => {
+                        particle.updateExit(progress);
+                        particle.draw();
+                    });
+
+                    if (progress >= 1) {
+                        // Exit complete - restart
+                        restart();
+                    } else {
+                        requestAnimationFrame(animate);
+                    }
+                } else if (animationState === 'hold') {
+                    // Just draw particles at target positions
+                    particles.forEach(particle => {
+                        particle.draw();
+                    });
                 }
+            }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = performance.now();
+                requestAnimationFrame(animate);
             }
 
             function restart() {
                 startTime = null;
+                animationState = 'entrance';
                 particles.forEach(particle => {
                     particle.opacity = 0;
                     particle.x = particle.startX;
@@ -205,7 +258,14 @@
             }
 
             requestAnimationFrame(animate);
-            canvas.addEventListener('click', restart);
+
+            canvas.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         }
     </script>
 </body>

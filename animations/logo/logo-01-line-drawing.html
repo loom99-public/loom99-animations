@@ -64,12 +64,20 @@
         // Check if user prefers reduced motion
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
+
         function easeOutQuart(t) {
             return 1 - Math.pow(1 - t, 4);
         }
 
         function easeInQuart(t) {
             return t * t * t * t;
+        }
+
+        function easeInCubic(t) {
+            return t * t * t;
         }
 
         class AnimatedLine {
@@ -88,6 +96,10 @@
                 this.folding = false;
                 this.foldComplete = false;
 
+                // Exit properties
+                this.exitX = startX;
+                this.exitY = startY;
+
                 this.path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                 this.path.classList.add('line');
                 this.path.style.stroke = color;
@@ -99,7 +111,7 @@
                 return this.points[0];
             }
 
-            update(elapsed) {
+            updateEntrance(elapsed) {
                 if (this.foldComplete) return;
 
                 if (elapsed < this.delay) {
@@ -182,6 +194,44 @@
                     }
                 }
             }
+
+            updateExit(exitElapsed) {
+                const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(progress);
+
+                // Shoot out to edges
+                const lastPoint = this.points[this.points.length - 1];
+                const headX = lastPoint.x + (this.exitX - lastPoint.x) * eased;
+                const headY = lastPoint.y + (this.exitY - lastPoint.y) * eased;
+
+                let d = `M ${this.points[0].x} ${this.points[0].y}`;
+
+                for (let i = 1; i < this.points.length; i++) {
+                    const point = this.points[i];
+                    if (point.type === 'Q') {
+                        d += ` Q ${point.cx} ${point.cy} ${point.x} ${point.y}`;
+                    } else if (point.type === 'A') {
+                        d += ` A ${point.rx} ${point.ry} ${point.rotation} ${point.largeArc} ${point.sweep} ${point.x} ${point.y}`;
+                    } else {
+                        d += ` L ${point.x} ${point.y}`;
+                    }
+                }
+
+                d += ` L ${headX} ${headY}`;
+
+                this.path.setAttribute('d', d);
+                this.path.style.opacity = 1 - eased;
+            }
+
+            reset() {
+                this.progress = 0;
+                this.foldProgress = 0;
+                this.started = false;
+                this.finished = false;
+                this.folding = false;
+                this.foldComplete = false;
+                this.path.style.opacity = '0';
+            }
         }
 
         const lines = [];
@@ -260,24 +310,39 @@
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
 
-            lines.forEach(line => line.update(elapsed));
+            if (animationState === 'entrance') {
+                lines.forEach(line => line.updateEntrance(elapsed));
 
-            const allDone = lines.every(l => l.foldComplete);
-            if (!allDone) {
-                requestAnimationFrame(animate);
+                const allDone = lines.every(l => l.foldComplete);
+                if (!allDone) {
+                    requestAnimationFrame(animate);
+                } else {
+                    animationState = 'hold';
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                lines.forEach(line => line.updateExit(exitElapsed));
+
+                if (exitElapsed < EXIT_DURATION) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Exit complete - restart
+                    restart();
+                }
             }
+        }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
         }
 
         function restart() {
             startTime = null;
+            animationState = 'entrance';
             lines.forEach(line => {
-                line.progress = 0;
-                line.foldProgress = 0;
-                line.started = false;
-                line.finished = false;
-                line.folding = false;
-                line.foldComplete = false;
-                line.path.style.opacity = '0';
+                line.reset();
             });
             requestAnimationFrame(animate);
         }
@@ -304,7 +369,13 @@
             requestAnimationFrame(animate);
         }
 
-        document.body.addEventListener('click', restart);
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance') {
+                restart();
+            }
+        });
     </script>
 </body>
 </html>

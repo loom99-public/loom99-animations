@@ -14,7 +14,7 @@
         const config = { hueShift: Random.range(-15, 15), amplitude: Random.vary(30, 8), waveCount: Random.vary(3, 1), speed: Random.vary(3, 0.8), duration: Random.vary(3000, 600), scaleAmp: Random.vary(0.2, 0.05) };
         console.log('Wave mode:', mode.name);
         const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftHue: (hsl, shift) => ({ h: (hsl.h + shift + 360) % 360, s: hsl.s, l: hsl.l }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
-        const words = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW!', element: document.getElementById('word3') } ];
+        const words = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW', element: document.getElementById('word3') } ];
         const letters = [];
         words.forEach((word, wordIndex) => {
             const chars = word.text.split('');

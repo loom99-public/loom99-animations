@@ -15,7 +15,7 @@
         const cursors = document.querySelectorAll('.cursor');
         cursors.forEach((cursor, i) => { cursor.style.width = `${config.cursorWidth}px`; cursor.style.height = `${config.cursorHeight}px`; cursor.style.animation = `blink ${config.cursorBlink}s infinite`; });
         document.querySelector('.word1').style.color = colors[0]; document.querySelector('.word2').style.color = colors[1]; document.querySelector('.word3').style.color = colors[2];
-        const words = [ { text: 'DO', element: document.getElementById('word1'), delay: 0 }, { text: 'IT', element: document.getElementById('word2'), delay: Random.range(config.pauseDelay * 0.5, config.pauseDelay * 1.5) }, { text: 'NOW!', element: document.getElementById('word3'), delay: Random.range(config.pauseDelay * 0.5, config.pauseDelay * 1.5) } ];
+        const words = [ { text: 'DO', element: document.getElementById('word1'), delay: 0 }, { text: 'IT', element: document.getElementById('word2'), delay: Random.range(config.pauseDelay * 0.5, config.pauseDelay * 1.5) }, { text: 'NOW', element: document.getElementById('word3'), delay: Random.range(config.pauseDelay * 0.5, config.pauseDelay * 1.5) } ];
         if (!prefersReducedMotion) {
             let currentWordIndex = 0, currentCharIndex = 0;
             words.forEach(word => { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; });

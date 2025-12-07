@@ -11,7 +11,7 @@
         const Random = { range: (min, max) => min + Math.random() * (max - min), int: (min, max) => Math.floor(Random.range(min, max + 1)) };
         const config = { hueShift: Random.range(-60, 60), satShift: Random.range(-30, 30), lightShift: Random.range(-15, 15), amplitude: Random.range(15, 60), waveCount: Random.range(1, 8), speed: Random.range(1, 6), duration: Random.range(2000, 5000), scaleAmp: Random.range(0.1, 0.5), rotAmp: Random.range(0, 30), freq1: Random.range(1, 5), freq2: Random.range(1, 5), phase1: Random.range(0, Math.PI * 2), phase2: Random.range(0, Math.PI * 2) };
         const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftColor: (hsl, hueShift, satShift, lightShift) => ({ h: (hsl.h + hueShift + 360) % 360, s: Math.max(0, Math.min(100, hsl.s + satShift)), l: Math.max(0, Math.min(100, hsl.l + lightShift)) }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
-        const words = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW!', element: document.getElementById('word3') } ];
+        const words = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW', element: document.getElementById('word3') } ];
         const letters = [];
         words.forEach((word, wordIndex) => {
             const chars = word.text.split('');

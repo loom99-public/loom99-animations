@@ -60,7 +60,7 @@
 <body>
     <div class="container">
         <canvas id="canvas"></canvas>
-        <div class="reduced-motion-text">DO IT NOW!</div>
+        <div class="reduced-motion-text">DO IT NOW</div>
     </div>
 
     <script>
@@ -165,8 +165,8 @@
                 particles.push(new Particle(point.x, point.y, '#ff6b00'));
             });
 
-            // Create particles for "NOW!"
-            const nowPoints = getTextPoints('NOW!', 50, 250, 80);
+            // Create particles for "NOW"
+            const nowPoints = getTextPoints('NOW', 50, 250, 80);
             nowPoints.forEach(point => {
                 particles.push(new Particle(point.x, point.y, '#ffdd00'));
             });

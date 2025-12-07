@@ -17,7 +17,7 @@
         document.querySelector('.word1').style.color = ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.hueShift));
         document.querySelector('.word2').style.color = ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.hueShift));
         document.querySelector('.word3').style.color = ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.hueShift));
-        const words = [ { text: 'DO', element: document.getElementById('word1'), delay: 0 }, { text: 'IT', element: document.getElementById('word2'), delay: config.pauseDelay }, { text: 'NOW!', element: document.getElementById('word3'), delay: config.pauseDelay } ];
+        const words = [ { text: 'DO', element: document.getElementById('word1'), delay: 0 }, { text: 'IT', element: document.getElementById('word2'), delay: config.pauseDelay }, { text: 'NOW', element: document.getElementById('word3'), delay: config.pauseDelay } ];
         if (!prefersReducedMotion) {
             let currentWordIndex = 0, currentCharIndex = 0;
             words.forEach(word => { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; });

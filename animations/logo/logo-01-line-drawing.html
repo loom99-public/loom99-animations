@@ -230,20 +230,28 @@
             {x: 400, y: 160}
         ], PINK, STAGGER * 3, DURATION);
 
-        // 9 (first) - from right, spirals in
+        // 9 (first) - from right, spirals in - curved flowing design
         addLine(700, 100, [
-            {x: 480, y: 60},
-            {type: 'A', rx: 20, ry: 20, rotation: 0, largeArc: 1, sweep: 1, x: 479.99, y: 60.01},
-            {x: 480, y: 100},
-            {x: 480, y: 160}
+            {x: 460, y: 70},
+            {type: 'Q', cx: 460, cy: 45, x: 480, y: 45},
+            {type: 'Q', cx: 500, cy: 45, x: 500, y: 70},
+            {type: 'Q', cx: 500, cy: 95, x: 480, y: 95},
+            {type: 'Q', cx: 460, cy: 95, x: 460, y: 70},
+            {x: 500, y: 70},
+            {type: 'Q', cx: 500, cy: 110, x: 485, y: 135},
+            {type: 'Q', cx: 470, cy: 160, x: 445, y: 165}
         ], CYAN, STAGGER * 4, DURATION);
 
-        // 9 (second) - from bottom right, shoots up
+        // 9 (second) - from bottom right, shoots up - curved flowing design
         addLine(650, 250, [
-            {x: 560, y: 60},
-            {type: 'A', rx: 20, ry: 20, rotation: 0, largeArc: 1, sweep: 1, x: 559.99, y: 60.01},
-            {x: 560, y: 100},
-            {x: 560, y: 160}
+            {x: 540, y: 70},
+            {type: 'Q', cx: 540, cy: 45, x: 560, y: 45},
+            {type: 'Q', cx: 580, cy: 45, x: 580, y: 70},
+            {type: 'Q', cx: 580, cy: 95, x: 560, y: 95},
+            {type: 'Q', cx: 540, cy: 95, x: 540, y: 70},
+            {x: 580, y: 70},
+            {type: 'Q', cx: 580, cy: 110, x: 565, y: 135},
+            {type: 'Q', cx: 550, cy: 160, x: 525, y: 165}
         ], CYAN, STAGGER * 5, DURATION);
 
         let startTime = null;

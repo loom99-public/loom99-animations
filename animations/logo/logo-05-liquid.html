@@ -159,25 +159,27 @@
             blobs.push(new Blob(x, y, r, 330));
         });
 
-        // 9 (first - cyan)
+        // 9 (first - cyan) - curved flowing design
         for (let angle = 0; angle < 360; angle += 40) {
             const rad = angle * Math.PI / 180;
             const x = 480 + Math.cos(rad) * 20;
-            const y = 60 + Math.sin(rad) * 20;
+            const y = 70 + Math.sin(rad) * 20;
             blobs.push(new Blob(x, y, 8, 190));
         }
-        [[480, 90, 10], [480, 120, 10], [480, 150, 10]].forEach(([x, y, r]) => {
+        // Curved tail going down and left
+        [[490, 95, 9], [480, 115, 9], [465, 135, 9], [450, 155, 9], [440, 165, 8]].forEach(([x, y, r]) => {
             blobs.push(new Blob(x, y, r, 190));
         });
 
-        // 9 (second - cyan)
+        // 9 (second - cyan) - curved flowing design
         for (let angle = 0; angle < 360; angle += 40) {
             const rad = angle * Math.PI / 180;
             const x = 560 + Math.cos(rad) * 20;
-            const y = 60 + Math.sin(rad) * 20;
+            const y = 70 + Math.sin(rad) * 20;
             blobs.push(new Blob(x, y, 8, 190));
         }
-        [[560, 90, 10], [560, 120, 10], [560, 150, 10]].forEach(([x, y, r]) => {
+        // Curved tail going down and left
+        [[570, 95, 9], [560, 115, 9], [545, 135, 9], [530, 155, 9], [520, 165, 8]].forEach(([x, y, r]) => {
             blobs.push(new Blob(x, y, r, 190));
         });
 

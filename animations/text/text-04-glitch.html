@@ -161,6 +161,10 @@
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         if (!prefersReducedMotion) {
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitStartTime = null;
+            const EXIT_DURATION = 300;
+
             const text = document.querySelector('.text');
             const glitchLayers = document.querySelectorAll('.glitch-layer');
             const scanline = document.querySelector('.scanline');
@@ -173,55 +177,97 @@
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
 
-                if (elapsed < glitchDuration) {
-                    // Intense glitch phase
-                    const intensity = 1 - (elapsed / glitchDuration);
+                if (animationState === 'entrance') {
+                    if (elapsed < glitchDuration) {
+                        // Intense glitch phase
+                        const intensity = 1 - (elapsed / glitchDuration);
+
+                        glitchLayers.forEach(layer => {
+                            layer.style.opacity = intensity * 0.7;
+                        });
+
+                        scanline.style.opacity = intensity * 0.5;
+
+                        // Random position jitter on main text
+                        const jitterX = (Math.random() - 0.5) * 10 * intensity;
+                        const jitterY = (Math.random() - 0.5) * 10 * intensity;
+                        text.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
+
+                        // Random skew
+                        const skewX = (Math.random() - 0.5) * 5 * intensity;
+                        text.style.transform += ` skewX(${skewX}deg)`;
+
+                        requestAnimationFrame(animate);
+                    } else if (elapsed < totalDuration) {
+                        // Stabilizing phase
+                        const stabilize = (elapsed - glitchDuration) / (totalDuration - glitchDuration);
+
+                        glitchLayers.forEach(layer => {
+                            layer.style.opacity = (1 - stabilize) * 0.3;
+                        });
+
+                        scanline.style.opacity = (1 - stabilize) * 0.3;
+
+                        // Reduce jitter
+                        const jitterX = (Math.random() - 0.5) * 3 * (1 - stabilize);
+                        const jitterY = (Math.random() - 0.5) * 3 * (1 - stabilize);
+                        text.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
+
+                        requestAnimationFrame(animate);
+                    } else {
+                        // Final stable state
+                        glitchLayers.forEach(layer => {
+                            layer.style.opacity = 0;
+                        });
+                        scanline.style.opacity = 0;
+                        text.style.transform = 'none';
+                        animationState = 'hold';
+                    }
+                } else if (animationState === 'exit') {
+                    const exitElapsed = timestamp - exitStartTime;
+                    const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+
+                    // Intense glitch effect that increases
+                    const intensity = progress;
 
                     glitchLayers.forEach(layer => {
-                        layer.style.opacity = intensity * 0.7;
+                        layer.style.opacity = intensity * 0.9;
                     });
 
-                    scanline.style.opacity = intensity * 0.5;
+                    scanline.style.opacity = intensity * 0.8;
 
-                    // Random position jitter on main text
-                    const jitterX = (Math.random() - 0.5) * 10 * intensity;
-                    const jitterY = (Math.random() - 0.5) * 10 * intensity;
-                    text.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
+                    // Extreme jitter and distortion
+                    const jitterX = (Math.random() - 0.5) * 30 * intensity;
+                    const jitterY = (Math.random() - 0.5) * 30 * intensity;
+                    const skewX = (Math.random() - 0.5) * 20 * intensity;
+                    text.style.transform = `translate(${jitterX}px, ${jitterY}px) skewX(${skewX}deg)`;
 
-                    // Random skew
-                    const skewX = (Math.random() - 0.5) * 5 * intensity;
-                    text.style.transform += ` skewX(${skewX}deg)`;
-
-                    requestAnimationFrame(animate);
-                } else if (elapsed < totalDuration) {
-                    // Stabilizing phase
-                    const stabilize = (elapsed - glitchDuration) / (totalDuration - glitchDuration);
-
+                    // Fade out
+                    text.style.opacity = 1 - progress;
                     glitchLayers.forEach(layer => {
-                        layer.style.opacity = (1 - stabilize) * 0.3;
+                        layer.style.opacity = intensity * 0.9 * (1 - progress);
                     });
 
-                    scanline.style.opacity = (1 - stabilize) * 0.3;
-
-                    // Reduce jitter
-                    const jitterX = (Math.random() - 0.5) * 3 * (1 - stabilize);
-                    const jitterY = (Math.random() - 0.5) * 3 * (1 - stabilize);
-                    text.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
-
-                    requestAnimationFrame(animate);
-                } else {
-                    // Final stable state
-                    glitchLayers.forEach(layer => {
-                        layer.style.opacity = 0;
-                    });
-                    scanline.style.opacity = 0;
-                    text.style.transform = 'none';
+                    if (exitElapsed < EXIT_DURATION) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        // Exit complete - restart
+                        restart();
+                    }
                 }
+            }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = performance.now();
+                requestAnimationFrame(animate);
             }
 
             function restart() {
                 startTime = null;
+                animationState = 'entrance';
                 text.style.transform = 'none';
+                text.style.opacity = 1;
                 glitchLayers.forEach(layer => {
                     layer.style.opacity = 0;
                 });
@@ -230,7 +276,14 @@
             }
 
             requestAnimationFrame(animate);
-            document.body.addEventListener('click', restart);
+
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         }
     </script>
 </body>

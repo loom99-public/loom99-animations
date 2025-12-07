@@ -81,10 +81,18 @@
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         if (!prefersReducedMotion) {
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitStartTime = null;
+            const EXIT_DURATION = 300;
+
             const words = document.querySelectorAll('.word');
 
             function easeOutCubic(t) {
                 return 1 - Math.pow(1 - t, 3);
+            }
+
+            function easeInCubic(t) {
+                return t * t * t;
             }
 
             class Word3D {
@@ -95,7 +103,7 @@
                     this.rotationAxis = rotationAxis; // 'X', 'Y', or 'Z'
                 }
 
-                update(elapsed) {
+                updateEntrance(elapsed) {
                     if (elapsed < this.delay) {
                         return;
                     }
@@ -123,6 +131,36 @@
                     `;
                     this.element.style.opacity = eased;
                 }
+
+                updateExit(elapsed) {
+                    const progress = Math.min(1, elapsed / EXIT_DURATION);
+                    const eased = easeInCubic(progress);
+
+                    let rotateX = 0, rotateY = 0, rotateZ = 0;
+                    const translateZ = -400 * eased;
+
+                    // Flip away in opposite direction
+                    if (this.rotationAxis === 'X') {
+                        rotateX = -90 * eased;
+                    } else if (this.rotationAxis === 'Y') {
+                        rotateY = -180 * eased;
+                    } else if (this.rotationAxis === 'Z') {
+                        rotateZ = -360 * eased;
+                    }
+
+                    this.element.style.transform = `
+                        translateZ(${translateZ}px)
+                        rotateX(${rotateX}deg)
+                        rotateY(${rotateY}deg)
+                        rotateZ(${rotateZ}deg)
+                    `;
+                    this.element.style.opacity = 1 - eased;
+                }
+
+                reset() {
+                    this.element.style.opacity = 0;
+                    this.element.style.transform = '';
+                }
             }
 
             const wordAnimations = [
@@ -138,24 +176,51 @@
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
 
-                wordAnimations.forEach(word => word.update(elapsed));
+                if (animationState === 'entrance') {
+                    wordAnimations.forEach(word => word.updateEntrance(elapsed));
 
-                if (elapsed < totalDuration) {
-                    requestAnimationFrame(animate);
+                    if (elapsed < totalDuration) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        animationState = 'hold';
+                    }
+                } else if (animationState === 'exit') {
+                    const exitElapsed = timestamp - exitStartTime;
+                    wordAnimations.forEach(word => word.updateExit(exitElapsed));
+
+                    if (exitElapsed < EXIT_DURATION) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        // Exit complete - restart
+                        restart();
+                    }
                 }
+            }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = performance.now();
+                requestAnimationFrame(animate);
             }
 
             function restart() {
                 startTime = null;
+                animationState = 'entrance';
                 wordAnimations.forEach(word => {
-                    word.element.style.opacity = 0;
-                    word.element.style.transform = '';
+                    word.reset();
                 });
                 requestAnimationFrame(animate);
             }
 
             requestAnimationFrame(animate);
-            document.body.addEventListener('click', restart);
+
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         } else {
             document.querySelectorAll('.word').forEach(word => {
                 word.style.opacity = 1;

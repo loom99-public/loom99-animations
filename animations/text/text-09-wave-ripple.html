@@ -90,6 +90,10 @@
         });
 
         if (!prefersReducedMotion) {
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitStartTime = null;
+            const EXIT_DURATION = 300;
+
             let startTime = null;
             const duration = 3000;
             const waveCount = 3;
@@ -98,33 +102,76 @@
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
 
-                letters.forEach((letter, i) => {
-                    const time = (elapsed + letter.baseDelay) / 1000;
-                    const wavePhase = (i / letters.length) * Math.PI * 2 * waveCount;
+                if (animationState === 'entrance') {
+                    letters.forEach((letter, i) => {
+                        const time = (elapsed + letter.baseDelay) / 1000;
+                        const wavePhase = (i / letters.length) * Math.PI * 2 * waveCount;
 
-                    // Multiple sine waves for complex motion
-                    const y = Math.sin(time * 3 + wavePhase) * 30 * Math.max(0, 1 - elapsed / duration);
-                    const scale = 1 + Math.sin(time * 2 + wavePhase) * 0.2 * Math.max(0, 1 - elapsed / duration);
+                        // Multiple sine waves for complex motion
+                        const y = Math.sin(time * 3 + wavePhase) * 30 * Math.max(0, 1 - elapsed / duration);
+                        const scale = 1 + Math.sin(time * 2 + wavePhase) * 0.2 * Math.max(0, 1 - elapsed / duration);
 
-                    letter.element.style.transform = `translateY(${y}px) scale(${scale})`;
-                });
-
-                if (elapsed < duration) {
-                    requestAnimationFrame(animate);
-                } else {
-                    letters.forEach(letter => {
-                        letter.element.style.transform = 'none';
+                        letter.element.style.transform = `translateY(${y}px) scale(${scale})`;
                     });
+
+                    if (elapsed < duration) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        letters.forEach(letter => {
+                            letter.element.style.transform = 'none';
+                        });
+                        animationState = 'hold';
+                    }
+                } else if (animationState === 'exit') {
+                    const exitElapsed = timestamp - exitStartTime;
+                    const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+
+                    letters.forEach((letter, i) => {
+                        const wavePhase = (i / letters.length) * Math.PI * 2;
+
+                        // Collapse inward with wave effect
+                        const y = Math.sin(wavePhase) * -100 * progress;
+                        const scale = 1 - progress;
+                        const opacity = 1 - progress;
+
+                        letter.element.style.transform = `translateY(${y}px) scale(${scale})`;
+                        letter.element.style.opacity = opacity;
+                    });
+
+                    if (exitElapsed < EXIT_DURATION) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        // Exit complete - restart
+                        restart();
+                    }
                 }
+            }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = performance.now();
+                requestAnimationFrame(animate);
             }
 
             function restart() {
                 startTime = null;
+                animationState = 'entrance';
+                letters.forEach(letter => {
+                    letter.element.style.transform = 'none';
+                    letter.element.style.opacity = 1;
+                });
                 requestAnimationFrame(animate);
             }
 
             requestAnimationFrame(animate);
-            document.body.addEventListener('click', restart);
+
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         }
     </script>
 </body>

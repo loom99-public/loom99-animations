@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>loom99 Logo - Line Drawing Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+        }
+
+        .line {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .line {
+                opacity: 1 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg id="logo" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#7b2ff7;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#ff2d75;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+        </svg>
+    </div>
+
+    <script>
+        const svg = document.getElementById('logo');
+
+        // Check if user prefers reduced motion
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function easeOutQuart(t) {
+            return 1 - Math.pow(1 - t, 4);
+        }
+
+        function easeInQuart(t) {
+            return t * t * t * t;
+        }
+
+        class AnimatedLine {
+            constructor(startX, startY, points, color, delay, duration, foldDuration = 200) {
+                this.points = points;
+                this.startX = startX;
+                this.startY = startY;
+                this.delay = delay;
+                this.duration = duration;
+                this.foldDuration = foldDuration;
+                this.color = color;
+                this.progress = 0;
+                this.foldProgress = 0;
+                this.started = false;
+                this.finished = false;
+                this.folding = false;
+                this.foldComplete = false;
+
+                this.path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                this.path.classList.add('line');
+                this.path.style.stroke = color;
+                this.path.style.filter = `drop-shadow(0 0 8px ${color})`;
+                this.path.style.opacity = '0';
+            }
+
+            getFirstPoint() {
+                return this.points[0];
+            }
+
+            update(elapsed) {
+                if (this.foldComplete) return;
+
+                if (elapsed < this.delay) {
+                    this.path.style.opacity = '0';
+                    return;
+                }
+
+                this.path.style.opacity = '1';
+
+                if (!this.started) {
+                    this.started = true;
+                }
+
+                const localTime = elapsed - this.delay;
+
+                // Phase 1: Line shoots in and curves into shape
+                if (localTime < this.duration) {
+                    this.progress = Math.min(1, localTime / this.duration);
+                    const eased = easeOutQuart(this.progress);
+
+                    const firstPoint = this.getFirstPoint();
+                    const tailX = this.startX + (firstPoint.x - this.startX) * eased;
+                    const tailY = this.startY + (firstPoint.y - this.startY) * eased;
+
+                    let d = `M ${tailX} ${tailY}`;
+
+                    for (let i = 0; i < this.points.length; i++) {
+                        const point = this.points[i];
+                        const finalPoint = this.points[this.points.length - 1];
+                        const t = (i + 1) / this.points.length;
+
+                        const straightX = this.startX + (finalPoint.x - this.startX) * t;
+                        const straightY = this.startY + (finalPoint.y - this.startY) * t;
+
+                        const currentX = straightX + (point.x - straightX) * eased;
+                        const currentY = straightY + (point.y - straightY) * eased;
+
+                        if (point.type === 'Q') {
+                            const ctrlStraightX = this.startX + (finalPoint.x - this.startX) * ((i + 0.5) / this.points.length);
+                            const ctrlStraightY = this.startY + (finalPoint.y - this.startY) * ((i + 0.5) / this.points.length);
+                            const ctrlX = ctrlStraightX + (point.cx - ctrlStraightX) * eased;
+                            const ctrlY = ctrlStraightY + (point.cy - ctrlStraightY) * eased;
+                            d += ` Q ${ctrlX} ${ctrlY} ${currentX} ${currentY}`;
+                        } else if (point.type === 'A') {
+                            d += ` A ${point.rx} ${point.ry} ${point.rotation} ${point.largeArc} ${point.sweep} ${currentX} ${currentY}`;
+                        } else {
+                            d += ` L ${currentX} ${currentY}`;
+                        }
+                    }
+
+                    this.path.setAttribute('d', d);
+                }
+                // Phase 2: Tail folds in
+                else {
+                    if (!this.folding) {
+                        this.folding = true;
+                        this.finished = true;
+                    }
+
+                    const foldTime = localTime - this.duration;
+                    this.foldProgress = Math.min(1, foldTime / this.foldDuration);
+
+                    let d = `M ${this.points[0].x} ${this.points[0].y}`;
+
+                    for (let i = 1; i < this.points.length; i++) {
+                        const point = this.points[i];
+                        if (point.type === 'Q') {
+                            d += ` Q ${point.cx} ${point.cy} ${point.x} ${point.y}`;
+                        } else if (point.type === 'A') {
+                            d += ` A ${point.rx} ${point.ry} ${point.rotation} ${point.largeArc} ${point.sweep} ${point.x} ${point.y}`;
+                        } else {
+                            d += ` L ${point.x} ${point.y}`;
+                        }
+                    }
+
+                    this.path.setAttribute('d', d);
+
+                    if (this.foldProgress >= 1) {
+                        this.foldComplete = true;
+                    }
+                }
+            }
+        }
+
+        const lines = [];
+
+        function addLine(startX, startY, points, color, delay, duration = 400, foldDuration = 180) {
+            const line = new AnimatedLine(startX, startY, points, color, delay, duration, foldDuration);
+            lines.push(line);
+            svg.appendChild(line.path);
+            return line;
+        }
+
+        const CYAN = '#00d4ff';
+        const PURPLE = '#7b2ff7';
+        const PINK = '#ff2d75';
+
+        const DURATION = 400;
+        const STAGGER = 80;
+
+        // L - from top left, shoots in
+        addLine(-100, 100, [
+            {x: 40, y: 40},
+            {x: 40, y: 160},
+            {x: 100, y: 160}
+        ], CYAN, 0, DURATION);
+
+        // O (first) - from left, swoops into circle
+        addLine(-100, 100, [
+            {x: 150, y: 60},
+            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 150, y: 140},
+            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 150, y: 60}
+        ], PURPLE, STAGGER, DURATION);
+
+        // O (second) - from top, drops and curves
+        addLine(240, -50, [
+            {x: 240, y: 60},
+            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 240, y: 140},
+            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 240, y: 60}
+        ], PURPLE, STAGGER * 2, DURATION);
+
+        // M - from top right, sweeps down
+        addLine(350, -50, [
+            {x: 300, y: 160},
+            {x: 300, y: 40},
+            {x: 350, y: 100},
+            {x: 400, y: 40},
+            {x: 400, y: 160}
+        ], PINK, STAGGER * 3, DURATION);
+
+        // 9 (first) - from right, spirals in
+        addLine(700, 100, [
+            {x: 480, y: 60},
+            {type: 'A', rx: 20, ry: 20, rotation: 0, largeArc: 1, sweep: 1, x: 479.99, y: 60.01},
+            {x: 480, y: 100},
+            {x: 480, y: 160}
+        ], CYAN, STAGGER * 4, DURATION);
+
+        // 9 (second) - from bottom right, shoots up
+        addLine(650, 250, [
+            {x: 560, y: 60},
+            {type: 'A', rx: 20, ry: 20, rotation: 0, largeArc: 1, sweep: 1, x: 559.99, y: 60.01},
+            {x: 560, y: 100},
+            {x: 560, y: 160}
+        ], CYAN, STAGGER * 5, DURATION);
+
+        let startTime = null;
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+
+            lines.forEach(line => line.update(elapsed));
+
+            const allDone = lines.every(l => l.foldComplete);
+            if (!allDone) {
+                requestAnimationFrame(animate);
+            }
+        }
+
+        function restart() {
+            startTime = null;
+            lines.forEach(line => {
+                line.progress = 0;
+                line.foldProgress = 0;
+                line.started = false;
+                line.finished = false;
+                line.folding = false;
+                line.foldComplete = false;
+                line.path.style.opacity = '0';
+            });
+            requestAnimationFrame(animate);
+        }
+
+        // Start animation (or show final state if reduced motion)
+        if (prefersReducedMotion) {
+            lines.forEach(line => {
+                line.foldComplete = true;
+                line.path.style.opacity = '1';
+                let d = `M ${line.points[0].x} ${line.points[0].y}`;
+                for (let i = 1; i < line.points.length; i++) {
+                    const point = line.points[i];
+                    if (point.type === 'Q') {
+                        d += ` Q ${point.cx} ${point.cy} ${point.x} ${point.y}`;
+                    } else if (point.type === 'A') {
+                        d += ` A ${point.rx} ${point.ry} ${point.rotation} ${point.largeArc} ${point.sweep} ${point.x} ${point.y}`;
+                    } else {
+                        d += ` L ${point.x} ${point.y}`;
+                    }
+                }
+                line.path.setAttribute('d', d);
+            });
+        } else {
+            requestAnimationFrame(animate);
+        }
+
+        document.body.addEventListener('click', restart);
+    </script>
+</body>
+</html>

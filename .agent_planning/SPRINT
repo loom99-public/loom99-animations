@@ -1,0 +1,19 @@
+# Sprint: Foundation & Initial Animations
+**Started**: 2025-12-07
+**Goal**: Complete P0 foundation items and begin core animations
+
+## Sprint Backlog
+
+### P0: Foundation (Critical - Do First)
+- [ ] P0-1: Design loom99 Logo Asset
+- [ ] P0-2: Create Project Organization Structure
+- [ ] P0-3: Create Animation Template & Shared Utilities
+
+### P1: First Wave of Animations
+- [ ] P2-1: Migrate prototype to new structure (text line-drawing)
+- [ ] P1-1: Logo Animation - Line Drawing
+- [ ] P1-2: Text Animation - Particles
+- [ ] P1-3: Logo Animation - Particles
+
+## Progress Notes
+Starting with P0-1: Logo design. Will create simple text-based logo "loom99" with clean typography that can be easily animated with all 10 techniques.

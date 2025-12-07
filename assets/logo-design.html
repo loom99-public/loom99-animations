@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>loom99 Logo Design Reference</title>
+    <style>
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #fff;
+        }
+
+        h1 {
+            margin-bottom: 40px;
+            font-size: 24px;
+            font-weight: 300;
+        }
+
+        .logo-container {
+            background: #0f0f1e;
+            padding: 60px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+        }
+
+        svg {
+            display: block;
+        }
+
+        .info {
+            max-width: 800px;
+            line-height: 1.6;
+            color: #aaa;
+        }
+
+        .info h2 {
+            color: #fff;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        code {
+            background: #0f0f1e;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>loom99 Logo Design Reference</h1>
+
+    <div class="logo-container">
+        <svg width="600" height="200" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+            <!-- Logo: "loom99" with clean, modern styling -->
+            <defs>
+                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#7b2ff7;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#ff2d75;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+
+            <!-- L -->
+            <path d="M 40 40 L 40 160 L 100 160"
+                  stroke="url(#logoGradient)"
+                  stroke-width="12"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  fill="none"
+                  filter="drop-shadow(0 0 10px rgba(0, 212, 255, 0.5))"/>
+
+            <!-- O (first) -->
+            <circle cx="150" cy="100" r="40"
+                    stroke="url(#logoGradient)"
+                    stroke-width="12"
+                    fill="none"
+                    filter="drop-shadow(0 0 10px rgba(123, 47, 247, 0.5))"/>
+
+            <!-- O (second) -->
+            <circle cx="240" cy="100" r="40"
+                    stroke="url(#logoGradient)"
+                    stroke-width="12"
+                    fill="none"
+                    filter="drop-shadow(0 0 10px rgba(123, 47, 247, 0.5))"/>
+
+            <!-- M -->
+            <path d="M 300 160 L 300 40 L 350 100 L 400 40 L 400 160"
+                  stroke="url(#logoGradient)"
+                  stroke-width="12"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  fill="none"
+                  filter="drop-shadow(0 0 10px rgba(255, 45, 117, 0.5))"/>
+
+            <!-- 9 (first) -->
+            <path d="M 480 60 A 20 20 0 1 1 479.99 60.01 L 480 100 L 480 160"
+                  stroke="url(#logoGradient)"
+                  stroke-width="12"
+                  stroke-linecap="round"
+                  fill="none"
+                  filter="drop-shadow(0 0 10px rgba(0, 212, 255, 0.5))"/>
+
+            <!-- 9 (second) -->
+            <path d="M 560 60 A 20 20 0 1 1 559.99 60.01 L 560 100 L 560 160"
+                  stroke="url(#logoGradient)"
+                  stroke-width="12"
+                  stroke-linecap="round"
+                  fill="none"
+                  filter="drop-shadow(0 0 10px rgba(0, 212, 255, 0.5))"/>
+        </svg>
+    </div>
+
+    <div class="info">
+        <h2>Design Notes</h2>
+        <p>
+            The loom99 logo is designed as clean, stroke-based typography optimized for animation.
+            Each letter/number is a separate path that can be animated independently.
+        </p>
+
+        <h2>Color Palette</h2>
+        <p>
+            <code>#00d4ff</code> (cyan) to
+            <code>#7b2ff7</code> (purple) to
+            <code>#ff2d75</code> (pink)
+            <br>
+            Gradient creates visual flow across the logo.
+        </p>
+
+        <h2>Technical Details</h2>
+        <ul>
+            <li>ViewBox: <code>0 0 600 200</code></li>
+            <li>Stroke width: <code>12px</code></li>
+            <li>Stroke linecap/linejoin: <code>round</code></li>
+            <li>Glow effect: <code>drop-shadow</code> filters</li>
+            <li>6 separable elements: L, O, O, M, 9, 9</li>
+        </ul>
+
+        <h2>Animation Considerations</h2>
+        <p>
+            Each character is a simple path that can be:
+        </p>
+        <ul>
+            <li>Drawn with line animation (stroke-dasharray/offset)</li>
+            <li>Decomposed into particles</li>
+            <li>Morphed from other shapes</li>
+            <li>Transformed in 3D space</li>
+            <li>Revealed through masks</li>
+            <li>And more...</li>
+        </ul>
+    </div>
+</body>
+</html>

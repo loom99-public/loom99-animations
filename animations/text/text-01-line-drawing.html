@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Do It Now - Line Drawing Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            padding: 20px;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+        }
+
+        .line {
+            fill: none;
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .line {
+                opacity: 1 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg id="text" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+    </div>
+
+    <script>
+        const svg = document.getElementById('text');
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function easeOutQuart(t) {
+            return 1 - Math.pow(1 - t, 4);
+        }
+
+        function easeInQuart(t) {
+            return t * t * t * t;
+        }
+
+        class AnimatedLine {
+            constructor(startX, startY, points, color, delay, duration, foldDuration = 150) {
+                this.points = points;
+                this.startX = startX;
+                this.startY = startY;
+                this.delay = delay;
+                this.duration = duration;
+                this.foldDuration = foldDuration;
+                this.color = color;
+                this.progress = 0;
+                this.foldProgress = 0;
+                this.started = false;
+                this.finished = false;
+                this.folding = false;
+                this.foldComplete = false;
+
+                this.path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                this.path.classList.add('line');
+                this.path.style.stroke = color;
+                this.path.style.filter = `drop-shadow(0 0 6px ${color})`;
+                this.path.style.opacity = '0';
+            }
+
+            getFirstPoint() {
+                return this.points[0];
+            }
+
+            update(elapsed) {
+                if (this.foldComplete) return;
+
+                if (elapsed < this.delay) {
+                    this.path.style.opacity = '0';
+                    return;
+                }
+
+                this.path.style.opacity = '1';
+
+                if (!this.started) {
+                    this.started = true;
+                }
+
+                const localTime = elapsed - this.delay;
+
+                if (localTime < this.duration) {
+                    this.progress = Math.min(1, localTime / this.duration);
+                    const eased = easeOutQuart(this.progress);
+
+                    const firstPoint = this.getFirstPoint();
+                    const tailX = this.startX + (firstPoint.x - this.startX) * eased;
+                    const tailY = this.startY + (firstPoint.y - this.startY) * eased;
+
+                    let d = `M ${tailX} ${tailY}`;
+
+                    for (let i = 0; i < this.points.length; i++) {
+                        const point = this.points[i];
+                        const finalPoint = this.points[this.points.length - 1];
+                        const t = (i + 1) / this.points.length;
+
+                        const straightX = this.startX + (finalPoint.x - this.startX) * t;
+                        const straightY = this.startY + (finalPoint.y - this.startY) * t;
+
+                        const currentX = straightX + (point.x - straightX) * eased;
+                        const currentY = straightY + (point.y - straightY) * eased;
+
+                        if (point.type === 'Q') {
+                            const ctrlStraightX = this.startX + (finalPoint.x - this.startX) * ((i + 0.5) / this.points.length);
+                            const ctrlStraightY = this.startY + (finalPoint.y - this.startY) * ((i + 0.5) / this.points.length);
+                            const ctrlX = ctrlStraightX + (point.cx - ctrlStraightX) * eased;
+                            const ctrlY = ctrlStraightY + (point.cy - ctrlStraightY) * eased;
+                            d += ` Q ${ctrlX} ${ctrlY} ${currentX} ${currentY}`;
+                        } else {
+                            d += ` L ${currentX} ${currentY}`;
+                        }
+                    }
+
+                    this.path.setAttribute('d', d);
+                } else {
+                    if (!this.folding) {
+                        this.folding = true;
+                        this.finished = true;
+                    }
+
+                    const foldTime = localTime - this.duration;
+                    this.foldProgress = Math.min(1, foldTime / this.foldDuration);
+
+                    let d = `M ${this.points[0].x} ${this.points[0].y}`;
+
+                    for (let i = 1; i < this.points.length; i++) {
+                        const point = this.points[i];
+                        if (point.type === 'Q') {
+                            d += ` Q ${point.cx} ${point.cy} ${point.x} ${point.y}`;
+                        } else {
+                            d += ` L ${point.x} ${point.y}`;
+                        }
+                    }
+
+                    this.path.setAttribute('d', d);
+
+                    if (this.foldProgress >= 1) {
+                        this.foldComplete = true;
+                    }
+                }
+            }
+        }
+
+        const lines = [];
+
+        function addLine(startX, startY, points, color, delay, duration = 350, foldDuration = 150) {
+            const line = new AnimatedLine(startX, startY, points, color, delay, duration, foldDuration);
+            lines.push(line);
+            svg.appendChild(line.path);
+            return line;
+        }
+
+        const RED = '#ff2d2d';
+        const ORANGE = '#ff6b00';
+        const YELLOW = '#ffdd00';
+
+        const SYLLABLE = 200;
+        const PAUSE = 100;
+
+        // ===== DO =====
+        const doStart = 0;
+        const doDur = SYLLABLE;
+
+        // D - vertical
+        addLine(-150, 70, [
+            {x: 100, y: 20},
+            {x: 100, y: 100}
+        ], RED, doStart, doDur);
+
+        // D - curve
+        addLine(350, 70, [
+            {x: 100, y: 20},
+            {type: 'Q', cx: 160, cy: 20, x: 160, y: 60},
+            {type: 'Q', cx: 160, cy: 100, x: 100, y: 100}
+        ], RED, doStart + 20, doDur);
+
+        // O - left arc
+        addLine(-150, 70, [
+            {x: 200, y: 60},
+            {type: 'Q', cx: 200, cy: 20, x: 240, y: 20},
+            {type: 'Q', cx: 280, cy: 20, x: 280, y: 60}
+        ], RED, doStart + 40, doDur);
+
+        // O - right arc
+        addLine(500, 70, [
+            {x: 280, y: 60},
+            {type: 'Q', cx: 280, cy: 100, x: 240, y: 100},
+            {type: 'Q', cx: 200, cy: 100, x: 200, y: 60}
+        ], RED, doStart + 50, doDur);
+
+        // ===== IT =====
+        const itStart = doStart + doDur + PAUSE;
+        const itDur = SYLLABLE;
+        const itY = 140;
+
+        // I - vertical
+        addLine(-150, itY + 20, [
+            {x: 100, y: itY},
+            {x: 100, y: itY + 60}
+        ], ORANGE, itStart, itDur);
+
+        // T - vertical
+        addLine(-100, itY + 20, [
+            {x: 170, y: itY},
+            {x: 170, y: itY + 60}
+        ], ORANGE, itStart + 30, itDur);
+
+        // T - horizontal
+        addLine(350, itY, [
+            {x: 140, y: itY},
+            {x: 200, y: itY}
+        ], ORANGE, itStart + 40, itDur);
+
+        // ===== NOW =====
+        const nowStart = itStart + itDur + PAUSE;
+        const nowDur = SYLLABLE;
+        const nowY = 220;
+
+        // N - left vertical
+        addLine(-150, nowY + 20, [
+            {x: 80, y: nowY},
+            {x: 80, y: nowY + 60}
+        ], YELLOW, nowStart, nowDur);
+
+        // N - diagonal
+        addLine(-100, nowY + 20, [
+            {x: 80, y: nowY},
+            {x: 140, y: nowY + 60}
+        ], YELLOW, nowStart + 10, nowDur);
+
+        // N - right vertical
+        addLine(800, nowY + 20, [
+            {x: 140, y: nowY},
+            {x: 140, y: nowY + 60}
+        ], YELLOW, nowStart + 20, nowDur);
+
+        // O - left arc
+        addLine(-150, nowY + 30, [
+            {x: 180, y: nowY + 30},
+            {type: 'Q', cx: 180, cy: nowY, x: 215, y: nowY},
+            {type: 'Q', cx: 250, cy: nowY, x: 250, y: nowY + 30}
+        ], YELLOW, nowStart + 30, nowDur);
+
+        // O - right arc
+        addLine(800, nowY + 30, [
+            {x: 250, y: nowY + 30},
+            {type: 'Q', cx: 250, cy: nowY + 60, x: 215, y: nowY + 60},
+            {type: 'Q', cx: 180, cy: nowY + 60, x: 180, y: nowY + 30}
+        ], YELLOW, nowStart + 40, nowDur);
+
+        // W - first stroke
+        addLine(-150, nowY + 20, [
+            {x: 280, y: nowY},
+            {x: 300, y: nowY + 60}
+        ], YELLOW, nowStart + 50, nowDur);
+
+        // W - second stroke
+        addLine(-100, nowY + 40, [
+            {x: 300, y: nowY + 60},
+            {x: 320, y: nowY + 30}
+        ], YELLOW, nowStart + 60, nowDur);
+
+        // W - third stroke
+        addLine(800, nowY + 40, [
+            {x: 320, y: nowY + 30},
+            {x: 340, y: nowY + 60}
+        ], YELLOW, nowStart + 70, nowDur);
+
+        // W - fourth stroke
+        addLine(800, nowY + 20, [
+            {x: 340, y: nowY + 60},
+            {x: 360, y: nowY}
+        ], YELLOW, nowStart + 80, nowDur);
+
+        // ! - stem
+        addLine(500, nowY - 30, [
+            {x: 390, y: nowY},
+            {x: 390, y: nowY + 45}
+        ], YELLOW, nowStart + 90, nowDur);
+
+        // ! - dot
+        addLine(500, nowY + 80, [
+            {x: 390, y: nowY + 55},
+            {x: 390, y: nowY + 60}
+        ], YELLOW, nowStart + 100, nowDur);
+
+        let startTime = null;
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+
+            lines.forEach(line => line.update(elapsed));
+
+            const allDone = lines.every(l => l.foldComplete);
+            if (!allDone) {
+                requestAnimationFrame(animate);
+            }
+        }
+
+        function restart() {
+            startTime = null;
+            lines.forEach(line => {
+                line.progress = 0;
+                line.foldProgress = 0;
+                line.started = false;
+                line.finished = false;
+                line.folding = false;
+                line.foldComplete = false;
+                line.path.style.opacity = '0';
+            });
+            requestAnimationFrame(animate);
+        }
+
+        if (prefersReducedMotion) {
+            lines.forEach(line => {
+                line.foldComplete = true;
+                line.path.style.opacity = '1';
+                let d = `M ${line.points[0].x} ${line.points[0].y}`;
+                for (let i = 1; i < line.points.length; i++) {
+                    const point = line.points[i];
+                    if (point.type === 'Q') {
+                        d += ` Q ${point.cx} ${point.cy} ${point.x} ${point.y}`;
+                    } else {
+                        d += ` L ${point.x} ${point.y}`;
+                    }
+                }
+                line.path.setAttribute('d', d);
+            });
+        } else {
+            requestAnimationFrame(animate);
+        }
+
+        document.body.addEventListener('click', restart);
+    </script>
+</body>
+</html>

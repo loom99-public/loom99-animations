@@ -1,0 +1,4 @@
+Agent: project-evaluator | 2025-12-07 18:42:00
+Completion: 5% | Gaps: 4 critical | Test Quality: 0/5
+Ambiguities: 8 found | Workflow: PAUSE
+Blocking: Missing logo asset (50% of deliverables blocked)

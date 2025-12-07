@@ -108,27 +108,6 @@
                 }
             ];
 
-            const selectedMode = Random.pick(modes);
-            console.log(`Formation mode: ${selectedMode.name} - ${selectedMode.description}`);
-
-            // Randomization config
-            const config = {
-                timing: {
-                    enabled: true,
-                    durationVariance: 0.2,
-                    speed: Random.varyPercent(1, 0.2)
-                },
-                colors: {
-                    enabled: true,
-                    hueShift: Random.range(-15, 15)
-                },
-                particles: {
-                    sizeVariance: 0.5,
-                    spacing: Random.int(5, 7),
-                    glowVariance: 2
-                }
-            };
-
             // Color utilities
             const ColorRandom = {
                 baseColors: {
@@ -144,17 +123,6 @@
                 toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
             };
 
-            // Apply color shifts
-            const palette = config.colors.enabled ? {
-                red: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.colors.hueShift)),
-                orange: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.colors.hueShift)),
-                yellow: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.colors.hueShift))
-            } : {
-                red: '#ff2d2d',
-                orange: '#ff6b00',
-                yellow: '#ffdd00'
-            };
-
             // Set canvas size
             canvas.width = 1000;
             canvas.height = 300;
@@ -162,6 +130,13 @@
             function easeOutCubic(t) {
                 return 1 - Math.pow(1 - t, 3);
             }
+
+            // Variables that will be regenerated on each restart
+            let selectedMode;
+            let config;
+            let palette;
+            let particles;
+            let duration;
 
             class Particle {
                 constructor(targetX, targetY, color) {
@@ -234,30 +209,68 @@
                 return points;
             }
 
-            const particles = [];
+            function initializeParameters() {
+                // Select random mode
+                selectedMode = Random.pick(modes);
+                console.log(`Formation mode: ${selectedMode.name} - ${selectedMode.description}`);
 
-            // Create particles for "DO"
-            const doPoints = getTextPoints('DO', 50, 90, 80, config.particles.spacing);
-            doPoints.forEach(point => {
-                particles.push(new Particle(point.x, point.y, palette.red));
-            });
+                // Randomization config
+                config = {
+                    timing: {
+                        enabled: true,
+                        durationVariance: 0.2,
+                        speed: Random.varyPercent(1, 0.2)
+                    },
+                    colors: {
+                        enabled: true,
+                        hueShift: Random.range(-15, 15)
+                    },
+                    particles: {
+                        sizeVariance: 0.5,
+                        spacing: Random.int(5, 7),
+                        glowVariance: 2
+                    }
+                };
 
-            // Create particles for "IT"
-            const itPoints = getTextPoints('IT', 100, 170, 60, config.particles.spacing);
-            itPoints.forEach(point => {
-                particles.push(new Particle(point.x, point.y, palette.orange));
-            });
+                // Apply color shifts
+                palette = config.colors.enabled ? {
+                    red: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.colors.hueShift)),
+                    orange: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.colors.hueShift)),
+                    yellow: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.colors.hueShift))
+                } : {
+                    red: '#ff2d2d',
+                    orange: '#ff6b00',
+                    yellow: '#ffdd00'
+                };
 
-            // Create particles for "NOW"
-            const nowPoints = getTextPoints('NOW', 50, 250, 80, config.particles.spacing);
-            nowPoints.forEach(point => {
-                particles.push(new Particle(point.x, point.y, palette.yellow));
-            });
+                // Create particles array
+                particles = [];
+
+                // Create particles for "DO"
+                const doPoints = getTextPoints('DO', 50, 90, 80, config.particles.spacing);
+                doPoints.forEach(point => {
+                    particles.push(new Particle(point.x, point.y, palette.red));
+                });
+
+                // Create particles for "IT"
+                const itPoints = getTextPoints('IT', 100, 170, 60, config.particles.spacing);
+                itPoints.forEach(point => {
+                    particles.push(new Particle(point.x, point.y, palette.orange));
+                });
+
+                // Create particles for "NOW"
+                const nowPoints = getTextPoints('NOW', 50, 250, 80, config.particles.spacing);
+                nowPoints.forEach(point => {
+                    particles.push(new Particle(point.x, point.y, palette.yellow));
+                });
+
+                // Calculate duration
+                const baseDuration = 2000;
+                duration = config.timing.enabled ?
+                    Random.varyPercent(baseDuration, config.timing.durationVariance) : baseDuration;
+            }
 
             let startTime = null;
-            const baseDuration = 2000;
-            const duration = config.timing.enabled ?
-                Random.varyPercent(baseDuration, config.timing.durationVariance) : baseDuration;
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
@@ -280,15 +293,13 @@
             }
 
             function restart() {
+                initializeParameters();  // Regenerate all random parameters
                 startTime = null;
-                particles.forEach(particle => {
-                    particle.opacity = 0;
-                    particle.x = particle.startX;
-                    particle.y = particle.startY;
-                });
                 requestAnimationFrame(animate);
             }
 
+            // Initial setup
+            initializeParameters();
             requestAnimationFrame(animate);
             canvas.addEventListener('click', restart);
         }

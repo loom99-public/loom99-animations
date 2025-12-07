@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>loom99 Logo - Particle Animation</title>
     <style>
@@ -71,12 +72,20 @@
         if (prefersReducedMotion) {
             // Skip animation for reduced motion
         } else {
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitStartTime = null;
+            const EXIT_DURATION = 250;
+
             // Set canvas size
             canvas.width = 600;
             canvas.height = 200;
 
             function easeOutCubic(t) {
                 return 1 - Math.pow(1 - t, 3);
+            }
+
+            function easeInCubic(t) {
+                return t * t * t;
             }
 
             class Particle {
@@ -99,9 +108,15 @@
                     this.color = color;
                     this.size = 2.5;
                     this.opacity = 0;
+
+                    // Exit properties - scatter in random direction
+                    const exitAngle = Math.random() * Math.PI * 2;
+                    const exitDistance = Math.random() * 300 + 200;
+                    this.exitX = targetX + Math.cos(exitAngle) * exitDistance;
+                    this.exitY = targetY + Math.sin(exitAngle) * exitDistance;
                 }
 
-                update(progress) {
+                updateEntrance(progress) {
                     // Ease into position
                     const eased = easeOutCubic(progress);
                     this.x = this.startX + (this.targetX - this.startX) * eased;
@@ -109,6 +124,13 @@
 
                     // Fade in during movement
                     this.opacity = Math.min(1, progress * 2);
+                }
+
+                updateExit(progress) {
+                    const eased = easeInCubic(progress);
+                    this.x = this.targetX + (this.exitX - this.targetX) * eased;
+                    this.y = this.targetY + (this.exitY - this.targetY) * eased;
+                    this.opacity = 1 - eased;
                 }
 
                 draw() {
@@ -121,6 +143,12 @@
                     ctx.fill();
                     ctx.shadowBlur = 0;
                     ctx.globalAlpha = 1;
+                }
+
+                reset() {
+                    this.opacity = 0;
+                    this.x = this.startX;
+                    this.y = this.startY;
                 }
             }
 
@@ -186,35 +214,73 @@
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
-                const progress = Math.min(1, elapsed / duration);
 
                 // Clear canvas
                 ctx.fillStyle = '#1a1a2e';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Update and draw particles
-                particles.forEach(particle => {
-                    particle.update(progress);
-                    particle.draw();
-                });
+                if (animationState === 'entrance') {
+                    const progress = Math.min(1, elapsed / duration);
 
-                if (progress < 1) {
+                    // Update and draw particles
+                    particles.forEach(particle => {
+                        particle.updateEntrance(progress);
+                        particle.draw();
+                    });
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        animationState = 'hold';
+                        requestAnimationFrame(animate);
+                    }
+                } else if (animationState === 'hold') {
+                    // Just draw particles in final position
+                    particles.forEach(particle => {
+                        particle.draw();
+                    });
                     requestAnimationFrame(animate);
+                } else if (animationState === 'exit') {
+                    const exitElapsed = timestamp - exitStartTime;
+                    const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+
+                    particles.forEach(particle => {
+                        particle.updateExit(progress);
+                        particle.draw();
+                    });
+
+                    if (exitElapsed < EXIT_DURATION) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        // Exit complete - restart
+                        restart();
+                    }
                 }
+            }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = performance.now();
             }
 
             function restart() {
                 startTime = null;
+                animationState = 'entrance';
                 particles.forEach(particle => {
-                    particle.opacity = 0;
-                    particle.x = particle.startX;
-                    particle.y = particle.startY;
+                    particle.reset();
                 });
                 requestAnimationFrame(animate);
             }
 
             requestAnimationFrame(animate);
-            canvas.addEventListener('click', restart);
+
+            canvas.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         }
     </script>
 </body>

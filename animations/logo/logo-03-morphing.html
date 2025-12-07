@@ -55,14 +55,23 @@
         const svg = document.getElementById('svg');
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
+
         function easeInOutCubic(t) {
             return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
         }
 
+        function easeInCubic(t) {
+            return t * t * t;
+        }
+
         class MorphingPath {
-            constructor(startPath, endPath, color, delay) {
+            constructor(startPath, endPath, exitPath, color, delay) {
                 this.startPath = startPath;
                 this.endPath = endPath;
+                this.exitPath = exitPath; // Small dot
                 this.color = color;
                 this.delay = delay;
                 this.duration = 1500;
@@ -78,12 +87,12 @@
                 svg.appendChild(this.path);
             }
 
-            interpolate(t) {
+            interpolate(t, fromPath, toPath) {
                 const eased = easeInOutCubic(t);
 
                 // Parse paths
-                const start = this.parsePath(this.startPath);
-                const end = this.parsePath(this.endPath);
+                const start = this.parsePath(fromPath);
+                const end = this.parsePath(toPath);
 
                 // Build interpolated path
                 let d = '';
@@ -127,7 +136,7 @@
                 return points;
             }
 
-            update(elapsed) {
+            updateEntrance(elapsed) {
                 if (elapsed < this.delay) {
                     this.path.style.opacity = '0';
                     return;
@@ -138,52 +147,68 @@
                 const localTime = elapsed - this.delay;
                 const progress = Math.min(1, localTime / this.duration);
 
-                const d = this.interpolate(progress);
+                const d = this.interpolate(progress, this.startPath, this.endPath);
                 this.path.setAttribute('d', d);
+            }
+
+            updateExit(progress) {
+                const d = this.interpolate(progress, this.endPath, this.exitPath);
+                this.path.setAttribute('d', d);
+                this.path.style.opacity = 1 - easeInCubic(progress);
+            }
+
+            reset() {
+                this.path.style.opacity = '0';
             }
         }
 
         const paths = [];
 
-        // L - morphs from a square
+        // L - morphs from a square, exits to dot
         paths.push(new MorphingPath(
             'M 40 40 L 100 40 L 100 100 L 40 100 Z',
             'M 40 40 L 40 160 L 100 160',
+            'M 70 100 L 70 100', // Small dot at center
             '#00d4ff', 0
         ));
 
-        // O (first) - morphs from a square to circle
+        // O (first) - morphs from a square to circle, exits to dot
         paths.push(new MorphingPath(
             'M 130 80 L 170 80 L 170 120 L 130 120 Z',
             'M 150 60 A 40 40 0 1 1 150 140 A 40 40 0 1 1 150 60',
+            'M 150 100 L 150 100', // Small dot at center
             '#7b2ff7', 150
         ));
 
-        // O (second) - morphs from a triangle to circle
+        // O (second) - morphs from a triangle to circle, exits to dot
         paths.push(new MorphingPath(
             'M 240 60 L 280 100 L 200 100 Z',
             'M 240 60 A 40 40 0 1 1 240 140 A 40 40 0 1 1 240 60',
+            'M 240 100 L 240 100', // Small dot at center
             '#7b2ff7', 300
         ));
 
-        // M - morphs from a rectangle
+        // M - morphs from a rectangle, exits to dot
         paths.push(new MorphingPath(
             'M 300 80 L 400 80 L 400 120 L 300 120 Z',
             'M 300 160 L 300 40 L 350 100 L 400 40 L 400 160',
+            'M 350 100 L 350 100', // Small dot at center
             '#ff2d75', 450
         ));
 
-        // 9 (first) - morphs from a small circle to curved 9
+        // 9 (first) - morphs from a small circle to curved 9, exits to dot
         paths.push(new MorphingPath(
             'M 480 100 L 480 100 L 480 100 L 480 100 L 480 100 L 480 100 L 480 100',
             'M 460 70 L 480 50 L 500 70 L 480 90 L 460 70 L 475 120 L 445 160',
+            'M 480 100 L 480 100', // Small dot at center
             '#00d4ff', 600
         ));
 
-        // 9 (second) - morphs from a small circle to curved 9
+        // 9 (second) - morphs from a small circle to curved 9, exits to dot
         paths.push(new MorphingPath(
             'M 560 100 L 560 100 L 560 100 L 560 100 L 560 100 L 560 100 L 560 100',
             'M 540 70 L 560 50 L 580 70 L 560 90 L 540 70 L 555 120 L 525 160',
+            'M 560 100 L 560 100', // Small dot at center
             '#00d4ff', 750
         ));
 
@@ -193,18 +218,41 @@
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
 
-            paths.forEach(path => path.update(elapsed));
+            if (animationState === 'entrance') {
+                paths.forEach(path => path.updateEntrance(elapsed));
 
-            const maxTime = 2500;
-            if (elapsed < maxTime) {
-                requestAnimationFrame(animate);
+                const maxTime = 2500;
+                if (elapsed < maxTime) {
+                    requestAnimationFrame(animate);
+                } else {
+                    animationState = 'hold';
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+
+                paths.forEach(path => path.updateExit(progress));
+
+                if (exitElapsed < EXIT_DURATION) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Exit complete - restart
+                    restart();
+                }
             }
+        }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
         }
 
         function restart() {
             startTime = null;
+            animationState = 'entrance';
             paths.forEach(path => {
-                path.path.style.opacity = '0';
+                path.reset();
             });
             requestAnimationFrame(animate);
         }
@@ -218,7 +266,13 @@
             requestAnimationFrame(animate);
         }
 
-        document.body.addEventListener('click', restart);
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance') {
+                restart();
+            }
+        });
     </script>
 </body>
 </html>

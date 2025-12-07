@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Do It Now - Morphing Animation (Varied)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            padding: 20px;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            svg path {
+                opacity: 1 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg id="svg" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+    </div>
+
+    <script>
+        const svg = document.getElementById('svg');
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // Random utilities
+        const Random = {
+            range: (min, max) => min + Math.random() * (max - min),
+            int: (min, max) => Math.floor(Random.range(min, max + 1)),
+            pick: (arr) => arr[Random.int(0, arr.length - 1)],
+            vary: (base, variance) => base + Random.range(-variance, variance),
+            varyPercent: (base, percent) => base * Random.range(1 - percent, 1 + percent),
+        };
+
+        // Define morph shape modes
+        const modes = [
+            {
+                name: 'circles',
+                getStartShape: (endPath) => 'M 350 140 L 350 140 L 350 140',
+                description: 'Morph from tiny circles'
+            },
+            {
+                name: 'boxes',
+                getStartShape: (endPath) => {
+                    const x = Random.range(100, 600);
+                    const y = Random.range(50, 230);
+                    const s = Random.range(5, 15);
+                    return `M ${x} ${y} L ${x+s} ${y} L ${x+s} ${y+s} L ${x} ${y+s} L ${x} ${y}`;
+                },
+                description: 'Morph from small boxes'
+            },
+            {
+                name: 'lines',
+                getStartShape: (endPath) => {
+                    const x = Random.range(100, 600);
+                    const y = Random.range(50, 230);
+                    return `M ${x} ${y} L ${x + Random.range(10, 30)} ${y}`;
+                },
+                description: 'Morph from lines'
+            }
+        ];
+
+        const selectedMode = Random.pick(modes);
+        console.log(`Morph mode: ${selectedMode.name} - ${selectedMode.description}`);
+
+        // Randomization config
+        const config = {
+            timing: {
+                enabled: true,
+                durationVariance: 0.2,
+                staggerVariance: 0.2
+            },
+            colors: {
+                enabled: true,
+                hueShift: Random.range(-15, 15)
+            },
+            effects: {
+                enabled: true,
+                strokeVariance: 0.8,
+                glowVariance: 1.5
+            }
+        };
+
+        // Color utilities
+        const ColorRandom = {
+            baseColors: {
+                red: { h: 0, s: 100, l: 59 },
+                orange: { h: 25, s: 100, l: 50 },
+                yellow: { h: 50, s: 100, l: 50 }
+            },
+            shiftHue: (hsl, shift) => ({
+                h: (hsl.h + shift + 360) % 360,
+                s: hsl.s,
+                l: hsl.l
+            }),
+            toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
+        };
+
+        const palette = config.colors.enabled ? {
+            red: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.colors.hueShift)),
+            orange: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.colors.hueShift)),
+            yellow: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.colors.hueShift))
+        } : {
+            red: '#ff2d2d',
+            orange: '#ff6b00',
+            yellow: '#ffdd00'
+        };
+
+        function easeInOutCubic(t) {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+
+        function interpolatePath(path1, path2, t) {
+            const eased = easeInOutCubic(t);
+            const points1 = parsePath(path1);
+            const points2 = parsePath(path2);
+
+            let result = '';
+            for (let i = 0; i < points1.length; i++) {
+                const p1 = points1[i];
+                const p2 = points2[i];
+
+                if (p1.type === 'M' || p1.type === 'L') {
+                    const x = p1.x + (p2.x - p1.x) * eased;
+                    const y = p1.y + (p2.y - p1.y) * eased;
+                    result += `${i === 0 ? 'M' : ' L'} ${x} ${y}`;
+                } else if (p1.type === 'Q') {
+                    const x = p1.x + (p2.x - p1.x) * eased;
+                    const y = p1.y + (p2.y - p1.y) * eased;
+                    const cx = p1.cx + (p2.cx - p1.cx) * eased;
+                    const cy = p1.cy + (p2.cy - p1.cy) * eased;
+                    result += ` Q ${cx} ${cy} ${x} ${y}`;
+                }
+            }
+            return result;
+        }
+
+        function parsePath(d) {
+            const points = [];
+            const commands = d.match(/[ML][^ML]*/g) || [];
+
+            commands.forEach((cmd, i) => {
+                const type = cmd[0];
+                const coords = cmd.slice(1).trim().split(/[\s,]+/).map(Number);
+
+                if (type === 'M' || type === 'L') {
+                    points.push({ type: type, x: coords[0], y: coords[1] });
+                }
+            });
+
+            return points;
+        }
+
+        class MorphingShape {
+            constructor(startPath, endPath, color, delay) {
+                this.startPath = startPath;
+                this.endPath = endPath;
+                this.color = color;
+                this.delay = config.timing.enabled ?
+                    Random.varyPercent(delay, config.timing.staggerVariance) : delay;
+                this.progress = 0;
+
+                const strokeWidth = config.effects.enabled ?
+                    Random.vary(4, config.effects.strokeVariance) : 4;
+                const glowRadius = config.effects.enabled ?
+                    Random.vary(6, config.effects.glowVariance) : 6;
+
+                this.path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                this.path.setAttribute('stroke', color);
+                this.path.setAttribute('stroke-width', Math.max(2, strokeWidth));
+                this.path.setAttribute('stroke-linecap', 'round');
+                this.path.setAttribute('stroke-linejoin', 'round');
+                this.path.setAttribute('fill', 'none');
+                this.path.style.filter = `drop-shadow(0 0 ${Math.max(0, glowRadius)}px ${color})`;
+                this.path.style.opacity = '0';
+                svg.appendChild(this.path);
+            }
+
+            update(elapsed) {
+                if (elapsed < this.delay) {
+                    this.path.style.opacity = '0';
+                    return;
+                }
+
+                this.path.style.opacity = '1';
+
+                const localTime = elapsed - this.delay;
+                const duration = config.timing.enabled ?
+                    Random.varyPercent(1200, config.timing.durationVariance) : 1200;
+                this.progress = Math.min(1, localTime / duration);
+
+                const d = interpolatePath(this.startPath, this.endPath, this.progress);
+                this.path.setAttribute('d', d);
+            }
+        }
+
+        const shapes = [];
+
+        // DO - morphs from selected mode shapes
+        shapes.push(new MorphingShape(
+            selectedMode.getStartShape('M 100 20 L 100 100'),
+            'M 100 20 L 100 100',
+            palette.red, 0
+        ));
+
+        shapes.push(new MorphingShape(
+            selectedMode.getStartShape('M 100 20 L 160 20 L 160 60 L 160 100 L 100 100'),
+            'M 100 20 L 160 20 L 160 60 L 160 100 L 100 100',
+            palette.red, 100
+        ));
+
+        shapes.push(new MorphingShape(
+            selectedMode.getStartShape('M 200 60 L 200 20 L 280 20 L 280 60 L 280 100 L 200 100 L 200 60'),
+            'M 200 60 L 200 20 L 280 20 L 280 60 L 280 100 L 200 100 L 200 60',
+            palette.red, 200
+        ));
+
+        // IT
+        shapes.push(new MorphingShape(
+            selectedMode.getStartShape('M 100 140 L 100 200'),
+            'M 100 140 L 100 200',
+            palette.orange, 300
+        ));
+
+        shapes.push(new MorphingShape(
+            selectedMode.getStartShape('M 170 140 L 170 200'),
+            'M 170 140 L 170 200',
+            palette.orange, 350
+        ));
+
+        shapes.push(new MorphingShape(
+            selectedMode.getStartShape('M 140 140 L 200 140'),
+            'M 140 140 L 200 140',
+            palette.orange, 400
+        ));
+
+        // NOW
+        shapes.push(new MorphingShape(
+            selectedMode.getStartShape('M 80 220 L 80 280'),
+            'M 80 220 L 80 280',
+            palette.yellow, 450
+        ));
+
+        shapes.push(new MorphingShape(
+            selectedMode.getStartShape('M 80 220 L 140 280'),
+            'M 80 220 L 140 280',
+            palette.yellow, 500
+        ));
+
+        shapes.push(new MorphingShape(
+            selectedMode.getStartShape('M 140 220 L 140 280'),
+            'M 140 220 L 140 280',
+            palette.yellow, 550
+        ));
+
+        shapes.push(new MorphingShape(
+            selectedMode.getStartShape('M 180 250 L 180 220 L 250 220 L 250 250 L 250 280 L 180 280 L 180 250'),
+            'M 180 250 L 180 220 L 250 220 L 250 250 L 250 280 L 180 280 L 180 250',
+            palette.yellow, 600
+        ));
+
+        shapes.push(new MorphingShape(
+            selectedMode.getStartShape('M 280 220 L 300 280 L 320 250 L 340 280 L 360 220'),
+            'M 280 220 L 300 280 L 320 250 L 340 280 L 360 220',
+            palette.yellow, 650
+        ));
+
+        shapes.push(new MorphingShape(
+            selectedMode.getStartShape('M 390 220 L 390 265 M 390 275 L 390 280'),
+            'M 390 220 L 390 265 M 390 275 L 390 280',
+            palette.yellow, 700
+        ));
+
+        let startTime = null;
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+
+            shapes.forEach(shape => shape.update(elapsed));
+
+            const maxTime = 2000;
+            if (elapsed < maxTime) {
+                requestAnimationFrame(animate);
+            }
+        }
+
+        function restart() {
+            startTime = null;
+            shapes.forEach(shape => {
+                shape.progress = 0;
+                shape.path.style.opacity = '0';
+            });
+            requestAnimationFrame(animate);
+        }
+
+        if (prefersReducedMotion) {
+            shapes.forEach(shape => {
+                shape.path.style.opacity = '1';
+                shape.path.setAttribute('d', shape.endPath);
+            });
+        } else {
+            requestAnimationFrame(animate);
+        }
+
+        document.body.addEventListener('click', restart);
+    </script>
+</body>
+</html>

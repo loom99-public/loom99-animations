@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do It Now - Reveal Mask Animation (Procedural)</title>
+    <style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; } .container { width: 100%; max-width: 1000px; padding: 20px; } svg { width: 100%; height: auto; } @media (prefers-reduced-motion: reduce) { svg text { opacity: 1 !important; } svg rect, svg circle { display: none !important; } }</style>
+</head>
+<body>
+    <div class="container">
+        <svg id="svg" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+            <defs><mask id="revealMask"><rect id="maskShape" x="0" y="0" width="0" height="280" fill="white"/></mask></defs>
+            <g mask="url(#revealMask)">
+                <text x="50" y="80" font-size="80" font-weight="900" fill="#ff2d2d" filter="drop-shadow(0 0 10px #ff2d2d)">DO</text>
+                <text x="50" y="170" font-size="60" font-weight="900" fill="#ff6b00" filter="drop-shadow(0 0 10px #ff6b00)">IT</text>
+                <text x="50" y="260" font-size="80" font-weight="900" fill="#ffdd00" filter="drop-shadow(0 0 10px #ffdd00)">NOW!</text>
+            </g>
+        </svg>
+    </div>
+    <script>
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const Random = { range: (min, max) => min + Math.random() * (max - min), int: (min, max) => Math.floor(Random.range(min, max + 1)) };
+        const config = { hueShift: Random.range(-60, 60), satShift: Random.range(-30, 30), lightShift: Random.range(-15, 15), duration: Random.range(1000, 3000), startX: Random.range(0, 700), startY: Random.range(0, 280), dir: Random.int(0, 7) };
+        const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftColor: (hsl, hueShift, satShift, lightShift) => ({ h: (hsl.h + hueShift + 360) % 360, s: Math.max(0, Math.min(100, hsl.s + satShift)), l: Math.max(0, Math.min(100, hsl.l + lightShift)) }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
+        const texts = document.querySelectorAll('text');
+        texts[0].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.red, config.hueShift, config.satShift, config.lightShift)));
+        texts[1].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.orange, config.hueShift, config.satShift, config.lightShift)));
+        texts[2].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.yellow, config.hueShift, config.satShift, config.lightShift)));
+        const easingFuncs = [ t => t, t => 1 - Math.pow(1 - t, 3), t => t * t, t => Math.sin(t * Math.PI / 2) ];
+        const selectedEasing = easingFuncs[Random.int(0, easingFuncs.length - 1)];
+        if (!prefersReducedMotion) {
+            const maskShape = document.getElementById('maskShape');
+            const dirs = [ { x: 0, y: 0, grow: (p) => ({ x: 0, y: 0, w: 700 * p, h: 280 }) }, { x: 700, y: 0, grow: (p) => ({ x: 700 * (1 - p), y: 0, w: 700 * p, h: 280 }) }, { x: 350, y: 140, grow: (p) => ({ x: 350 - 350 * p, y: 140 - 140 * p, w: 700 * p, h: 280 * p }) }, { x: 0, y: 0, grow: (p) => ({ x: 0, y: 0, w: 700, h: 280 * p }) }, { x: 0, y: 280, grow: (p) => ({ x: 0, y: 280 * (1 - p), w: 700, h: 280 * p }) }, { x: Random.range(0, 700), y: Random.range(0, 280), grow: (p) => { const x = Math.min(700, Math.random() * 700 * p); const y = Math.min(280, Math.random() * 280 * p); return { x, y, w: Random.range(100, 700) * p, h: Random.range(50, 280) * p }; } } ];
+            const dir = dirs[Math.min(config.dir, dirs.length - 1)];
+            maskShape.setAttribute('x', dir.x); maskShape.setAttribute('y', dir.y); maskShape.setAttribute('width', '0'); maskShape.setAttribute('height', '0');
+            let startTime = null;
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
+                const progress = Math.min(1, elapsed / config.duration), eased = selectedEasing(progress);
+                const dims = dir.grow(eased);
+                maskShape.setAttribute('x', dims.x); maskShape.setAttribute('y', dims.y);
+                maskShape.setAttribute('width', dims.w); maskShape.setAttribute('height', dims.h);
+                if (progress < 1) { requestAnimationFrame(animate); }
+            }
+            function restart() { startTime = null; maskShape.setAttribute('x', dir.x); maskShape.setAttribute('y', dir.y); maskShape.setAttribute('width', '0'); maskShape.setAttribute('height', '0'); requestAnimationFrame(animate); }
+            requestAnimationFrame(animate); document.body.addEventListener('click', restart);
+        } else { const maskShape = document.getElementById('maskShape'); maskShape.setAttribute('x', '0'); maskShape.setAttribute('y', '0'); maskShape.setAttribute('width', '700'); maskShape.setAttribute('height', '280'); }
+    </script>
+</body>
+</html>

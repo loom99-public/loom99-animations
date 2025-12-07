@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>loom99 Logo - Wave Ripple Animation (Procedural)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+        }
+
+        .logo-part {
+            transform-origin: center;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .logo-part {
+                transform: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg id="svg" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#7b2ff7;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#ff2d75;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+
+            <path class="logo-part" d="M 40 40 L 40 160 L 100 160" stroke="#00d4ff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #00d4ff)"/>
+            <circle class="logo-part" cx="150" cy="100" r="40" stroke="#7b2ff7" stroke-width="12" fill="none" filter="drop-shadow(0 0 8px #7b2ff7)"/>
+            <circle class="logo-part" cx="240" cy="100" r="40" stroke="#7b2ff7" stroke-width="12" fill="none" filter="drop-shadow(0 0 8px #7b2ff7)"/>
+            <path class="logo-part" d="M 300 160 L 300 40 L 350 100 L 400 40 L 400 160" stroke="#ff2d75" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #ff2d75)"/>
+            <path class="logo-part" d="M 460 70 C 460 45, 500 45, 500 70 C 500 95, 460 95, 460 70 M 500 70 C 500 95, 495 130, 475 155 C 460 175, 440 170, 435 160" stroke="#00d4ff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #00d4ff)"/>
+            <path class="logo-part" d="M 540 70 C 540 45, 580 45, 580 70 C 580 95, 540 95, 540 70 M 580 70 C 580 95, 575 130, 555 155 C 540 175, 520 170, 515 160" stroke="#00d4ff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #00d4ff)"/>
+        </svg>
+    </div>
+
+    <script>
+        const Random = {
+            range: (min, max) => min + Math.random() * (max - min),
+        };
+
+        // Wild wave configuration
+        const config = {
+            waveCount: Random.range(1, 8),
+            amplitude: Random.range(10, 60),
+            frequency: Random.range(1, 10),
+            scaleAmount: Random.range(0, 0.5),
+            damping: Random.range(0.3, 1.5),
+            duration: Random.range(2000, 5000),
+            phaseRandomness: Random.range(0, Math.PI * 4)
+        };
+
+        console.log('Wave config:', config);
+
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (!prefersReducedMotion) {
+            const parts = document.querySelectorAll('.logo-part');
+
+            // Random phase offsets for each element
+            const phaseOffsets = Array.from(parts).map(() => Random.range(0, config.phaseRandomness));
+
+            let startTime = null;
+
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+
+                parts.forEach((part, index) => {
+                    const time = elapsed / 1000;
+                    const wavePhase = (index / parts.length) * Math.PI * 2 * config.waveCount +
+                                    phaseOffsets[index];
+
+                    const dampingFactor = Math.max(0, 1 - elapsed / config.duration);
+
+                    // Wild multi-dimensional motion
+                    const y = Math.sin(time * config.frequency + wavePhase) *
+                            config.amplitude * dampingFactor * config.damping;
+                    const x = Math.cos(time * config.frequency * 0.7 + wavePhase) *
+                            (config.amplitude * 0.3) * dampingFactor;
+                    const rotation = Math.sin(time * config.frequency * 0.5 + wavePhase) *
+                                   Random.range(0, 15) * dampingFactor;
+                    const scale = 1 + Math.sin(time * 2 + wavePhase) *
+                                config.scaleAmount * dampingFactor;
+
+                    const bbox = part.getBBox();
+                    const centerX = bbox.x + bbox.width / 2;
+                    const centerY = bbox.y + bbox.height / 2;
+
+                    part.style.transformOrigin = `${centerX}px ${centerY}px`;
+                    part.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`;
+                });
+
+                if (elapsed < config.duration) {
+                    requestAnimationFrame(animate);
+                } else {
+                    parts.forEach(part => {
+                        part.style.transform = 'none';
+                    });
+                }
+            }
+
+            function restart() {
+                startTime = null;
+                requestAnimationFrame(animate);
+            }
+
+            requestAnimationFrame(animate);
+            document.body.addEventListener('click', restart);
+        }
+    </script>
+</body>
+</html>

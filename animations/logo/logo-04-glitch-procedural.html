@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>loom99 Logo - Glitch Animation (Procedural)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+            position: relative;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+        }
+
+        .logo-container {
+            position: relative;
+        }
+
+        .logo-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            opacity: 0;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .logo-layer {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-container">
+            <svg id="logo" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+                        <stop offset="50%" style="stop-color:#7b2ff7;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#ff2d75;stop-opacity:1" />
+                    </linearGradient>
+
+                    <filter id="glitch-r">
+                        <feColorMatrix type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"/>
+                        <feOffset id="offset-r" dx="3" dy="-2"/>
+                    </filter>
+
+                    <filter id="glitch-g">
+                        <feColorMatrix type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"/>
+                        <feOffset id="offset-g" dx="-2" dy="2"/>
+                    </filter>
+
+                    <filter id="glitch-b">
+                        <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"/>
+                        <feOffset id="offset-b" dx="2" dy="3"/>
+                    </filter>
+                </defs>
+
+                <g id="logo-main">
+                    <path d="M 40 40 L 40 160 L 100 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <circle cx="150" cy="100" r="40" stroke="url(#logoGradient)" stroke-width="12" fill="none"/>
+                    <circle cx="240" cy="100" r="40" stroke="url(#logoGradient)" stroke-width="12" fill="none"/>
+                    <path d="M 300 160 L 300 40 L 350 100 L 400 40 L 400 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <path d="M 460 70 C 460 45, 500 45, 500 70 C 500 95, 460 95, 460 70 M 500 70 C 500 95, 495 130, 475 155 C 460 175, 440 170, 435 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <path d="M 540 70 C 540 45, 580 45, 580 70 C 580 95, 540 95, 540 70 M 580 70 C 580 95, 575 130, 555 155 C 540 175, 520 170, 515 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </g>
+            </svg>
+
+            <svg class="logo-layer layer-r" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+                <use href="#logo-main" filter="url(#glitch-r)"/>
+            </svg>
+
+            <svg class="logo-layer layer-g" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+                <use href="#logo-main" filter="url(#glitch-g)"/>
+            </svg>
+
+            <svg class="logo-layer layer-b" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+                <use href="#logo-main" filter="url(#glitch-b)"/>
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        // Random utilities
+        const Random = {
+            range: (min, max) => min + Math.random() * (max - min),
+        };
+
+        // Heavy randomization config
+        const config = {
+            rgbOffset: Random.range(5, 25),
+            jitterMax: Random.range(15, 40),
+            glitchDuration: Random.range(600, 1800),
+            scanLineFrequency: Random.range(20, 80),
+            skewAmount: Random.range(5, 25)
+        };
+
+        console.log('Glitch config:', config);
+
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (!prefersReducedMotion) {
+            const logo = document.getElementById('logo');
+            const glitchLayers = document.querySelectorAll('.logo-layer');
+            const offsetR = document.getElementById('offset-r');
+            const offsetG = document.getElementById('offset-g');
+            const offsetB = document.getElementById('offset-b');
+
+            let startTime = null;
+            const totalDuration = 2500;
+
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+
+                if (elapsed < config.glitchDuration) {
+                    // Wild glitch phase
+                    const intensity = 1 - (elapsed / config.glitchDuration);
+
+                    // Crazy random RGB offsets
+                    offsetR.setAttribute('dx', Random.range(-config.rgbOffset, config.rgbOffset));
+                    offsetR.setAttribute('dy', Random.range(-config.rgbOffset, config.rgbOffset));
+                    offsetG.setAttribute('dx', Random.range(-config.rgbOffset, config.rgbOffset));
+                    offsetG.setAttribute('dy', Random.range(-config.rgbOffset, config.rgbOffset));
+                    offsetB.setAttribute('dx', Random.range(-config.rgbOffset, config.rgbOffset));
+                    offsetB.setAttribute('dy', Random.range(-config.rgbOffset, config.rgbOffset));
+
+                    glitchLayers.forEach((layer, i) => {
+                        // Wild opacity flicker
+                        layer.style.opacity = Random.range(0.3, 1) * intensity;
+
+                        // Extreme transforms
+                        const tx = Random.range(-40, 40) * intensity;
+                        const ty = Random.range(-40, 40) * intensity;
+                        const skew = Random.range(-config.skewAmount, config.skewAmount) * intensity;
+                        const rotate = Random.range(-5, 5) * intensity;
+                        layer.style.transform = `translate(${tx}px, ${ty}px) skewX(${skew}deg) rotate(${rotate}deg)`;
+                    });
+
+                    // Violent main logo jitter
+                    const jitterX = Random.range(-config.jitterMax, config.jitterMax) * intensity;
+                    const jitterY = Random.range(-config.jitterMax, config.jitterMax) * intensity;
+                    const jitterRotate = Random.range(-3, 3) * intensity;
+                    logo.style.transform = `translate(${jitterX}px, ${jitterY}px) rotate(${jitterRotate}deg)`;
+
+                    // Random pauses/freezes
+                    const shouldPause = Math.random() < 0.1;
+                    if (!shouldPause) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        setTimeout(() => requestAnimationFrame(animate), Random.range(50, 200));
+                    }
+                } else if (elapsed < totalDuration) {
+                    // Chaotic stabilization
+                    const stabilize = (elapsed - config.glitchDuration) / (totalDuration - config.glitchDuration);
+
+                    glitchLayers.forEach((layer, i) => {
+                        layer.style.opacity = Random.range(0, 0.5) * (1 - stabilize);
+
+                        const tx = Random.range(-10, 10) * (1 - stabilize);
+                        const ty = Random.range(-10, 10) * (1 - stabilize);
+                        layer.style.transform = `translate(${tx}px, ${ty}px)`;
+                    });
+
+                    const jitterX = Random.range(-5, 5) * (1 - stabilize);
+                    const jitterY = Random.range(-5, 5) * (1 - stabilize);
+                    logo.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
+
+                    requestAnimationFrame(animate);
+                } else {
+                    // Final state
+                    glitchLayers.forEach(layer => {
+                        layer.style.opacity = 0;
+                        layer.style.transform = 'none';
+                    });
+                    logo.style.transform = 'none';
+                }
+            }
+
+            function restart() {
+                startTime = null;
+                logo.style.transform = 'none';
+                glitchLayers.forEach(layer => {
+                    layer.style.opacity = 0;
+                    layer.style.transform = 'none';
+                });
+                requestAnimationFrame(animate);
+            }
+
+            requestAnimationFrame(animate);
+            document.body.addEventListener('click', restart);
+        }
+    </script>
+</body>
+</html>

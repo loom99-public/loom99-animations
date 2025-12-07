@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>loom99 Logo - Liquid Animation (Varied)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            svg {
+                filter: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg id="svg" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="goo">
+                    <feGaussianBlur id="blur" in="SourceGraphic" stdDeviation="8" result="blur"/>
+                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" result="goo"/>
+                    <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+                </filter>
+            </defs>
+
+            <g id="blobs"></g>
+        </svg>
+    </div>
+
+    <script>
+        // Random utilities
+        const Random = {
+            range: (min, max) => min + Math.random() * (max - min),
+            int: (min, max) => Math.floor(Random.range(min, max + 1)),
+            pick: (arr) => arr[Random.int(0, arr.length - 1)],
+            vary: (base, variance) => base + Random.range(-variance, variance),
+            varyPercent: (base, percent) => base * Random.range(1 - percent, 1 + percent),
+        };
+
+        // Liquid flow modes
+        const modes = [
+            {
+                name: 'cascade',
+                startY: -30,
+                dropVelocity: 1.5,
+                gooStrength: 8,
+                description: 'Smooth cascade from top'
+            },
+            {
+                name: 'fountain',
+                startY: -50,
+                dropVelocity: 2.5,
+                gooStrength: 12,
+                description: 'Fast fountain effect'
+            },
+            {
+                name: 'gentle',
+                startY: -20,
+                dropVelocity: 1.0,
+                gooStrength: 6,
+                description: 'Gentle drip'
+            }
+        ];
+
+        const selectedMode = Random.pick(modes);
+        console.log(`Liquid mode: ${selectedMode.name} - ${selectedMode.description}`);
+
+        // Randomization config
+        const config = {
+            timing: {
+                enabled: true,
+                delayVariance: 0.2,
+                durationVariance: 0.15
+            },
+            colors: {
+                enabled: true,
+                hueShift: Random.range(-15, 15)
+            },
+            motion: {
+                enabled: true,
+                useMode: true
+            },
+            effects: {
+                enabled: true,
+                blobSizeVariance: 2
+            }
+        };
+
+        // Color utilities
+        const ColorRandom = {
+            baseColors: {
+                cyan: { h: 190, s: 100, l: 50 },
+                purple: { h: 265, s: 85, l: 57 },
+                pink: { h: 340, s: 100, l: 63 }
+            },
+            shiftHue: (hsl, shift) => ({
+                h: (hsl.h + shift + 360) % 360,
+                s: hsl.s,
+                l: hsl.l
+            }),
+            toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
+        };
+
+        const palette = config.colors.enabled ? {
+            cyan: ColorRandom.baseColors.cyan.h + config.colors.hueShift,
+            purple: ColorRandom.baseColors.purple.h + config.colors.hueShift,
+            pink: ColorRandom.baseColors.pink.h + config.colors.hueShift
+        } : {
+            cyan: 190,
+            purple: 280,
+            pink: 330
+        };
+
+        const svg = document.getElementById('svg');
+        const blobsGroup = document.getElementById('blobs');
+        const blur = document.getElementById('blur');
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // Apply goo filter strength
+        svg.style.filter = `url(#goo)`;
+        blur.setAttribute('stdDeviation', selectedMode.gooStrength);
+
+        function easeOutCubic(t) {
+            return 1 - Math.pow(1 - t, 3);
+        }
+
+        function easeInCubic(t) {
+            return t * t * t;
+        }
+
+        class Blob {
+            constructor(targetX, targetY, targetR, hue) {
+                this.startX = 300 + (Math.random() - 0.5) * 100;
+                this.startY = selectedMode.startY;
+                this.startR = 6;
+
+                this.targetX = targetX;
+                this.targetY = targetY;
+                this.targetR = config.effects.enabled ?
+                    Random.vary(targetR, config.effects.blobSizeVariance) : targetR;
+
+                this.x = this.startX;
+                this.y = this.startY;
+                this.r = this.startR;
+
+                this.hue = hue;
+
+                this.circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                this.circle.setAttribute('fill', `hsl(${hue}, 80%, 60%)`);
+                blobsGroup.appendChild(this.circle);
+
+                const baseDelay = Math.random() * 400;
+                this.delay = config.timing.enabled ?
+                    Random.varyPercent(baseDelay, config.timing.delayVariance) : baseDelay;
+
+                const baseDuration = 1500 + Math.random() * 500;
+                this.duration = config.timing.enabled ?
+                    Random.varyPercent(baseDuration, config.timing.durationVariance) : baseDuration;
+
+                this.dropVelocity = config.motion.useMode ?
+                    Random.vary(selectedMode.dropVelocity, 0.3) : 1.5;
+            }
+
+            update(elapsed) {
+                if (elapsed < this.delay) {
+                    this.circle.setAttribute('r', 0);
+                    return;
+                }
+
+                const localTime = elapsed - this.delay;
+                const progress = Math.min(1, localTime / this.duration);
+
+                if (progress < 0.7) {
+                    const t = progress / 0.7;
+                    const dropEase = easeInCubic(t) * this.dropVelocity;
+                    const spreadEase = easeOutCubic(t);
+
+                    this.y = this.startY + (this.targetY - this.startY) * dropEase;
+                    this.x = this.startX + (this.targetX - this.startX) * spreadEase;
+                    this.r = this.startR + (this.targetR - this.startR) * spreadEase;
+                } else {
+                    const t = (progress - 0.7) / 0.3;
+                    const settleEase = easeOutCubic(t);
+
+                    this.x = this.x + (this.targetX - this.x) * settleEase;
+                    this.y = this.y + (this.targetY - this.y) * settleEase;
+                    this.r = this.r + (this.targetR - this.r) * settleEase;
+                }
+
+                this.circle.setAttribute('cx', this.x);
+                this.circle.setAttribute('cy', this.y);
+                this.circle.setAttribute('r', this.r);
+            }
+        }
+
+        const blobs = [];
+
+        // L (cyan)
+        [[40, 60, 12], [40, 100, 12], [40, 140, 12], [70, 160, 12], [100, 160, 12]].forEach(([x, y, r]) => {
+            blobs.push(new Blob(x, y, r, palette.cyan));
+        });
+
+        // O (first - purple)
+        for (let angle = 0; angle < 360; angle += 30) {
+            const rad = angle * Math.PI / 180;
+            const x = 150 + Math.cos(rad) * 40;
+            const y = 100 + Math.sin(rad) * 40;
+            blobs.push(new Blob(x, y, 10, palette.purple));
+        }
+
+        // O (second - purple)
+        for (let angle = 0; angle < 360; angle += 30) {
+            const rad = angle * Math.PI / 180;
+            const x = 240 + Math.cos(rad) * 40;
+            const y = 100 + Math.sin(rad) * 40;
+            blobs.push(new Blob(x, y, 10, palette.purple));
+        }
+
+        // M (pink)
+        [[300, 60, 12], [300, 100, 12], [300, 140, 12],
+         [325, 80, 10], [350, 100, 10], [375, 80, 10],
+         [400, 60, 12], [400, 100, 12], [400, 140, 12]].forEach(([x, y, r]) => {
+            blobs.push(new Blob(x, y, r, palette.pink));
+        });
+
+        // 9 (first - cyan)
+        for (let angle = 0; angle < 360; angle += 40) {
+            const rad = angle * Math.PI / 180;
+            const x = 480 + Math.cos(rad) * 20;
+            const y = 70 + Math.sin(rad) * 20;
+            blobs.push(new Blob(x, y, 8, palette.cyan));
+        }
+        [[490, 95, 9], [480, 115, 9], [465, 135, 9], [450, 155, 9], [440, 165, 8]].forEach(([x, y, r]) => {
+            blobs.push(new Blob(x, y, r, palette.cyan));
+        });
+
+        // 9 (second - cyan)
+        for (let angle = 0; angle < 360; angle += 40) {
+            const rad = angle * Math.PI / 180;
+            const x = 560 + Math.cos(rad) * 20;
+            const y = 70 + Math.sin(rad) * 20;
+            blobs.push(new Blob(x, y, 8, palette.cyan));
+        }
+        [[570, 95, 9], [560, 115, 9], [545, 135, 9], [530, 155, 9], [520, 165, 8]].forEach(([x, y, r]) => {
+            blobs.push(new Blob(x, y, r, palette.cyan));
+        });
+
+        let startTime = null;
+        const totalDuration = 3000;
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+
+            blobs.forEach(blob => blob.update(elapsed));
+
+            if (elapsed < totalDuration) {
+                requestAnimationFrame(animate);
+            }
+        }
+
+        function restart() {
+            startTime = null;
+            blobs.forEach(blob => {
+                blob.x = blob.startX;
+                blob.y = blob.startY;
+                blob.r = blob.startR;
+                blob.circle.setAttribute('r', 0);
+            });
+            requestAnimationFrame(animate);
+        }
+
+        if (prefersReducedMotion) {
+            blobs.forEach(blob => {
+                blob.x = blob.targetX;
+                blob.y = blob.targetY;
+                blob.r = blob.targetR;
+                blob.circle.setAttribute('cx', blob.x);
+                blob.circle.setAttribute('cy', blob.y);
+                blob.circle.setAttribute('r', blob.r);
+            });
+        } else {
+            requestAnimationFrame(animate);
+        }
+
+        document.body.addEventListener('click', restart);
+    </script>
+</body>
+</html>

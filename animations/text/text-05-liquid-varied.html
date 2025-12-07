@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Do It Now - Liquid Animation (Varied)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        .container { width: 100%; max-width: 1000px; padding: 20px; }
+        svg { width: 100%; height: auto; filter: url(#goo); }
+        @media (prefers-reduced-motion: reduce) { svg { filter: none !important; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg id="svg" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="goo">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>
+                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo"/>
+                    <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+                </filter>
+            </defs>
+            <g id="blobs"></g>
+        </svg>
+    </div>
+    <script>
+        const svg = document.getElementById('svg');
+        const blobsGroup = document.getElementById('blobs');
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const Random = { range: (min, max) => min + Math.random() * (max - min), pick: (arr) => arr[Math.floor(Math.random() * arr.length)], vary: (base, v) => base + Random.range(-v, v), varyPercent: (base, p) => base * Random.range(1 - p, 1 + p) };
+        const modes = [
+            { name: 'top-rain', getStart: (tx, ty) => ({ x: Random.vary(tx, 150), y: Random.range(-100, -30) }), desc: 'Rain from top' },
+            { name: 'center-burst', getStart: (tx, ty) => ({ x: 350, y: 140 }), desc: 'Burst from center' },
+            { name: 'side-flow', getStart: (tx, ty) => ({ x: Random.range(-150, 0), y: Random.vary(ty, 50) }), desc: 'Flow from left' }
+        ];
+        const mode = Random.pick(modes);
+        const config = { hueShift: Random.range(-15, 15), sizeVar: 0.3, speedMod: Random.range(0.85, 1.15), gooStr: Random.vary(10, 2) };
+        console.log('Liquid mode:', mode.name);
+        const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftHue: (hsl, shift) => ({ h: (hsl.h + shift + 360) % 360, s: hsl.s, l: hsl.l }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
+        const palette = { red: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.hueShift)), orange: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.hueShift)), yellow: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.hueShift)) };
+        function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+        function easeInCubic(t) { return t * t * t; }
+        class Blob {
+            constructor(targetX, targetY, targetR, color) {
+                const start = mode.getStart(targetX, targetY);
+                this.startX = start.x; this.startY = start.y; this.startR = 5;
+                this.targetX = targetX; this.targetY = targetY; this.targetR = Random.vary(targetR, targetR * config.sizeVar);
+                this.x = this.startX; this.y = this.startY; this.r = this.startR; this.color = color;
+                this.circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                this.circle.setAttribute('fill', color); this.circle.setAttribute('filter', 'url(#goo)');
+                blobsGroup.appendChild(this.circle);
+                this.delay = Math.random() * 300; this.duration = Random.varyPercent(1500, 0.2) / config.speedMod;
+            }
+            update(elapsed) {
+                if (elapsed < this.delay) { this.circle.setAttribute('r', 0); return; }
+                const localTime = elapsed - this.delay;
+                const progress = Math.min(1, localTime / this.duration);
+                if (progress < 0.7) {
+                    const t = progress / 0.7;
+                    const dropEase = easeInCubic(t); const spreadEase = easeOutCubic(t);
+                    this.y = this.startY + (this.targetY - this.startY) * dropEase;
+                    this.x = this.startX + (this.targetX - this.startX) * spreadEase;
+                    this.r = this.startR + (this.targetR - this.startR) * spreadEase;
+                } else {
+                    const t = (progress - 0.7) / 0.3; const settleEase = easeOutCubic(t);
+                    this.x = this.x + (this.targetX - this.x) * settleEase;
+                    this.y = this.y + (this.targetY - this.y) * settleEase;
+                    this.r = this.r + (this.targetR - this.r) * settleEase;
+                }
+                this.circle.setAttribute('cx', this.x); this.circle.setAttribute('cy', this.y); this.circle.setAttribute('r', this.r);
+            }
+        }
+        const blobs = [];
+        const doY = 60; const doBlobs = [[115, doY, 25], [115, doY + 40, 25], [160, doY, 20], [160, doY + 40, 20], [220, doY + 20, 25], [260, doY + 20, 25]];
+        doBlobs.forEach(([x, y, r]) => { blobs.push(new Blob(x, y, r, palette.red)); });
+        const itY = 150; const itBlobs = [[100, itY, 20], [100, itY + 30, 20], [160, itY - 10, 20], [160, itY + 20, 20], [160, itY + 40, 20], [140, itY - 10, 15], [180, itY - 10, 15]];
+        itBlobs.forEach(([x, y, r]) => { blobs.push(new Blob(x, y, r, palette.orange)); });
+        const nowY = 240; const nowBlobs = [[90, nowY, 22], [90, nowY + 30, 22], [110, nowY + 15, 18], [140, nowY, 22], [140, nowY + 30, 22], [215, nowY + 15, 25], [290, nowY, 18], [310, nowY + 30, 18], [320, nowY + 15, 16], [340, nowY + 30, 18], [360, nowY, 18], [380, nowY + 15, 16], [400, nowY, 15], [400, nowY + 22, 15], [400, nowY + 32, 8]];
+        nowBlobs.forEach(([x, y, r]) => { blobs.push(new Blob(x, y, r, palette.yellow)); });
+        let startTime = null; const totalDuration = 3000;
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
+            blobs.forEach(blob => blob.update(elapsed));
+            if (elapsed < totalDuration) { requestAnimationFrame(animate); }
+        }
+        function restart() { startTime = null; blobs.forEach(blob => { blob.x = blob.startX; blob.y = blob.startY; blob.r = blob.startR; blob.circle.setAttribute('r', 0); }); requestAnimationFrame(animate); }
+        if (prefersReducedMotion) { blobs.forEach(blob => { blob.x = blob.targetX; blob.y = blob.targetY; blob.r = blob.targetR; blob.circle.setAttribute('cx', blob.x); blob.circle.setAttribute('cy', blob.y); blob.circle.setAttribute('r', blob.r); }); }
+        else { requestAnimationFrame(animate); }
+        document.body.addEventListener('click', restart);
+    </script>
+</body>
+</html>

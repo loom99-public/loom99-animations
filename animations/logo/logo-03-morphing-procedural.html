@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>loom99 Logo - Morphing Animation (Procedural)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            svg path {
+                opacity: 1 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg id="svg" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+    </div>
+
+    <script>
+        // Random utilities
+        const Random = {
+            range: (min, max) => min + Math.random() * (max - min),
+            int: (min, max) => Math.floor(Random.range(min, max + 1)),
+            pick: (arr) => arr[Random.int(0, arr.length - 1)],
+            vary: (base, variance) => base + Random.range(-variance, variance),
+            varyPercent: (base, percent) => base * Random.range(1 - percent, 1 + percent),
+        };
+
+        // Randomization config (heavy)
+        const config = {
+            timing: {
+                enabled: true,
+                durationVariance: 0.5,
+                staggerVariance: 0.6
+            },
+            colors: {
+                enabled: true,
+                hueShift: Random.range(-60, 60),
+                satShift: Random.range(-30, 30),
+                lightShift: Random.range(-20, 20)
+            },
+            motion: {
+                enabled: true,
+                randomShapes: true
+            },
+            effects: {
+                enabled: true,
+                strokeVariance: 5,
+                glowVariance: 8
+            }
+        };
+
+        // Color utilities
+        const ColorRandom = {
+            baseColors: {
+                cyan: { h: 190, s: 100, l: 50 },
+                purple: { h: 265, s: 85, l: 57 },
+                pink: { h: 340, s: 100, l: 63 }
+            },
+            shiftColor: (hsl, hueShift, satShift, lightShift) => ({
+                h: (hsl.h + hueShift + 360) % 360,
+                s: Math.max(0, Math.min(100, hsl.s + satShift)),
+                l: Math.max(0, Math.min(100, hsl.l + lightShift))
+            }),
+            toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
+        };
+
+        const palette = config.colors.enabled ? {
+            cyan: ColorRandom.toHSL(ColorRandom.shiftColor(
+                ColorRandom.baseColors.cyan,
+                config.colors.hueShift,
+                config.colors.satShift,
+                config.colors.lightShift
+            )),
+            purple: ColorRandom.toHSL(ColorRandom.shiftColor(
+                ColorRandom.baseColors.purple,
+                config.colors.hueShift,
+                config.colors.satShift,
+                config.colors.lightShift
+            )),
+            pink: ColorRandom.toHSL(ColorRandom.shiftColor(
+                ColorRandom.baseColors.pink,
+                config.colors.hueShift,
+                config.colors.satShift,
+                config.colors.lightShift
+            ))
+        } : {
+            cyan: '#00d4ff',
+            purple: '#7b2ff7',
+            pink: '#ff2d75'
+        };
+
+        const svg = document.getElementById('svg');
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // Randomize easing
+        const easingFunctions = [
+            t => t,
+            t => t * t,
+            t => t * t * t,
+            t => 1 - Math.pow(1 - t, 3),
+            t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+            t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+        ];
+        const selectedEasing = Random.pick(easingFunctions);
+
+        // Generate random start shapes
+        function generateRandomShape(centerX, centerY, size) {
+            const shapeTypes = [
+                // Circle
+                () => `M ${centerX + size} ${centerY} A ${size} ${size} 0 1 1 ${centerX + size} ${centerY + 0.1}`,
+                // Square
+                () => `M ${centerX - size} ${centerY - size} L ${centerX + size} ${centerY - size} L ${centerX + size} ${centerY + size} L ${centerX - size} ${centerY + size} Z`,
+                // Triangle
+                () => `M ${centerX} ${centerY - size} L ${centerX + size} ${centerY + size} L ${centerX - size} ${centerY + size} Z`,
+                // Star-ish
+                () => {
+                    const points = [];
+                    for (let i = 0; i < 5; i++) {
+                        const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+                        const r = i % 2 === 0 ? size : size / 2;
+                        points.push(`${centerX + Math.cos(angle) * r} ${centerY + Math.sin(angle) * r}`);
+                    }
+                    return `M ${points[0]} L ${points.slice(1).join(' L ')} Z`;
+                },
+                // Random polygon
+                () => {
+                    const sides = Random.int(3, 8);
+                    const points = [];
+                    for (let i = 0; i < sides; i++) {
+                        const angle = (i / sides) * Math.PI * 2;
+                        const r = size * Random.range(0.5, 1);
+                        points.push(`${centerX + Math.cos(angle) * r} ${centerY + Math.sin(angle) * r}`);
+                    }
+                    return `M ${points[0]} L ${points.slice(1).join(' L ')} Z`;
+                }
+            ];
+            return Random.pick(shapeTypes)();
+        }
+
+        class MorphingPath {
+            constructor(startPath, endPath, color, delay) {
+                this.startPath = startPath;
+                this.endPath = endPath;
+                this.color = color;
+                this.delay = delay;
+                this.duration = Random.varyPercent(Random.range(800, 2000), config.timing.durationVariance);
+
+                const strokeWidth = config.effects.enabled ?
+                    Math.max(2, Random.vary(12, config.effects.strokeVariance)) : 12;
+                const glowRadius = config.effects.enabled ?
+                    Math.max(0, Random.vary(8, config.effects.glowVariance)) : 8;
+
+                this.path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                this.path.setAttribute('stroke', color);
+                this.path.setAttribute('stroke-width', strokeWidth);
+                this.path.setAttribute('stroke-linecap', 'round');
+                this.path.setAttribute('stroke-linejoin', 'round');
+                this.path.setAttribute('fill', 'none');
+                this.path.style.filter = `drop-shadow(0 0 ${glowRadius}px ${color})`;
+                this.path.style.opacity = '0';
+                svg.appendChild(this.path);
+            }
+
+            interpolate(t) {
+                const eased = selectedEasing(t);
+
+                // Parse paths
+                const start = this.parsePath(this.startPath);
+                const end = this.parsePath(this.endPath);
+
+                // Build interpolated path
+                let d = '';
+                const maxLen = Math.max(start.length, end.length);
+
+                for (let i = 0; i < maxLen; i++) {
+                    const s = start[i] || start[start.length - 1];
+                    const e = end[i] || end[end.length - 1];
+
+                    if (e.cmd === 'M' || e.cmd === 'L') {
+                        const x = s.x + (e.x - s.x) * eased;
+                        const y = s.y + (e.y - s.y) * eased;
+                        d += `${i === 0 ? 'M' : ' L'} ${x} ${y}`;
+                    } else if (e.cmd === 'A') {
+                        const x = s.x + (e.x - s.x) * eased;
+                        const y = s.y + (e.y - s.y) * eased;
+                        d += ` A ${e.rx} ${e.ry} ${e.rot} ${e.laf} ${e.sf} ${x} ${y}`;
+                    }
+                }
+
+                return d;
+            }
+
+            parsePath(d) {
+                const points = [];
+                const parts = d.match(/[MLAZ][^MLAZ]*/gi) || [];
+
+                parts.forEach(part => {
+                    const cmd = part[0];
+                    const nums = part.slice(1).trim().split(/[\s,]+/).map(Number);
+
+                    if (cmd === 'M' || cmd === 'L') {
+                        points.push({ cmd, x: nums[0], y: nums[1] });
+                    } else if (cmd === 'A') {
+                        points.push({ cmd, rx: nums[0], ry: nums[1], rot: nums[2], laf: nums[3], sf: nums[4], x: nums[5], y: nums[6] });
+                    } else if (cmd === 'Z') {
+                        points.push({ cmd: 'Z' });
+                    }
+                });
+
+                return points;
+            }
+
+            update(elapsed) {
+                if (elapsed < this.delay) {
+                    this.path.style.opacity = '0';
+                    return;
+                }
+
+                this.path.style.opacity = '1';
+
+                const localTime = elapsed - this.delay;
+                const progress = Math.min(1, localTime / this.duration);
+
+                const d = this.interpolate(progress);
+                this.path.setAttribute('d', d);
+            }
+        }
+
+        const paths = [];
+
+        const BASE_STAGGER = Random.range(50, 300);
+
+        // L
+        paths.push(new MorphingPath(
+            generateRandomShape(70, 100, 40),
+            'M 40 40 L 40 160 L 100 160',
+            palette.cyan,
+            Random.varyPercent(0, config.timing.staggerVariance)
+        ));
+
+        // O (first)
+        paths.push(new MorphingPath(
+            generateRandomShape(150, 100, 35),
+            'M 150 60 A 40 40 0 1 1 150 140 A 40 40 0 1 1 150 60',
+            palette.purple,
+            Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance)
+        ));
+
+        // O (second)
+        paths.push(new MorphingPath(
+            generateRandomShape(240, 100, 35),
+            'M 240 60 A 40 40 0 1 1 240 140 A 40 40 0 1 1 240 60',
+            palette.purple,
+            Random.varyPercent(BASE_STAGGER * 2, config.timing.staggerVariance)
+        ));
+
+        // M
+        paths.push(new MorphingPath(
+            generateRandomShape(350, 100, 50),
+            'M 300 160 L 300 40 L 350 100 L 400 40 L 400 160',
+            palette.pink,
+            Random.varyPercent(BASE_STAGGER * 3, config.timing.staggerVariance)
+        ));
+
+        // 9 (first)
+        paths.push(new MorphingPath(
+            generateRandomShape(480, 100, 30),
+            'M 460 70 L 480 50 L 500 70 L 480 90 L 460 70 L 475 120 L 445 160',
+            palette.cyan,
+            Random.varyPercent(BASE_STAGGER * 4, config.timing.staggerVariance)
+        ));
+
+        // 9 (second)
+        paths.push(new MorphingPath(
+            generateRandomShape(560, 100, 30),
+            'M 540 70 L 560 50 L 580 70 L 560 90 L 540 70 L 555 120 L 525 160',
+            palette.cyan,
+            Random.varyPercent(BASE_STAGGER * 5, config.timing.staggerVariance)
+        ));
+
+        let startTime = null;
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+
+            paths.forEach(path => path.update(elapsed));
+
+            const maxTime = 4000;
+            if (elapsed < maxTime) {
+                requestAnimationFrame(animate);
+            }
+        }
+
+        function restart() {
+            startTime = null;
+            paths.forEach(path => {
+                path.path.style.opacity = '0';
+            });
+            requestAnimationFrame(animate);
+        }
+
+        if (prefersReducedMotion) {
+            paths.forEach(path => {
+                path.path.style.opacity = '1';
+                path.path.setAttribute('d', path.endPath);
+            });
+        } else {
+            requestAnimationFrame(animate);
+        }
+
+        document.body.addEventListener('click', restart);
+    </script>
+</body>
+</html>

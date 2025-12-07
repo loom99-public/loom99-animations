@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Do It Now - Particle Animation (Varied)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            padding: 20px;
+        }
+
+        canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            canvas {
+                display: none;
+            }
+        }
+
+        .reduced-motion-text {
+            display: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 80px;
+            font-weight: 700;
+            text-align: center;
+            background: linear-gradient(90deg, #ff2d2d, #ff6b00, #ffdd00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .reduced-motion-text {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="canvas"></canvas>
+        <div class="reduced-motion-text">DO IT NOW!</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (prefersReducedMotion) {
+            // Skip animation for reduced motion
+        } else {
+            // Random utilities
+            const Random = {
+                range: (min, max) => min + Math.random() * (max - min),
+                int: (min, max) => Math.floor(Random.range(min, max + 1)),
+                pick: (arr) => arr[Random.int(0, arr.length - 1)],
+                vary: (base, variance) => base + Random.range(-variance, variance),
+                varyPercent: (base, percent) => base * Random.range(1 - percent, 1 + percent),
+            };
+
+            // Define formation modes
+            const modes = [
+                {
+                    name: 'scatter-gather',
+                    getStartPos: (target) => ({
+                        x: Random.range(0, canvas.width),
+                        y: Random.range(0, canvas.height)
+                    }),
+                    description: 'Random scatter to positions'
+                },
+                {
+                    name: 'radial-burst',
+                    getStartPos: (target) => ({
+                        x: canvas.width / 2,
+                        y: canvas.height / 2
+                    }),
+                    description: 'Burst from center'
+                },
+                {
+                    name: 'top-rain',
+                    getStartPos: (target) => ({
+                        x: target.x + Random.range(-100, 100),
+                        y: Random.range(-100, -20)
+                    }),
+                    description: 'Rain from top'
+                }
+            ];
+
+            const selectedMode = Random.pick(modes);
+            console.log(`Formation mode: ${selectedMode.name} - ${selectedMode.description}`);
+
+            // Randomization config
+            const config = {
+                timing: {
+                    enabled: true,
+                    durationVariance: 0.2,
+                    speed: Random.varyPercent(1, 0.2)
+                },
+                colors: {
+                    enabled: true,
+                    hueShift: Random.range(-15, 15)
+                },
+                particles: {
+                    sizeVariance: 0.5,
+                    spacing: Random.int(5, 7),
+                    glowVariance: 2
+                }
+            };
+
+            // Color utilities
+            const ColorRandom = {
+                baseColors: {
+                    red: { h: 0, s: 100, l: 59 },
+                    orange: { h: 25, s: 100, l: 50 },
+                    yellow: { h: 50, s: 100, l: 50 }
+                },
+                shiftHue: (hsl, shift) => ({
+                    h: (hsl.h + shift + 360) % 360,
+                    s: hsl.s,
+                    l: hsl.l
+                }),
+                toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
+            };
+
+            // Apply color shifts
+            const palette = config.colors.enabled ? {
+                red: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.colors.hueShift)),
+                orange: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.colors.hueShift)),
+                yellow: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.colors.hueShift))
+            } : {
+                red: '#ff2d2d',
+                orange: '#ff6b00',
+                yellow: '#ffdd00'
+            };
+
+            // Set canvas size
+            canvas.width = 1000;
+            canvas.height = 300;
+
+            function easeOutCubic(t) {
+                return 1 - Math.pow(1 - t, 3);
+            }
+
+            class Particle {
+                constructor(targetX, targetY, color) {
+                    // Start position based on mode
+                    const start = selectedMode.getStartPos({ x: targetX, y: targetY });
+                    this.startX = start.x;
+                    this.startY = start.y;
+
+                    // Target position (letter position)
+                    this.targetX = targetX;
+                    this.targetY = targetY;
+
+                    this.x = this.startX;
+                    this.y = this.startY;
+                    this.color = color;
+                    this.size = config.particles.sizeVariance ?
+                        Random.vary(3, config.particles.sizeVariance) : 3;
+                    this.opacity = 0;
+                    this.glow = Random.vary(10, config.particles.glowVariance);
+                }
+
+                update(progress) {
+                    // Ease into position
+                    const eased = easeOutCubic(progress);
+                    this.x = this.startX + (this.targetX - this.startX) * eased;
+                    this.y = this.startY + (this.targetY - this.startY) * eased;
+
+                    // Fade in during movement
+                    this.opacity = Math.min(1, progress * 2);
+                }
+
+                draw() {
+                    ctx.globalAlpha = this.opacity;
+                    ctx.fillStyle = this.color;
+                    ctx.shadowBlur = this.glow;
+                    ctx.shadowColor = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, Math.max(1, this.size), 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.globalAlpha = 1;
+                }
+            }
+
+            // Function to sample points from text
+            function getTextPoints(text, x, y, fontSize, spacing = 6) {
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+
+                tempCtx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+                tempCtx.fillStyle = '#ffffff';
+                tempCtx.fillText(text, x, y);
+
+                const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                const points = [];
+
+                for (let py = 0; py < imageData.height; py += spacing) {
+                    for (let px = 0; px < imageData.width; px += spacing) {
+                        const index = (py * imageData.width + px) * 4;
+                        const alpha = imageData.data[index + 3];
+
+                        if (alpha > 128) {
+                            points.push({ x: px, y: py });
+                        }
+                    }
+                }
+
+                return points;
+            }
+
+            const particles = [];
+
+            // Create particles for "DO"
+            const doPoints = getTextPoints('DO', 50, 90, 80, config.particles.spacing);
+            doPoints.forEach(point => {
+                particles.push(new Particle(point.x, point.y, palette.red));
+            });
+
+            // Create particles for "IT"
+            const itPoints = getTextPoints('IT', 100, 170, 60, config.particles.spacing);
+            itPoints.forEach(point => {
+                particles.push(new Particle(point.x, point.y, palette.orange));
+            });
+
+            // Create particles for "NOW!"
+            const nowPoints = getTextPoints('NOW!', 50, 250, 80, config.particles.spacing);
+            nowPoints.forEach(point => {
+                particles.push(new Particle(point.x, point.y, palette.yellow));
+            });
+
+            let startTime = null;
+            const baseDuration = 2000;
+            const duration = config.timing.enabled ?
+                Random.varyPercent(baseDuration, config.timing.durationVariance) : baseDuration;
+
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(1, (elapsed * config.timing.speed) / duration);
+
+                // Clear canvas
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Update and draw particles
+                particles.forEach(particle => {
+                    particle.update(progress);
+                    particle.draw();
+                });
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+
+            function restart() {
+                startTime = null;
+                particles.forEach(particle => {
+                    particle.opacity = 0;
+                    particle.x = particle.startX;
+                    particle.y = particle.startY;
+                });
+                requestAnimationFrame(animate);
+            }
+
+            requestAnimationFrame(animate);
+            canvas.addEventListener('click', restart);
+        }
+    </script>
+</body>
+</html>

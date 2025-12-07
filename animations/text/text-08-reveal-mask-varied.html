@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do It Now - Reveal Mask Animation (Varied)</title>
+    <style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; } .container { width: 100%; max-width: 1000px; padding: 20px; } svg { width: 100%; height: auto; } @media (prefers-reduced-motion: reduce) { svg text { opacity: 1 !important; } svg rect, svg circle { display: none !important; } }</style>
+</head>
+<body>
+    <div class="container">
+        <svg id="svg" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+            <defs><mask id="revealMask"><rect id="maskShape" x="0" y="0" width="0" height="280" fill="white"/></mask></defs>
+            <g mask="url(#revealMask)">
+                <text x="50" y="80" font-size="80" font-weight="900" fill="#ff2d2d" filter="drop-shadow(0 0 10px #ff2d2d)">DO</text>
+                <text x="50" y="170" font-size="60" font-weight="900" fill="#ff6b00" filter="drop-shadow(0 0 10px #ff6b00)">IT</text>
+                <text x="50" y="260" font-size="80" font-weight="900" fill="#ffdd00" filter="drop-shadow(0 0 10px #ffdd00)">NOW!</text>
+            </g>
+        </svg>
+    </div>
+    <script>
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const Random = { range: (min, max) => min + Math.random() * (max - min), pick: (arr) => arr[Math.floor(Math.random() * arr.length)], vary: (base, v) => base + Random.range(-v, v) };
+        const modes = [ { name: 'left-right', init: (mask) => { mask.setAttribute('x', '0'); mask.setAttribute('width', '0'); }, update: (mask, p) => { mask.setAttribute('width', 700 * p); } }, { name: 'right-left', init: (mask) => { mask.setAttribute('x', '700'); mask.setAttribute('width', '0'); }, update: (mask, p) => { mask.setAttribute('x', 700 * (1 - p)); mask.setAttribute('width', 700 * p); } }, { name: 'center-out', init: (mask) => { mask.setAttribute('x', '350'); mask.setAttribute('width', '0'); }, update: (mask, p) => { const w = 700 * p; mask.setAttribute('x', 350 - w / 2); mask.setAttribute('width', w); } } ];
+        const mode = Random.pick(modes);
+        const config = { hueShift: Random.range(-15, 15), duration: Random.vary(2000, 400) };
+        console.log('Reveal mode:', mode.name);
+        const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftHue: (hsl, shift) => ({ h: (hsl.h + shift + 360) % 360, s: hsl.s, l: hsl.l }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
+        const texts = document.querySelectorAll('text');
+        texts[0].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.hueShift)));
+        texts[1].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.hueShift)));
+        texts[2].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.hueShift)));
+        if (!prefersReducedMotion) {
+            const maskShape = document.getElementById('maskShape');
+            mode.init(maskShape);
+            function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+            let startTime = null;
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
+                const progress = Math.min(1, elapsed / config.duration), eased = easeOutCubic(progress);
+                mode.update(maskShape, eased);
+                if (progress < 1) { requestAnimationFrame(animate); }
+            }
+            function restart() { startTime = null; mode.init(maskShape); requestAnimationFrame(animate); }
+            requestAnimationFrame(animate); document.body.addEventListener('click', restart);
+        } else { const maskShape = document.getElementById('maskShape'); maskShape.setAttribute('x', '0'); maskShape.setAttribute('width', '700'); }
+    </script>
+</body>
+</html>

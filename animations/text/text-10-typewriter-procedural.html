@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do It Now - Typewriter Animation (Procedural)</title>
+    <style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; font-family: 'Courier New', monospace; } .container { width: 100%; max-width: 1000px; padding: 20px; } .text-container { text-align: left; padding: 40px; } .word { display: block; font-size: 80px; font-weight: 900; line-height: 1.3; font-family: 'Courier New', monospace; } .letter { opacity: 0; } .cursor { display: inline-block; width: 4px; background: currentColor; margin-left: 2px; vertical-align: text-bottom; } @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } } @media (prefers-reduced-motion: reduce) { .letter { opacity: 1 !important; } .cursor { display: none !important; } }</style>
+</head>
+<body>
+    <div class="container"><div class="text-container"><div class="word word1" id="word1"><span class="cursor"></span></div><div class="word word2" id="word2"><span class="cursor"></span></div><div class="word word3" id="word3"><span class="cursor"></span></div></div></div>
+    <script>
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const Random = { range: (min, max) => min + Math.random() * (max - min), int: (min, max) => Math.floor(Random.range(min, max + 1)) };
+        const config = { hueShift: Random.range(-60, 60), satShift: Random.range(-30, 30), lightShift: Random.range(-15, 15), charDelay: Random.range(30, 250), charDelayVar: Random.range(0, 150), pauseDelay: Random.range(200, 1200), cursorBlink: Random.range(0.3, 1.2), cursorWidth: Random.int(2, 8), cursorHeight: Random.range(60, 100) };
+        const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftColor: (hsl, hueShift, satShift, lightShift) => ({ h: (hsl.h + hueShift + 360) % 360, s: Math.max(0, Math.min(100, hsl.s + satShift)), l: Math.max(0, Math.min(100, hsl.l + lightShift)) }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
+        const colors = [ ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.red, config.hueShift, config.satShift, config.lightShift)), ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.orange, config.hueShift, config.satShift, config.lightShift)), ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.yellow, config.hueShift, config.satShift, config.lightShift)) ];
+        const cursors = document.querySelectorAll('.cursor');
+        cursors.forEach((cursor, i) => { cursor.style.width = `${config.cursorWidth}px`; cursor.style.height = `${config.cursorHeight}px`; cursor.style.animation = `blink ${config.cursorBlink}s infinite`; });
+        document.querySelector('.word1').style.color = colors[0]; document.querySelector('.word2').style.color = colors[1]; document.querySelector('.word3').style.color = colors[2];
+        const words = [ { text: 'DO', element: document.getElementById('word1'), delay: 0 }, { text: 'IT', element: document.getElementById('word2'), delay: Random.range(config.pauseDelay * 0.5, config.pauseDelay * 1.5) }, { text: 'NOW!', element: document.getElementById('word3'), delay: Random.range(config.pauseDelay * 0.5, config.pauseDelay * 1.5) } ];
+        if (!prefersReducedMotion) {
+            let currentWordIndex = 0, currentCharIndex = 0;
+            words.forEach(word => { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; });
+            function typeCharacter() {
+                if (currentWordIndex >= words.length) { words.forEach(word => { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; }); return; }
+                const word = words[currentWordIndex], chars = word.text.split('');
+                if (currentCharIndex === 0) { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'inline-block'; }
+                if (currentCharIndex < chars.length) {
+                    const span = document.createElement('span'); span.className = 'letter'; span.textContent = chars[currentCharIndex]; span.style.opacity = '1';
+                    const cursor = word.element.querySelector('.cursor'); word.element.insertBefore(span, cursor);
+                    currentCharIndex++; setTimeout(typeCharacter, config.charDelay + Random.range(-config.charDelayVar, config.charDelayVar));
+                } else {
+                    const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none';
+                    currentWordIndex++; currentCharIndex = 0;
+                    const nextWord = words[currentWordIndex];
+                    if (nextWord) { setTimeout(typeCharacter, nextWord.delay); }
+                }
+            }
+            function restart() {
+                currentWordIndex = 0; currentCharIndex = 0;
+                words.forEach(word => { const letters = word.element.querySelectorAll('.letter'); letters.forEach(letter => letter.remove()); const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; });
+                setTimeout(typeCharacter, words[0].delay);
+            }
+            setTimeout(typeCharacter, words[0].delay); document.body.addEventListener('click', restart);
+        } else {
+            words.forEach(word => {
+                const chars = word.text.split(''), cursor = word.element.querySelector('.cursor');
+                chars.forEach(char => { const span = document.createElement('span'); span.className = 'letter'; span.textContent = char; span.style.opacity = '1'; word.element.insertBefore(span, cursor); });
+                cursor.style.display = 'none';
+            });
+        }
+    </script>
+</body>
+</html>

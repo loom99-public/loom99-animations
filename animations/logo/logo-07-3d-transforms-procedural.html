@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>loom99 Logo - 3D Transform Animation (Procedural)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+            transform-style: preserve-3d;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            transform-style: preserve-3d;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            body { perspective: none; }
+            .container,
+            svg {
+                transform: none !important;
+                transform-style: flat !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg id="svg" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#7b2ff7;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#ff2d75;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+
+            <path d="M 40 40 L 40 160 L 100 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #00d4ff)"/>
+            <circle cx="150" cy="100" r="40" stroke="url(#logoGradient)" stroke-width="12" fill="none" filter="drop-shadow(0 0 8px #7b2ff7)"/>
+            <circle cx="240" cy="100" r="40" stroke="url(#logoGradient)" stroke-width="12" fill="none" filter="drop-shadow(0 0 8px #7b2ff7)"/>
+            <path d="M 300 160 L 300 40 L 350 100 L 400 40 L 400 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #ff2d75)"/>
+            <path d="M 460 70 C 460 45, 500 45, 500 70 C 500 95, 460 95, 460 70 M 500 70 C 500 95, 495 130, 475 155 C 460 175, 440 170, 435 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #00d4ff)"/>
+            <path d="M 540 70 C 540 45, 580 45, 580 70 C 580 95, 540 95, 540 70 M 580 70 C 580 95, 575 130, 555 155 C 540 175, 520 170, 515 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #00d4ff)"/>
+        </svg>
+    </div>
+
+    <script>
+        const Random = {
+            range: (min, max) => min + Math.random() * (max - min),
+        };
+
+        // Wild 3D config
+        const config = {
+            perspective: Random.range(500, 2000),
+            maxRotateX: Random.range(-360, 360),
+            maxRotateY: Random.range(-360, 360),
+            maxRotateZ: Random.range(-180, 180),
+            duration: Random.range(1500, 4000),
+            wobbleFreq: Random.range(1, 5)
+        };
+
+        console.log('3D config:', config);
+
+        document.body.style.perspective = `${config.perspective}px`;
+
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (!prefersReducedMotion) {
+            const svg = document.getElementById('svg');
+
+            // Random easing
+            const easingFunctions = [
+                t => t,
+                t => 1 - Math.pow(1 - t, 3),
+                t => t * t,
+                t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
+            ];
+            const easing = easingFunctions[Math.floor(Math.random() * easingFunctions.length)];
+
+            let startTime = null;
+
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(1, elapsed / config.duration);
+                const eased = easing(progress);
+
+                // Wild multi-axis rotation
+                const rotateX = config.maxRotateX * (1 - eased) +
+                               Random.range(-5, 5) * Math.sin(progress * Math.PI * config.wobbleFreq);
+                const rotateY = config.maxRotateY * (1 - eased) +
+                               Random.range(-5, 5) * Math.cos(progress * Math.PI * config.wobbleFreq);
+                const rotateZ = config.maxRotateZ * (1 - eased) +
+                               Random.range(-3, 3) * Math.sin(progress * Math.PI * config.wobbleFreq * 2);
+
+                svg.style.transform = `
+                    rotateX(${rotateX}deg)
+                    rotateY(${rotateY}deg)
+                    rotateZ(${rotateZ}deg)
+                `;
+                svg.style.opacity = eased;
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+
+            function restart() {
+                startTime = null;
+                svg.style.opacity = 0;
+                requestAnimationFrame(animate);
+            }
+
+            requestAnimationFrame(animate);
+            document.body.addEventListener('click', restart);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do It Now - 3D Transform Animation (Procedural)</title>
+    <style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; } .container { width: 100%; max-width: 1000px; padding: 20px; } .text-container { text-align: center; transform-style: preserve-3d; } .word { display: block; font-size: 80px; font-weight: 900; line-height: 1.2; transform-style: preserve-3d; opacity: 0; } @media (prefers-reduced-motion: reduce) { body { perspective: none; } .text-container, .word { transform: none !important; opacity: 1 !important; transform-style: flat !important; } }</style>
+</head>
+<body>
+    <div class="container"><div class="text-container"><div class="word word1">DO</div><div class="word word2">IT</div><div class="word word3">NOW!</div></div></div>
+    <script>
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const Random = { range: (min, max) => min + Math.random() * (max - min), int: (min, max) => Math.floor(Random.range(min, max + 1)), pick: (arr) => arr[Random.int(0, arr.length - 1)] };
+        const config = { perspective: Random.range(500, 2000), hueShift: Random.range(-60, 60), satShift: Random.range(-30, 30), lightShift: Random.range(-15, 15), rotX: Random.range(0, 360), rotY: Random.range(0, 360), rotZ: Random.range(0, 360), translateZ: Random.range(-400, -100), duration: Random.range(800, 2200), stagger: Random.range(100, 500) };
+        document.body.style.perspective = `${config.perspective}px`;
+        const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftColor: (hsl, hueShift, satShift, lightShift) => ({ h: (hsl.h + hueShift + 360) % 360, s: Math.max(0, Math.min(100, hsl.s + satShift)), l: Math.max(0, Math.min(100, hsl.l + lightShift)) }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
+        const easingFuncs = [ t => t, t => 1 - Math.pow(1 - t, 3), t => t * t * t, t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 ];
+        const selectedEasing = Random.pick(easingFuncs);
+        if (!prefersReducedMotion) {
+            const words = document.querySelectorAll('.word');
+            words.forEach((word, i) => {
+                const colors = [ColorRandom.baseColors.red, ColorRandom.baseColors.orange, ColorRandom.baseColors.yellow];
+                const color = ColorRandom.toHSL(ColorRandom.shiftColor(colors[i], config.hueShift, config.satShift, config.lightShift));
+                word.style.color = color; word.style.textShadow = `0 0 20px ${color}, 2px 2px 4px rgba(0,0,0,0.5)`;
+            });
+            class Word3D {
+                constructor(element, delay) {
+                    this.element = element; this.delay = delay; this.duration = Random.range(config.duration * 0.7, config.duration * 1.3);
+                    this.rotX = Random.range(0, config.rotX); this.rotY = Random.range(0, config.rotY); this.rotZ = Random.range(0, config.rotZ);
+                    this.translateZ = Random.range(config.translateZ * 0.7, config.translateZ * 1.3);
+                }
+                update(elapsed) {
+                    if (elapsed < this.delay) { return; }
+                    const localTime = elapsed - this.delay, progress = Math.min(1, localTime / this.duration), eased = selectedEasing(progress);
+                    const rotateX = this.rotX * (1 - eased), rotateY = this.rotY * (1 - eased), rotateZ = this.rotZ * (1 - eased);
+                    const translateZ = this.translateZ * (1 - eased);
+                    this.element.style.transform = `translateZ(${translateZ}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`;
+                    this.element.style.opacity = eased;
+                }
+            }
+            const wordAnimations = [ new Word3D(words[0], 0), new Word3D(words[1], Random.range(config.stagger * 0.7, config.stagger * 1.3)), new Word3D(words[2], Random.range(config.stagger * 1.4, config.stagger * 2)) ];
+            let startTime = null; const totalDuration = 3500;
+            function animate(timestamp) { if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime; wordAnimations.forEach(word => word.update(elapsed)); if (elapsed < totalDuration) { requestAnimationFrame(animate); } }
+            function restart() { startTime = null; wordAnimations.forEach(word => { word.element.style.opacity = 0; word.element.style.transform = ''; }); requestAnimationFrame(animate); }
+            requestAnimationFrame(animate); document.body.addEventListener('click', restart);
+        } else { document.querySelectorAll('.word').forEach(word => { word.style.opacity = 1; }); }
+    </script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do It Now - Kinetic Animation (Procedural)</title>
+    <style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; } .container { width: 100%; max-width: 1000px; padding: 20px; position: relative; } .text-container { text-align: center; position: relative; } .word { display: block; font-size: 80px; font-weight: 900; line-height: 1.2; position: relative; } .letter { display: inline-block; opacity: 0; transform: translate(0, 0) rotate(0deg) scale(0); } .word1 .letter { color: #ff2d2d; text-shadow: 0 0 20px rgba(255, 45, 45, 0.8); } .word2 .letter { color: #ff6b00; text-shadow: 0 0 20px rgba(255, 107, 0, 0.8); } .word3 .letter { color: #ffdd00; text-shadow: 0 0 20px rgba(255, 221, 0, 0.8); } @media (prefers-reduced-motion: reduce) { .letter { opacity: 1 !important; transform: none !important; } }</style>
+</head>
+<body>
+    <div class="container"><div class="text-container"><div class="word word1" id="word1"></div><div class="word word2" id="word2"></div><div class="word word3" id="word3"></div></div></div>
+    <script>
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const Random = { range: (min, max) => min + Math.random() * (max - min), int: (min, max) => Math.floor(Random.range(min, max + 1)), pick: (arr) => arr[Random.int(0, arr.length - 1)] };
+        const config = { hueShift: Random.range(-60, 60), satShift: Random.range(-30, 30), lightShift: Random.range(-15, 15), distance: Random.range(300, 800), rotRange: Random.range(180, 720), delay: Random.range(30, 120), duration: Random.range(600, 1800) };
+        const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftColor: (hsl, hueShift, satShift, lightShift) => ({ h: (hsl.h + hueShift + 360) % 360, s: Math.max(0, Math.min(100, hsl.s + satShift)), l: Math.max(0, Math.min(100, hsl.l + lightShift)) }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
+        const easingFuncs = [ t => t, t => 1 + 2.70158 * Math.pow(t - 1, 3) + 1.70158 * Math.pow(t - 1, 2), t => t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2, t => Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * ((2 * Math.PI) / 3)) + 1 ];
+        const selectedEasing = Random.pick(easingFuncs);
+        class Letter {
+            constructor(char, element, delay) {
+                this.char = char; this.element = element; this.delay = delay; this.duration = Random.range(config.duration * 0.7, config.duration * 1.3);
+                const angle = Random.range(0, Math.PI * 2);
+                const dist = Random.range(config.distance * 0.7, config.distance * 1.3);
+                this.startX = Math.cos(angle) * dist; this.startY = Math.sin(angle) * dist;
+                this.startRotation = Random.range(-config.rotRange, config.rotRange); this.startScale = Random.range(0, 0.3);
+                this.targetX = 0; this.targetY = 0; this.targetRotation = Random.range(-20, 20); this.targetScale = 1;
+            }
+            update(elapsed) {
+                if (elapsed < this.delay) { return; }
+                const localTime = elapsed - this.delay, progress = Math.min(1, localTime / this.duration), eased = selectedEasing(progress);
+                const x = this.startX + (this.targetX - this.startX) * eased, y = this.startY + (this.targetY - this.startY) * eased;
+                const rotation = this.startRotation + (this.targetRotation - this.startRotation) * eased, scale = this.startScale + (this.targetScale - this.startScale) * eased;
+                this.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`;
+                this.element.style.opacity = Math.min(1, progress * 2);
+            }
+        }
+        const words = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW!', element: document.getElementById('word3') } ];
+        const letters = []; let letterIndex = 0;
+        words.forEach((word, wordIndex) => {
+            const chars = word.text.split('');
+            chars.forEach((char, charIndex) => {
+                const span = document.createElement('span'); span.className = 'letter'; span.textContent = char;
+                const palette = ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors[wordIndex === 0 ? 'red' : wordIndex === 1 ? 'orange' : 'yellow'], config.hueShift, config.satShift, config.lightShift));
+                span.style.color = palette; span.style.textShadow = `0 0 20px ${palette}`;
+                word.element.appendChild(span);
+                const letter = new Letter(char, span, Random.range(0, letterIndex * config.delay));
+                letters.push(letter); letterIndex++;
+            });
+        });
+        let startTime = null; const totalDuration = 3000;
+        function animate(timestamp) { if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime; letters.forEach(letter => letter.update(elapsed)); if (elapsed < totalDuration) { requestAnimationFrame(animate); } }
+        function restart() { startTime = null; letters.forEach(letter => { letter.element.style.opacity = 0; letter.element.style.transform = 'translate(0, 0) rotate(0deg) scale(0)'; }); requestAnimationFrame(animate); }
+        if (prefersReducedMotion) { letters.forEach(letter => { letter.element.style.opacity = 1; letter.element.style.transform = 'none'; }); } else { requestAnimationFrame(animate); }
+        document.body.addEventListener('click', restart);
+    </script>
+</body>
+</html>

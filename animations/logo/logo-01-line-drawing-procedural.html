@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>loom99 Logo - Line Drawing Animation (Procedural)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+        }
+
+        .line {
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .line {
+                opacity: 1 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg id="logo" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+    </div>
+
+    <script>
+        // Random utilities
+        const Random = {
+            range: (min, max) => min + Math.random() * (max - min),
+            int: (min, max) => Math.floor(Random.range(min, max + 1)),
+            pick: (arr) => arr[Random.int(0, arr.length - 1)],
+            vary: (base, variance) => base + Random.range(-variance, variance),
+            varyPercent: (base, percent) => base * Random.range(1 - percent, 1 + percent),
+        };
+
+        // Randomization config (heavy)
+        const config = {
+            timing: {
+                enabled: true,
+                durationVariance: 0.5,
+                staggerVariance: 0.6
+            },
+            colors: {
+                enabled: true,
+                hueShift: Random.range(-60, 60),
+                satShift: Random.range(-30, 30),
+                lightShift: Random.range(-20, 20)
+            },
+            motion: {
+                enabled: true,
+                randomStart: true
+            },
+            effects: {
+                enabled: true,
+                strokeVariance: 5,
+                glowVariance: 10
+            }
+        };
+
+        // Color utilities
+        const ColorRandom = {
+            baseColors: {
+                cyan: { h: 190, s: 100, l: 50 },
+                purple: { h: 265, s: 85, l: 57 },
+                pink: { h: 340, s: 100, l: 63 }
+            },
+            shiftColor: (hsl, hueShift, satShift, lightShift) => ({
+                h: (hsl.h + hueShift + 360) % 360,
+                s: Math.max(0, Math.min(100, hsl.s + satShift)),
+                l: Math.max(0, Math.min(100, hsl.l + lightShift))
+            }),
+            toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
+        };
+
+        // Apply wild color shifts
+        const palette = config.colors.enabled ? {
+            cyan: ColorRandom.toHSL(ColorRandom.shiftColor(
+                ColorRandom.baseColors.cyan,
+                config.colors.hueShift,
+                config.colors.satShift,
+                config.colors.lightShift
+            )),
+            purple: ColorRandom.toHSL(ColorRandom.shiftColor(
+                ColorRandom.baseColors.purple,
+                config.colors.hueShift,
+                config.colors.satShift,
+                config.colors.lightShift
+            )),
+            pink: ColorRandom.toHSL(ColorRandom.shiftColor(
+                ColorRandom.baseColors.pink,
+                config.colors.hueShift,
+                config.colors.satShift,
+                config.colors.lightShift
+            ))
+        } : {
+            cyan: '#00d4ff',
+            purple: '#7b2ff7',
+            pink: '#ff2d75'
+        };
+
+        const svg = document.getElementById('logo');
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // Randomize easing function
+        const easingFunctions = [
+            t => t,
+            t => 1 - Math.pow(1 - t, 4),
+            t => t * t * t * t,
+            t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+            t => 1 - Math.pow(1 - t, 3),
+            t => t * (2 - t)
+        ];
+        const selectedEasing = Random.pick(easingFunctions);
+
+        class AnimatedLine {
+            constructor(startX, startY, points, color, delay, duration, foldDuration = 200) {
+                this.points = points;
+                this.startX = startX;
+                this.startY = startY;
+                this.delay = delay;
+                this.duration = duration;
+                this.foldDuration = foldDuration;
+                this.color = color;
+                this.progress = 0;
+                this.foldProgress = 0;
+                this.started = false;
+                this.finished = false;
+                this.folding = false;
+                this.foldComplete = false;
+
+                const strokeWidth = config.effects.enabled ?
+                    Random.vary(12, config.effects.strokeVariance) : 12;
+                const glowRadius = config.effects.enabled ?
+                    Random.vary(8, config.effects.glowVariance) : 8;
+
+                this.path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                this.path.classList.add('line');
+                this.path.style.stroke = color;
+                this.path.style.strokeWidth = Math.max(2, strokeWidth);
+                this.path.style.filter = `drop-shadow(0 0 ${Math.max(0, glowRadius)}px ${color})`;
+                this.path.style.opacity = '0';
+            }
+
+            getFirstPoint() {
+                return this.points[0];
+            }
+
+            update(elapsed) {
+                if (this.foldComplete) return;
+
+                if (elapsed < this.delay) {
+                    this.path.style.opacity = '0';
+                    return;
+                }
+
+                this.path.style.opacity = '1';
+
+                if (!this.started) {
+                    this.started = true;
+                }
+
+                const localTime = elapsed - this.delay;
+
+                if (localTime < this.duration) {
+                    this.progress = Math.min(1, localTime / this.duration);
+                    const eased = selectedEasing(this.progress);
+
+                    const firstPoint = this.getFirstPoint();
+                    const tailX = this.startX + (firstPoint.x - this.startX) * eased;
+                    const tailY = this.startY + (firstPoint.y - this.startY) * eased;
+
+                    let d = `M ${tailX} ${tailY}`;
+
+                    for (let i = 0; i < this.points.length; i++) {
+                        const point = this.points[i];
+                        const finalPoint = this.points[this.points.length - 1];
+                        const t = (i + 1) / this.points.length;
+
+                        const straightX = this.startX + (finalPoint.x - this.startX) * t;
+                        const straightY = this.startY + (finalPoint.y - this.startY) * t;
+
+                        const currentX = straightX + (point.x - straightX) * eased;
+                        const currentY = straightY + (point.y - straightY) * eased;
+
+                        if (point.type === 'Q') {
+                            const ctrlStraightX = this.startX + (finalPoint.x - this.startX) * ((i + 0.5) / this.points.length);
+                            const ctrlStraightY = this.startY + (finalPoint.y - this.startY) * ((i + 0.5) / this.points.length);
+                            const ctrlX = ctrlStraightX + (point.cx - ctrlStraightX) * eased;
+                            const ctrlY = ctrlStraightY + (point.cy - ctrlStraightY) * eased;
+                            d += ` Q ${ctrlX} ${ctrlY} ${currentX} ${currentY}`;
+                        } else if (point.type === 'A') {
+                            d += ` A ${point.rx} ${point.ry} ${point.rotation} ${point.largeArc} ${point.sweep} ${currentX} ${currentY}`;
+                        } else {
+                            d += ` L ${currentX} ${currentY}`;
+                        }
+                    }
+
+                    this.path.setAttribute('d', d);
+                } else {
+                    if (!this.folding) {
+                        this.folding = true;
+                        this.finished = true;
+                    }
+
+                    const foldTime = localTime - this.duration;
+                    this.foldProgress = Math.min(1, foldTime / this.foldDuration);
+
+                    let d = `M ${this.points[0].x} ${this.points[0].y}`;
+
+                    for (let i = 1; i < this.points.length; i++) {
+                        const point = this.points[i];
+                        if (point.type === 'Q') {
+                            d += ` Q ${point.cx} ${point.cy} ${point.x} ${point.y}`;
+                        } else if (point.type === 'A') {
+                            d += ` A ${point.rx} ${point.ry} ${point.rotation} ${point.largeArc} ${point.sweep} ${point.x} ${point.y}`;
+                        } else {
+                            d += ` L ${point.x} ${point.y}`;
+                        }
+                    }
+
+                    this.path.setAttribute('d', d);
+
+                    if (this.foldProgress >= 1) {
+                        this.foldComplete = true;
+                    }
+                }
+            }
+        }
+
+        const lines = [];
+
+        function addLine(startX, startY, points, color, delay, duration = 400, foldDuration = 180) {
+            const line = new AnimatedLine(startX, startY, points, color, delay, duration, foldDuration);
+            lines.push(line);
+            svg.appendChild(line.path);
+            return line;
+        }
+
+        const CYAN = palette.cyan;
+        const PURPLE = palette.purple;
+        const PINK = palette.pink;
+
+        // Randomize timing heavily
+        const BASE_DURATION = Random.range(200, 600);
+        const BASE_STAGGER = Random.range(40, 150);
+
+        // Randomize start positions heavily
+        const getRandomStart = () => {
+            const directions = [
+                { x: Random.range(-200, -50), y: Random.range(0, 200) },
+                { x: Random.range(650, 800), y: Random.range(0, 200) },
+                { x: Random.range(100, 500), y: Random.range(-150, -50) },
+                { x: Random.range(100, 500), y: Random.range(250, 350) }
+            ];
+            return Random.pick(directions);
+        };
+
+        // L
+        const dur0 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+        const start0 = config.motion.randomStart ? getRandomStart() : { x: -100, y: 100 };
+        addLine(start0.x, start0.y, [
+            {x: 40, y: 40},
+            {x: 40, y: 160},
+            {x: 100, y: 160}
+        ], CYAN, 0, dur0);
+
+        // O (first)
+        const dur1 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+        const delay1 = Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+        const start1 = config.motion.randomStart ? getRandomStart() : { x: -100, y: 100 };
+        addLine(start1.x, start1.y, [
+            {x: 150, y: 60},
+            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 150, y: 140},
+            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 150, y: 60}
+        ], PURPLE, delay1, dur1);
+
+        // O (second)
+        const dur2 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+        const delay2 = delay1 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+        const start2 = config.motion.randomStart ? getRandomStart() : { x: 240, y: -50 };
+        addLine(start2.x, start2.y, [
+            {x: 240, y: 60},
+            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 240, y: 140},
+            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 240, y: 60}
+        ], PURPLE, delay2, dur2);
+
+        // M
+        const dur3 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+        const delay3 = delay2 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+        const start3 = config.motion.randomStart ? getRandomStart() : { x: 350, y: -50 };
+        addLine(start3.x, start3.y, [
+            {x: 300, y: 160},
+            {x: 300, y: 40},
+            {x: 350, y: 100},
+            {x: 400, y: 40},
+            {x: 400, y: 160}
+        ], PINK, delay3, dur3);
+
+        // 9 (first)
+        const dur4 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+        const delay4 = delay3 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+        const start4 = config.motion.randomStart ? getRandomStart() : { x: 700, y: 100 };
+        addLine(start4.x, start4.y, [
+            {x: 460, y: 70},
+            {type: 'Q', cx: 460, cy: 45, x: 480, y: 45},
+            {type: 'Q', cx: 500, cy: 45, x: 500, y: 70},
+            {type: 'Q', cx: 500, cy: 95, x: 480, y: 95},
+            {type: 'Q', cx: 460, cy: 95, x: 460, y: 70},
+            {x: 500, y: 70},
+            {type: 'Q', cx: 500, cy: 110, x: 485, y: 135},
+            {type: 'Q', cx: 470, cy: 160, x: 445, y: 165}
+        ], CYAN, delay4, dur4);
+
+        // 9 (second)
+        const dur5 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+        const delay5 = delay4 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+        const start5 = config.motion.randomStart ? getRandomStart() : { x: 650, y: 250 };
+        addLine(start5.x, start5.y, [
+            {x: 540, y: 70},
+            {type: 'Q', cx: 540, cy: 45, x: 560, y: 45},
+            {type: 'Q', cx: 580, cy: 45, x: 580, y: 70},
+            {type: 'Q', cx: 580, cy: 95, x: 560, y: 95},
+            {type: 'Q', cx: 540, cy: 95, x: 540, y: 70},
+            {x: 580, y: 70},
+            {type: 'Q', cx: 580, cy: 110, x: 565, y: 135},
+            {type: 'Q', cx: 550, cy: 160, x: 525, y: 165}
+        ], CYAN, delay5, dur5);
+
+        let startTime = null;
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+
+            lines.forEach(line => line.update(elapsed));
+
+            const allDone = lines.every(l => l.foldComplete);
+            if (!allDone) {
+                requestAnimationFrame(animate);
+            }
+        }
+
+        function restart() {
+            startTime = null;
+            lines.forEach(line => {
+                line.progress = 0;
+                line.foldProgress = 0;
+                line.started = false;
+                line.finished = false;
+                line.folding = false;
+                line.foldComplete = false;
+                line.path.style.opacity = '0';
+            });
+            requestAnimationFrame(animate);
+        }
+
+        if (prefersReducedMotion) {
+            lines.forEach(line => {
+                line.foldComplete = true;
+                line.path.style.opacity = '1';
+                let d = `M ${line.points[0].x} ${line.points[0].y}`;
+                for (let i = 1; i < line.points.length; i++) {
+                    const point = line.points[i];
+                    if (point.type === 'Q') {
+                        d += ` Q ${point.cx} ${point.cy} ${point.x} ${point.y}`;
+                    } else if (point.type === 'A') {
+                        d += ` A ${point.rx} ${point.ry} ${point.rotation} ${point.largeArc} ${point.sweep} ${point.x} ${point.y}`;
+                    } else {
+                        d += ` L ${point.x} ${point.y}`;
+                    }
+                }
+                line.path.setAttribute('d', d);
+            });
+        } else {
+            requestAnimationFrame(animate);
+        }
+
+        document.body.addEventListener('click', restart);
+    </script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>loom99 Logo - Typewriter Animation (Procedural)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        .logo-text {
+            font-size: 100px;
+            font-weight: 900;
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff2d75);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+            position: relative;
+        }
+
+        .letter {
+            opacity: 0;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 6px;
+            height: 100px;
+            background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff2d75);
+            margin-left: 4px;
+            vertical-align: text-bottom;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .letter {
+                opacity: 1 !important;
+            }
+            .cursor {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-text" id="logo">
+            <span class="cursor"></span>
+        </div>
+    </div>
+
+    <script>
+        const Random = {
+            range: (min, max) => min + Math.random() * (max - min),
+        };
+
+        // Wild typing configuration
+        const config = {
+            baseDelay: Random.range(30, 500),
+            variance: Random.range(20, 300),
+            pauseProbability: Random.range(0, 0.8),
+            pauseDuration: Random.range(100, 2000),
+            blinkSpeed: Random.range(0.2, 2.0),
+            typoChance: Random.range(0, 0.3),
+            backspaceDelay: Random.range(100, 500)
+        };
+
+        console.log('Typewriter config:', config);
+
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        const text = 'loom99';
+        const logo = document.getElementById('logo');
+        const cursor = logo.querySelector('.cursor');
+
+        // Wild cursor blink
+        const blinkKeyframes = `
+            @keyframes wildBlink {
+                0%, 49% { opacity: 1; }
+                50%, 100% { opacity: 0; }
+            }
+        `;
+        const style = document.createElement('style');
+        style.textContent = blinkKeyframes;
+        document.head.appendChild(style);
+        cursor.style.animation = `wildBlink ${config.blinkSpeed}s infinite`;
+
+        if (!prefersReducedMotion) {
+            let currentIndex = 0;
+            let typoMode = false;
+            let typoChar = null;
+
+            function typeCharacter() {
+                if (currentIndex >= text.length) {
+                    setTimeout(() => {
+                        cursor.style.display = 'none';
+                    }, Random.range(500, 2000));
+                    return;
+                }
+
+                // Random typo
+                if (!typoMode && Math.random() < config.typoChance) {
+                    typoMode = true;
+                    const typoChars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+                    typoChar = typoChars[Math.floor(Math.random() * typoChars.length)];
+
+                    const span = document.createElement('span');
+                    span.className = 'letter typo';
+                    span.textContent = typoChar;
+                    span.style.opacity = '1';
+                    logo.insertBefore(span, cursor);
+
+                    // Pause, then backspace
+                    setTimeout(() => {
+                        span.remove();
+                        typoMode = false;
+                        setTimeout(typeCharacter, Random.range(50, 150));
+                    }, config.backspaceDelay);
+                    return;
+                }
+
+                const char = text[currentIndex];
+                const span = document.createElement('span');
+                span.className = 'letter';
+                span.textContent = char;
+                span.style.opacity = '1';
+
+                logo.insertBefore(span, cursor);
+
+                currentIndex++;
+
+                // Wild random pausing
+                const shouldPause = Math.random() < config.pauseProbability;
+                const delay = Random.range(
+                    Math.max(10, config.baseDelay - config.variance),
+                    config.baseDelay + config.variance
+                );
+
+                const nextDelay = shouldPause ?
+                    delay + Random.range(config.pauseDuration * 0.5, config.pauseDuration * 1.5) :
+                    delay;
+
+                setTimeout(typeCharacter, nextDelay);
+            }
+
+            function restart() {
+                currentIndex = 0;
+                typoMode = false;
+
+                const letters = logo.querySelectorAll('.letter');
+                letters.forEach(letter => letter.remove());
+
+                cursor.style.display = 'inline-block';
+
+                setTimeout(typeCharacter, Random.range(200, 1000));
+            }
+
+            setTimeout(typeCharacter, Random.range(200, 1000));
+            document.body.addEventListener('click', restart);
+        } else {
+            cursor.style.display = 'none';
+
+            text.split('').forEach(char => {
+                const span = document.createElement('span');
+                span.className = 'letter';
+                span.textContent = char;
+                span.style.opacity = '1';
+                logo.insertBefore(span, cursor);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do It Now - Wave Ripple Animation (Varied)</title>
+    <style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; } .container { width: 100%; max-width: 1000px; padding: 20px; } .text-container { text-align: center; } .word { display: block; font-size: 80px; font-weight: 900; line-height: 1.2; } .letter { display: inline-block; } .word1 .letter { color: #ff2d2d; text-shadow: 0 0 20px rgba(255, 45, 45, 0.8); } .word2 .letter { color: #ff6b00; text-shadow: 0 0 20px rgba(255, 107, 0, 0.8); } .word3 .letter { color: #ffdd00; text-shadow: 0 0 20px rgba(255, 221, 0, 0.8); } @media (prefers-reduced-motion: reduce) { .letter { transform: none !important; } }</style>
+</head>
+<body>
+    <div class="container"><div class="text-container"><div class="word word1" id="word1"></div><div class="word word2" id="word2"></div><div class="word word3" id="word3"></div></div></div>
+    <script>
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const Random = { range: (min, max) => min + Math.random() * (max - min), pick: (arr) => arr[Math.floor(Math.random() * arr.length)], vary: (base, v) => base + Random.range(-v, v) };
+        const modes = [ { name: 'sine', wave: (t, i, total) => Math.sin(t * 3 + (i / total) * Math.PI * 2 * 3) }, { name: 'pulse', wave: (t, i, total) => Math.cos(t * 4 + (i / total) * Math.PI * 4) }, { name: 'ripple', wave: (t, i, total) => Math.sin(t * 2 + (i / total) * Math.PI * 6) * Math.cos(t * 1.5) } ];
+        const mode = Random.pick(modes);
+        const config = { hueShift: Random.range(-15, 15), amplitude: Random.vary(30, 8), waveCount: Random.vary(3, 1), speed: Random.vary(3, 0.8), duration: Random.vary(3000, 600), scaleAmp: Random.vary(0.2, 0.05) };
+        console.log('Wave mode:', mode.name);
+        const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftHue: (hsl, shift) => ({ h: (hsl.h + shift + 360) % 360, s: hsl.s, l: hsl.l }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
+        const words = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW!', element: document.getElementById('word3') } ];
+        const letters = [];
+        words.forEach((word, wordIndex) => {
+            const chars = word.text.split('');
+            chars.forEach((char, charIndex) => {
+                const span = document.createElement('span'); span.className = 'letter'; span.textContent = char;
+                const colors = [ColorRandom.baseColors.red, ColorRandom.baseColors.orange, ColorRandom.baseColors.yellow];
+                const color = ColorRandom.toHSL(ColorRandom.shiftHue(colors[wordIndex], config.hueShift));
+                span.style.color = color; span.style.textShadow = `0 0 20px ${color}`;
+                word.element.appendChild(span);
+                letters.push({ element: span, index: letters.length, baseDelay: wordIndex * 200 });
+            });
+        });
+        if (!prefersReducedMotion) {
+            let startTime = null;
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
+                letters.forEach((letter, i) => {
+                    const time = (elapsed + letter.baseDelay) / 1000;
+                    const wavePhase = (i / letters.length) * Math.PI * 2 * config.waveCount;
+                    const y = mode.wave(time * config.speed, i, letters.length) * config.amplitude * Math.max(0, 1 - elapsed / config.duration);
+                    const scale = 1 + Math.sin(time * 2 + wavePhase) * config.scaleAmp * Math.max(0, 1 - elapsed / config.duration);
+                    letter.element.style.transform = `translateY(${y}px) scale(${scale})`;
+                });
+                if (elapsed < config.duration) { requestAnimationFrame(animate); }
+                else { letters.forEach(letter => { letter.element.style.transform = 'none'; }); }
+            }
+            function restart() { startTime = null; requestAnimationFrame(animate); }
+            requestAnimationFrame(animate); document.body.addEventListener('click', restart);
+        }
+    </script>
+</body>
+</html>

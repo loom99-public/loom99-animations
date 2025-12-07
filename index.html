@@ -20,7 +20,7 @@
 
         .header {
             max-width: 1400px;
-            margin: 0 auto 60px;
+            margin: 0 auto 40px;
             text-align: center;
         }
 
@@ -38,7 +38,34 @@
             font-size: 20px;
             color: #aaa;
             font-weight: 300;
+            margin-bottom: 24px;
         }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.original { background: #4a4a5e; }
+        .legend-dot.varied { background: linear-gradient(135deg, #00d4ff, #7b2ff7); }
+        .legend-dot.procedural { background: linear-gradient(135deg, #ff2d75, #ffdd00); }
 
         .gallery {
             max-width: 1400px;
@@ -46,33 +73,46 @@
         }
 
         .technique-section {
-            margin-bottom: 80px;
+            margin-bottom: 60px;
         }
 
         .technique-title {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 700;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             padding-bottom: 12px;
             border-bottom: 2px solid #7b2ff7;
         }
 
         .technique-number {
             color: #7b2ff7;
-            font-size: 24px;
+            font-size: 22px;
             margin-right: 12px;
+        }
+
+        .animation-row {
+            margin-bottom: 24px;
+        }
+
+        .row-label {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            padding-left: 4px;
         }
 
         .animation-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
         }
 
         .animation-card {
             background: #1a1a2e;
-            border-radius: 12px;
-            padding: 24px;
+            border-radius: 10px;
+            padding: 16px;
             border: 2px solid #2a2a3e;
             transition: all 0.3s ease;
             text-decoration: none;
@@ -82,26 +122,44 @@
 
         .animation-card:hover {
             border-color: #7b2ff7;
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(123, 47, 247, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(123, 47, 247, 0.25);
+        }
+
+        .animation-card.varied {
+            border-color: #3a3a5e;
+        }
+
+        .animation-card.varied:hover {
+            border-color: #00d4ff;
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.25);
+        }
+
+        .animation-card.procedural {
+            border-color: #3a3a5e;
+        }
+
+        .animation-card.procedural:hover {
+            border-color: #ff2d75;
+            box-shadow: 0 6px 20px rgba(255, 45, 117, 0.25);
         }
 
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
 
         .card-title {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 600;
         }
 
         .badge {
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
         }
@@ -117,14 +175,34 @@
         }
 
         .card-description {
-            color: #aaa;
-            font-size: 14px;
-            line-height: 1.6;
+            color: #888;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .variant-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 8px;
+        }
+
+        .variant-tag.varied {
+            background: linear-gradient(90deg, #00d4ff, #7b2ff7);
+            color: #fff;
+        }
+
+        .variant-tag.procedural {
+            background: linear-gradient(90deg, #ff2d75, #ffdd00);
+            color: #1a1a2e;
         }
 
         .footer {
             max-width: 1400px;
-            margin: 60px auto 0;
+            margin: 40px auto 0;
             text-align: center;
             color: #666;
             font-size: 14px;
@@ -138,11 +216,16 @@
             }
 
             h1 {
-                font-size: 36px;
+                font-size: 32px;
             }
 
             .technique-title {
-                font-size: 24px;
+                font-size: 22px;
+            }
+
+            .legend {
+                flex-direction: column;
+                align-items: center;
             }
         }
     </style>
@@ -150,283 +233,627 @@
 <body>
     <div class="header">
         <h1>loom99 Animations</h1>
-        <p class="subtitle">20 unique animations showcasing 10 different techniques</p>
+        <p class="subtitle">60 animations: 10 techniques × 2 targets × 3 variations</p>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot original"></div>
+                <span>Original (deterministic)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot varied"></div>
+                <span>Varied (modes + subtle random)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot procedural"></div>
+                <span>Procedural (heavy random)</span>
+            </div>
+        </div>
     </div>
 
     <div class="gallery">
+        <!-- 01: Line Drawing -->
         <div class="technique-section">
             <h2 class="technique-title">
                 <span class="technique-number">01</span>
                 Line Drawing / Path Animation
             </h2>
-            <div class="animation-grid">
-                <a href="animations/logo/logo-01-line-drawing.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">loom99 Logo</div>
-                        <div class="badge badge-logo">Logo</div>
-                    </div>
-                    <div class="card-description">
-                        Lines shoot in from off-canvas positions and curve into the logo shape with smooth easing.
-                    </div>
-                </a>
-                <a href="animations/text/text-01-line-drawing.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">Do It Now</div>
-                        <div class="badge badge-text">Text</div>
-                    </div>
-                    <div class="card-description">
-                        Animated strokes form "Do It Now" text with staggered timing for dramatic effect.
-                    </div>
-                </a>
+            <div class="animation-row">
+                <div class="row-label">loom99 Logo</div>
+                <div class="animation-grid">
+                    <a href="animations/logo/logo-01-line-drawing.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Lines shoot in and curve into shape</div>
+                    </a>
+                    <a href="animations/logo/logo-01-line-drawing-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Multiple direction modes + subtle timing variance</div>
+                    </a>
+                    <a href="animations/logo/logo-01-line-drawing-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Chaotic directions, speeds, and colors each time</div>
+                    </a>
+                </div>
+            </div>
+            <div class="animation-row">
+                <div class="row-label">Do It Now</div>
+                <div class="animation-grid">
+                    <a href="animations/text/text-01-line-drawing.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Strokes form text with staggered timing</div>
+                    </a>
+                    <a href="animations/text/text-01-line-drawing-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Direction modes with subtle variations</div>
+                    </a>
+                    <a href="animations/text/text-01-line-drawing-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Unique every load with wild variance</div>
+                    </a>
+                </div>
             </div>
         </div>
 
+        <!-- 02: Particles -->
         <div class="technique-section">
             <h2 class="technique-title">
                 <span class="technique-number">02</span>
                 Particle Effects
             </h2>
-            <div class="animation-grid">
-                <a href="animations/logo/logo-02-particles.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">loom99 Logo</div>
-                        <div class="badge badge-logo">Logo</div>
-                    </div>
-                    <div class="card-description">
-                        Particles coalesce from an explosion pattern to form the complete logo.
-                    </div>
-                </a>
-                <a href="animations/text/text-02-particles.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">Do It Now</div>
-                        <div class="badge badge-text">Text</div>
-                    </div>
-                    <div class="card-description">
-                        Scattered particles gravitate together to reveal the text message.
-                    </div>
-                </a>
+            <div class="animation-row">
+                <div class="row-label">loom99 Logo</div>
+                <div class="animation-grid">
+                    <a href="animations/logo/logo-02-particles.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Particles coalesce from explosion</div>
+                    </a>
+                    <a href="animations/logo/logo-02-particles-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Formation patterns with count variance</div>
+                    </a>
+                    <a href="animations/logo/logo-02-particles-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Wild particle behaviors and sizes</div>
+                    </a>
+                </div>
+            </div>
+            <div class="animation-row">
+                <div class="row-label">Do It Now</div>
+                <div class="animation-grid">
+                    <a href="animations/text/text-02-particles.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Scattered particles form text</div>
+                    </a>
+                    <a href="animations/text/text-02-particles-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Multiple formation modes</div>
+                    </a>
+                    <a href="animations/text/text-02-particles-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Chaotic particle dynamics</div>
+                    </a>
+                </div>
             </div>
         </div>
 
+        <!-- 03: Morphing -->
         <div class="technique-section">
             <h2 class="technique-title">
                 <span class="technique-number">03</span>
                 Morphing / Shape Transitions
             </h2>
-            <div class="animation-grid">
-                <a href="animations/logo/logo-03-morphing.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">loom99 Logo</div>
-                        <div class="badge badge-logo">Logo</div>
-                    </div>
-                    <div class="card-description">
-                        Geometric shapes smoothly morph into the final logo design.
-                    </div>
-                </a>
-                <a href="animations/text/text-03-morphing.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">Do It Now</div>
-                        <div class="badge badge-text">Text</div>
-                    </div>
-                    <div class="card-description">
-                        Simple shapes transform into letters with fluid path interpolation.
-                    </div>
-                </a>
+            <div class="animation-row">
+                <div class="row-label">loom99 Logo</div>
+                <div class="animation-grid">
+                    <a href="animations/logo/logo-03-morphing.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Shapes morph into logo</div>
+                    </a>
+                    <a href="animations/logo/logo-03-morphing-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Different start shapes and easings</div>
+                    </a>
+                    <a href="animations/logo/logo-03-morphing-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Random procedural shapes</div>
+                    </a>
+                </div>
+            </div>
+            <div class="animation-row">
+                <div class="row-label">Do It Now</div>
+                <div class="animation-grid">
+                    <a href="animations/text/text-03-morphing.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Shapes transform into letters</div>
+                    </a>
+                    <a href="animations/text/text-03-morphing-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Shape type modes with variance</div>
+                    </a>
+                    <a href="animations/text/text-03-morphing-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Wild morph timings and shapes</div>
+                    </a>
+                </div>
             </div>
         </div>
 
+        <!-- 04: Glitch -->
         <div class="technique-section">
             <h2 class="technique-title">
                 <span class="technique-number">04</span>
                 Glitch Effects
             </h2>
-            <div class="animation-grid">
-                <a href="animations/logo/logo-04-glitch.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">loom99 Logo</div>
-                        <div class="badge badge-logo">Logo</div>
-                    </div>
-                    <div class="card-description">
-                        Digital glitch with RGB split and transform distortion before stabilizing.
-                    </div>
-                </a>
-                <a href="animations/text/text-04-glitch.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">Do It Now</div>
-                        <div class="badge badge-text">Text</div>
-                    </div>
-                    <div class="card-description">
-                        Chromatic aberration, jitter, and scanlines create retro glitch aesthetic.
-                    </div>
-                </a>
+            <div class="animation-row">
+                <div class="row-label">loom99 Logo</div>
+                <div class="animation-grid">
+                    <a href="animations/logo/logo-04-glitch.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">RGB split and distortion</div>
+                    </a>
+                    <a href="animations/logo/logo-04-glitch-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Intensity modes with variance</div>
+                    </a>
+                    <a href="animations/logo/logo-04-glitch-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Extreme glitch chaos</div>
+                    </a>
+                </div>
+            </div>
+            <div class="animation-row">
+                <div class="row-label">Do It Now</div>
+                <div class="animation-grid">
+                    <a href="animations/text/text-04-glitch.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Chromatic aberration and jitter</div>
+                    </a>
+                    <a href="animations/text/text-04-glitch-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Glitch style modes</div>
+                    </a>
+                    <a href="animations/text/text-04-glitch-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Maximum digital distortion</div>
+                    </a>
+                </div>
             </div>
         </div>
 
+        <!-- 05: Liquid -->
         <div class="technique-section">
             <h2 class="technique-title">
                 <span class="technique-number">05</span>
                 Liquid / Fluid Motion
             </h2>
-            <div class="animation-grid">
-                <a href="animations/logo/logo-05-liquid.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">loom99 Logo</div>
-                        <div class="badge badge-logo">Logo</div>
-                    </div>
-                    <div class="card-description">
-                        Liquid droplets fall and merge using metaball effects to form the logo.
-                    </div>
-                </a>
-                <a href="animations/text/text-05-liquid.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">Do It Now</div>
-                        <div class="badge badge-text">Text</div>
-                    </div>
-                    <div class="card-description">
-                        Fluid blobs coalesce with goo filter for realistic liquid effect.
-                    </div>
-                </a>
+            <div class="animation-row">
+                <div class="row-label">loom99 Logo</div>
+                <div class="animation-grid">
+                    <a href="animations/logo/logo-05-liquid.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Metaball droplets merge</div>
+                    </a>
+                    <a href="animations/logo/logo-05-liquid-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Flow pattern modes</div>
+                    </a>
+                    <a href="animations/logo/logo-05-liquid-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Chaotic blob dynamics</div>
+                    </a>
+                </div>
+            </div>
+            <div class="animation-row">
+                <div class="row-label">Do It Now</div>
+                <div class="animation-grid">
+                    <a href="animations/text/text-05-liquid.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Fluid blobs with goo filter</div>
+                    </a>
+                    <a href="animations/text/text-05-liquid-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Drop pattern variations</div>
+                    </a>
+                    <a href="animations/text/text-05-liquid-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Wild fluid simulation</div>
+                    </a>
+                </div>
             </div>
         </div>
 
+        <!-- 06: Kinetic -->
         <div class="technique-section">
             <h2 class="technique-title">
                 <span class="technique-number">06</span>
                 Kinetic Typography / Motion
             </h2>
-            <div class="animation-grid">
-                <a href="animations/logo/logo-06-kinetic.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">loom99 Logo</div>
-                        <div class="badge badge-logo">Logo</div>
-                    </div>
-                    <div class="card-description">
-                        Logo components fly in from different angles with spring physics.
-                    </div>
-                </a>
-                <a href="animations/text/text-06-kinetic.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">Do It Now</div>
-                        <div class="badge badge-text">Text</div>
-                    </div>
-                    <div class="card-description">
-                        Letters spiral in with elastic bounce for energetic reveal.
-                    </div>
-                </a>
+            <div class="animation-row">
+                <div class="row-label">loom99 Logo</div>
+                <div class="animation-grid">
+                    <a href="animations/logo/logo-06-kinetic.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Spring physics fly-in</div>
+                    </a>
+                    <a href="animations/logo/logo-06-kinetic-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Entry pattern modes</div>
+                    </a>
+                    <a href="animations/logo/logo-06-kinetic-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Chaotic multi-directional</div>
+                    </a>
+                </div>
+            </div>
+            <div class="animation-row">
+                <div class="row-label">Do It Now</div>
+                <div class="animation-grid">
+                    <a href="animations/text/text-06-kinetic.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Letters spiral with bounce</div>
+                    </a>
+                    <a href="animations/text/text-06-kinetic-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Motion style modes</div>
+                    </a>
+                    <a href="animations/text/text-06-kinetic-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Unpredictable physics</div>
+                    </a>
+                </div>
             </div>
         </div>
 
+        <!-- 07: 3D Transforms -->
         <div class="technique-section">
             <h2 class="technique-title">
                 <span class="technique-number">07</span>
                 3D Transforms
             </h2>
-            <div class="animation-grid">
-                <a href="animations/logo/logo-07-3d-transforms.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">loom99 Logo</div>
-                        <div class="badge badge-logo">Logo</div>
-                    </div>
-                    <div class="card-description">
-                        Logo flips through 3D space with perspective rotation effects.
-                    </div>
-                </a>
-                <a href="animations/text/text-07-3d-transforms.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">Do It Now</div>
-                        <div class="badge badge-text">Text</div>
-                    </div>
-                    <div class="card-description">
-                        Each word rotates in 3D on different axes with depth perception.
-                    </div>
-                </a>
+            <div class="animation-row">
+                <div class="row-label">loom99 Logo</div>
+                <div class="animation-grid">
+                    <a href="animations/logo/logo-07-3d-transforms.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Perspective rotation flip</div>
+                    </a>
+                    <a href="animations/logo/logo-07-3d-transforms-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Rotation axis modes</div>
+                    </a>
+                    <a href="animations/logo/logo-07-3d-transforms-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Multi-axis tumbling</div>
+                    </a>
+                </div>
+            </div>
+            <div class="animation-row">
+                <div class="row-label">Do It Now</div>
+                <div class="animation-grid">
+                    <a href="animations/text/text-07-3d-transforms.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Words rotate in 3D</div>
+                    </a>
+                    <a href="animations/text/text-07-3d-transforms-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Perspective variations</div>
+                    </a>
+                    <a href="animations/text/text-07-3d-transforms-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Extreme 3D chaos</div>
+                    </a>
+                </div>
             </div>
         </div>
 
+        <!-- 08: Reveal/Mask -->
         <div class="technique-section">
             <h2 class="technique-title">
                 <span class="technique-number">08</span>
                 Reveal / Mask Animations
             </h2>
-            <div class="animation-grid">
-                <a href="animations/logo/logo-08-reveal-mask.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">loom99 Logo</div>
-                        <div class="badge badge-logo">Logo</div>
-                    </div>
-                    <div class="card-description">
-                        Left-to-right wipe reveals the logo with smooth masking.
-                    </div>
-                </a>
-                <a href="animations/text/text-08-reveal-mask.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">Do It Now</div>
-                        <div class="badge badge-text">Text</div>
-                    </div>
-                    <div class="card-description">
-                        Expanding circular mask reveals text from the center outward.
-                    </div>
-                </a>
+            <div class="animation-row">
+                <div class="row-label">loom99 Logo</div>
+                <div class="animation-grid">
+                    <a href="animations/logo/logo-08-reveal-mask.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Left-to-right wipe</div>
+                    </a>
+                    <a href="animations/logo/logo-08-reveal-mask-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Directional wipe modes</div>
+                    </a>
+                    <a href="animations/logo/logo-08-reveal-mask-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Random reveal types</div>
+                    </a>
+                </div>
+            </div>
+            <div class="animation-row">
+                <div class="row-label">Do It Now</div>
+                <div class="animation-grid">
+                    <a href="animations/text/text-08-reveal-mask.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Circular expanding reveal</div>
+                    </a>
+                    <a href="animations/text/text-08-reveal-mask-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Mask shape modes</div>
+                    </a>
+                    <a href="animations/text/text-08-reveal-mask-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Unpredictable reveals</div>
+                    </a>
+                </div>
             </div>
         </div>
 
+        <!-- 09: Wave/Ripple -->
         <div class="technique-section">
             <h2 class="technique-title">
                 <span class="technique-number">09</span>
                 Wave / Ripple Effects
             </h2>
-            <div class="animation-grid">
-                <a href="animations/logo/logo-09-wave-ripple.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">loom99 Logo</div>
-                        <div class="badge badge-logo">Logo</div>
-                    </div>
-                    <div class="card-description">
-                        Sine wave ripples through logo parts with scaling effects.
-                    </div>
-                </a>
-                <a href="animations/text/text-09-wave-ripple.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">Do It Now</div>
-                        <div class="badge badge-text">Text</div>
-                    </div>
-                    <div class="card-description">
-                        Letters oscillate in wave patterns with multi-frequency motion.
-                    </div>
-                </a>
+            <div class="animation-row">
+                <div class="row-label">loom99 Logo</div>
+                <div class="animation-grid">
+                    <a href="animations/logo/logo-09-wave-ripple.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Sine wave oscillation</div>
+                    </a>
+                    <a href="animations/logo/logo-09-wave-ripple-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Wave intensity modes</div>
+                    </a>
+                    <a href="animations/logo/logo-09-wave-ripple-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Multi-dimensional waves</div>
+                    </a>
+                </div>
+            </div>
+            <div class="animation-row">
+                <div class="row-label">Do It Now</div>
+                <div class="animation-grid">
+                    <a href="animations/text/text-09-wave-ripple.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Multi-frequency letter motion</div>
+                    </a>
+                    <a href="animations/text/text-09-wave-ripple-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Wave function modes</div>
+                    </a>
+                    <a href="animations/text/text-09-wave-ripple-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Chaotic wave patterns</div>
+                    </a>
+                </div>
             </div>
         </div>
 
+        <!-- 10: Typewriter -->
         <div class="technique-section">
             <h2 class="technique-title">
                 <span class="technique-number">10</span>
                 Typewriter / Sequential Reveal
             </h2>
-            <div class="animation-grid">
-                <a href="animations/logo/logo-10-typewriter.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">loom99 Logo</div>
-                        <div class="badge badge-logo">Logo</div>
-                    </div>
-                    <div class="card-description">
-                        Characters appear one by one with monospace typewriter effect and cursor.
-                    </div>
-                </a>
-                <a href="animations/text/text-10-typewriter.html" class="animation-card">
-                    <div class="card-header">
-                        <div class="card-title">Do It Now</div>
-                        <div class="badge badge-text">Text</div>
-                    </div>
-                    <div class="card-description">
-                        Classic typewriter animation with blinking cursor and sequential typing.
-                    </div>
-                </a>
+            <div class="animation-row">
+                <div class="row-label">loom99 Logo</div>
+                <div class="animation-grid">
+                    <a href="animations/logo/logo-10-typewriter.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Monospace typewriter effect</div>
+                    </a>
+                    <a href="animations/logo/logo-10-typewriter-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Typing speed modes</div>
+                    </a>
+                    <a href="animations/logo/logo-10-typewriter-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-logo">Logo</div>
+                        </div>
+                        <div class="card-description">Random pauses and typos</div>
+                    </a>
+                </div>
+            </div>
+            <div class="animation-row">
+                <div class="row-label">Do It Now</div>
+                <div class="animation-grid">
+                    <a href="animations/text/text-10-typewriter.html" class="animation-card">
+                        <div class="card-header">
+                            <div class="card-title">Original</div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Classic typewriter with cursor</div>
+                    </a>
+                    <a href="animations/text/text-10-typewriter-varied.html" class="animation-card varied">
+                        <div class="card-header">
+                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Speed and style modes</div>
+                    </a>
+                    <a href="animations/text/text-10-typewriter-procedural.html" class="animation-card procedural">
+                        <div class="card-header">
+                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
+                            <div class="badge badge-text">Text</div>
+                        </div>
+                        <div class="card-description">Hunt-and-peck chaos</div>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="footer">
-        <p>Click any animation to view. Click again to restart.</p>
+        <p>Click any animation to view. Click again to restart. Refresh randomized versions for new variations.</p>
         <p style="margin-top: 8px;">All animations support reduced-motion preferences for accessibility.</p>
     </div>
 </body>

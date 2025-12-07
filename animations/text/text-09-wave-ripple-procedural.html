@@ -9,38 +9,60 @@
     <script>
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const Random = { range: (min, max) => min + Math.random() * (max - min), int: (min, max) => Math.floor(Random.range(min, max + 1)) };
-        const config = { hueShift: Random.range(-60, 60), satShift: Random.range(-30, 30), lightShift: Random.range(-15, 15), amplitude: Random.range(15, 60), waveCount: Random.range(1, 8), speed: Random.range(1, 6), duration: Random.range(2000, 5000), scaleAmp: Random.range(0.1, 0.5), rotAmp: Random.range(0, 30), freq1: Random.range(1, 5), freq2: Random.range(1, 5), phase1: Random.range(0, Math.PI * 2), phase2: Random.range(0, Math.PI * 2) };
+
+        // Variables that will be regenerated on each restart
+        let config;
+        let letters;
+
         const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftColor: (hsl, hueShift, satShift, lightShift) => ({ h: (hsl.h + hueShift + 360) % 360, s: Math.max(0, Math.min(100, hsl.s + satShift)), l: Math.max(0, Math.min(100, hsl.l + lightShift)) }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
-        const words = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW', element: document.getElementById('word3') } ];
-        const letters = [];
-        words.forEach((word, wordIndex) => {
-            const chars = word.text.split('');
-            chars.forEach((char, charIndex) => {
-                const span = document.createElement('span'); span.className = 'letter'; span.textContent = char;
-                const colors = [ColorRandom.baseColors.red, ColorRandom.baseColors.orange, ColorRandom.baseColors.yellow];
-                const color = ColorRandom.toHSL(ColorRandom.shiftColor(colors[wordIndex], config.hueShift, config.satShift, config.lightShift));
-                span.style.color = color; span.style.textShadow = `0 0 20px ${color}`;
-                word.element.appendChild(span);
-                letters.push({ element: span, index: letters.length, baseDelay: Random.range(0, 500), phaseOffset: Random.range(0, Math.PI * 2) });
-            });
-        });
-        if (!prefersReducedMotion) {
-            let startTime = null;
-            function animate(timestamp) {
-                if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
-                letters.forEach((letter, i) => {
-                    const time = (elapsed + letter.baseDelay) / 1000;
-                    const wavePhase = (i / letters.length) * Math.PI * 2 * config.waveCount + letter.phaseOffset;
-                    const y = (Math.sin(time * config.freq1 + wavePhase + config.phase1) + Math.cos(time * config.freq2 + wavePhase * 0.5 + config.phase2)) * config.amplitude * 0.5 * Math.max(0, 1 - elapsed / config.duration);
-                    const scale = 1 + Math.sin(time * config.speed + wavePhase) * config.scaleAmp * Math.max(0, 1 - elapsed / config.duration);
-                    const rotation = Math.sin(time * (config.speed * 0.7) + wavePhase * 1.3) * config.rotAmp * Math.max(0, 1 - elapsed / config.duration);
-                    letter.element.style.transform = `translateY(${y}px) scale(${scale}) rotate(${rotation}deg)`;
+
+        function initializeParameters() {
+            // Clear existing letters from DOM
+            const words = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW', element: document.getElementById('word3') } ];
+            words.forEach(word => { while (word.element.firstChild) { word.element.removeChild(word.element.firstChild); } });
+
+            // Generate config
+            config = { hueShift: Random.range(-60, 60), satShift: Random.range(-30, 30), lightShift: Random.range(-15, 15), amplitude: Random.range(15, 60), waveCount: Random.range(1, 8), speed: Random.range(1, 6), duration: Random.range(2000, 5000), scaleAmp: Random.range(0.1, 0.5), rotAmp: Random.range(0, 30), freq1: Random.range(1, 5), freq2: Random.range(1, 5), phase1: Random.range(0, Math.PI * 2), phase2: Random.range(0, Math.PI * 2) };
+
+            // Create letters array
+            letters = [];
+            words.forEach((word, wordIndex) => {
+                const chars = word.text.split('');
+                chars.forEach((char, charIndex) => {
+                    const span = document.createElement('span'); span.className = 'letter'; span.textContent = char;
+                    const colors = [ColorRandom.baseColors.red, ColorRandom.baseColors.orange, ColorRandom.baseColors.yellow];
+                    const color = ColorRandom.toHSL(ColorRandom.shiftColor(colors[wordIndex], config.hueShift, config.satShift, config.lightShift));
+                    span.style.color = color; span.style.textShadow = `0 0 20px ${color}`;
+                    word.element.appendChild(span);
+                    letters.push({ element: span, index: letters.length, baseDelay: Random.range(0, 500), phaseOffset: Random.range(0, Math.PI * 2) });
                 });
-                if (elapsed < config.duration) { requestAnimationFrame(animate); }
-                else { letters.forEach(letter => { letter.element.style.transform = 'none'; }); }
-            }
-            function restart() { startTime = null; requestAnimationFrame(animate); }
-            requestAnimationFrame(animate); document.body.addEventListener('click', restart);
+            });
+        }
+
+        let startTime = null;
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
+            letters.forEach((letter, i) => {
+                const time = (elapsed + letter.baseDelay) / 1000;
+                const wavePhase = (i / letters.length) * Math.PI * 2 * config.waveCount + letter.phaseOffset;
+                const y = (Math.sin(time * config.freq1 + wavePhase + config.phase1) + Math.cos(time * config.freq2 + wavePhase * 0.5 + config.phase2)) * config.amplitude * 0.5 * Math.max(0, 1 - elapsed / config.duration);
+                const scale = 1 + Math.sin(time * config.speed + wavePhase) * config.scaleAmp * Math.max(0, 1 - elapsed / config.duration);
+                const rotation = Math.sin(time * (config.speed * 0.7) + wavePhase * 1.3) * config.rotAmp * Math.max(0, 1 - elapsed / config.duration);
+                letter.element.style.transform = `translateY(${y}px) scale(${scale}) rotate(${rotation}deg)`;
+            });
+            if (elapsed < config.duration) { requestAnimationFrame(animate); }
+            else { letters.forEach(letter => { letter.element.style.transform = 'none'; }); }
+        }
+        function restart() {
+            initializeParameters();  // Regenerate all random parameters
+            startTime = null;
+            requestAnimationFrame(animate);
+        }
+
+        if (!prefersReducedMotion) {
+            initializeParameters();
+            requestAnimationFrame(animate);
+            document.body.addEventListener('click', restart);
         }
     </script>
 </body>

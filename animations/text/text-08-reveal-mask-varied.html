@@ -19,28 +19,54 @@
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const Random = { range: (min, max) => min + Math.random() * (max - min), pick: (arr) => arr[Math.floor(Math.random() * arr.length)], vary: (base, v) => base + Random.range(-v, v) };
         const modes = [ { name: 'left-right', init: (mask) => { mask.setAttribute('x', '0'); mask.setAttribute('width', '0'); }, update: (mask, p) => { mask.setAttribute('width', 700 * p); } }, { name: 'right-left', init: (mask) => { mask.setAttribute('x', '700'); mask.setAttribute('width', '0'); }, update: (mask, p) => { mask.setAttribute('x', 700 * (1 - p)); mask.setAttribute('width', 700 * p); } }, { name: 'center-out', init: (mask) => { mask.setAttribute('x', '350'); mask.setAttribute('width', '0'); }, update: (mask, p) => { const w = 700 * p; mask.setAttribute('x', 350 - w / 2); mask.setAttribute('width', w); } } ];
-        const mode = Random.pick(modes);
-        const config = { hueShift: Random.range(-15, 15), duration: Random.vary(2000, 400) };
-        console.log('Reveal mode:', mode.name);
+
+        // Variables that will be regenerated on each restart
+        let mode;
+        let config;
+
         const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftHue: (hsl, shift) => ({ h: (hsl.h + shift + 360) % 360, s: hsl.s, l: hsl.l }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
-        const texts = document.querySelectorAll('text');
-        texts[0].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.hueShift)));
-        texts[1].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.hueShift)));
-        texts[2].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.hueShift)));
-        if (!prefersReducedMotion) {
+
+        function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+        function initializeParameters() {
+            // Select mode and config
+            mode = Random.pick(modes);
+            config = { hueShift: Random.range(-15, 15), duration: Random.vary(2000, 400) };
+            console.log('Reveal mode:', mode.name);
+
+            // Apply colors
+            const texts = document.querySelectorAll('text');
+            texts[0].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.hueShift)));
+            texts[1].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.hueShift)));
+            texts[2].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.hueShift)));
+
+            // Initialize mask
             const maskShape = document.getElementById('maskShape');
             mode.init(maskShape);
-            function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-            let startTime = null;
-            function animate(timestamp) {
-                if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
-                const progress = Math.min(1, elapsed / config.duration), eased = easeOutCubic(progress);
-                mode.update(maskShape, eased);
-                if (progress < 1) { requestAnimationFrame(animate); }
-            }
-            function restart() { startTime = null; mode.init(maskShape); requestAnimationFrame(animate); }
-            requestAnimationFrame(animate); document.body.addEventListener('click', restart);
-        } else { const maskShape = document.getElementById('maskShape'); maskShape.setAttribute('x', '0'); maskShape.setAttribute('width', '700'); }
+        }
+
+        let startTime = null;
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
+            const progress = Math.min(1, elapsed / config.duration), eased = easeOutCubic(progress);
+            const maskShape = document.getElementById('maskShape');
+            mode.update(maskShape, eased);
+            if (progress < 1) { requestAnimationFrame(animate); }
+        }
+        function restart() {
+            initializeParameters();  // Regenerate all random parameters
+            startTime = null;
+            requestAnimationFrame(animate);
+        }
+
+        if (!prefersReducedMotion) {
+            initializeParameters();
+            requestAnimationFrame(animate);
+            document.body.addEventListener('click', restart);
+        } else {
+            const maskShape = document.getElementById('maskShape');
+            maskShape.setAttribute('x', '0'); maskShape.setAttribute('width', '700');
+        }
     </script>
 </body>
 </html>

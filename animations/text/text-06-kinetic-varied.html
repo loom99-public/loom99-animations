@@ -25,13 +25,13 @@
             { name: 'radial', getAngle: (i, total) => (i / total) * Math.PI * 2, desc: 'Radial burst' },
             { name: 'wave', getAngle: (i, total) => Math.PI + Math.sin(i / total * Math.PI * 2) * Math.PI / 2, desc: 'Wave pattern' }
         ];
-        const mode = Random.pick(modes);
-        const config = { hueShift: Random.range(-15, 15), distance: Random.vary(500, 100), rotRange: Random.vary(360, 120), delay: Random.vary(60, 15), duration: Random.vary(1000, 200) };
-        console.log('Kinetic mode:', mode.name);
         const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftHue: (hsl, shift) => ({ h: (hsl.h + shift + 360) % 360, s: hsl.s, l: hsl.l }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
-        document.querySelectorAll('.word1 .letter').forEach(el => el.style.color = ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.hueShift)));
-        document.querySelectorAll('.word2 .letter').forEach(el => el.style.color = ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.hueShift)));
-        document.querySelectorAll('.word3 .letter').forEach(el => el.style.color = ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.hueShift)));
+
+        // Variables that will be regenerated on each restart
+        let mode;
+        let config;
+        let letters;
+
         function easeOutBack(t) { const c1 = 1.70158; const c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
         class Letter {
             constructor(char, element, delay, angle) {
@@ -51,23 +51,55 @@
                 this.element.style.opacity = Math.min(1, progress * 2);
             }
         }
-        const words = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW', element: document.getElementById('word3') } ];
-        const letters = []; let letterIndex = 0; const baseDelay = 0;
-        words.forEach((word, wordIndex) => {
-            const chars = word.text.split('');
-            chars.forEach((char, charIndex) => {
-                const span = document.createElement('span'); span.className = 'letter'; span.textContent = char; word.element.appendChild(span);
-                const totalLetters = words.reduce((sum, w) => sum + w.text.length, 0);
-                const angle = mode.getAngle(letterIndex, totalLetters);
-                const letter = new Letter(char, span, baseDelay + letterIndex * config.delay, angle);
-                letters.push(letter); letterIndex++;
+
+        function initializeParameters() {
+            // Clear existing letters from DOM
+            const words = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW', element: document.getElementById('word3') } ];
+            words.forEach(word => { while (word.element.firstChild) { word.element.removeChild(word.element.firstChild); } });
+
+            // Select random mode and config
+            mode = Random.pick(modes);
+            config = { hueShift: Random.range(-15, 15), distance: Random.vary(500, 100), rotRange: Random.vary(360, 120), delay: Random.vary(60, 15), duration: Random.vary(1000, 200) };
+            console.log('Kinetic mode:', mode.name);
+
+            // Apply colors
+            document.querySelectorAll('.word1 .letter').forEach(el => el.style.color = ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.hueShift)));
+            document.querySelectorAll('.word2 .letter').forEach(el => el.style.color = ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.hueShift)));
+            document.querySelectorAll('.word3 .letter').forEach(el => el.style.color = ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.hueShift)));
+
+            // Create new letters array
+            letters = []; let letterIndex = 0; const baseDelay = 0;
+            words.forEach((word, wordIndex) => {
+                const chars = word.text.split('');
+                chars.forEach((char, charIndex) => {
+                    const span = document.createElement('span'); span.className = 'letter'; span.textContent = char; word.element.appendChild(span);
+                    const totalLetters = words.reduce((sum, w) => sum + w.text.length, 0);
+                    const angle = mode.getAngle(letterIndex, totalLetters);
+                    const letter = new Letter(char, span, baseDelay + letterIndex * config.delay, angle);
+                    letters.push(letter); letterIndex++;
+                });
             });
-        });
+
+            // Apply colors after creating letters
+            document.querySelectorAll('.word1 .letter').forEach(el => el.style.color = ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.hueShift)));
+            document.querySelectorAll('.word2 .letter').forEach(el => el.style.color = ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.hueShift)));
+            document.querySelectorAll('.word3 .letter').forEach(el => el.style.color = ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.hueShift)));
+        }
+
         let startTime = null; const totalDuration = 2000;
         function animate(timestamp) { if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime; letters.forEach(letter => letter.update(elapsed)); if (elapsed < totalDuration) { requestAnimationFrame(animate); } }
-        function restart() { startTime = null; letters.forEach(letter => { letter.element.style.opacity = 0; letter.element.style.transform = 'translate(0, 0) rotate(0deg) scale(0)'; }); requestAnimationFrame(animate); }
-        if (prefersReducedMotion) { letters.forEach(letter => { letter.element.style.opacity = 1; letter.element.style.transform = 'none'; }); }
-        else { requestAnimationFrame(animate); }
+        function restart() {
+            initializeParameters();  // Regenerate all random parameters
+            startTime = null;
+            requestAnimationFrame(animate);
+        }
+        if (prefersReducedMotion) {
+            initializeParameters();
+            letters.forEach(letter => { letter.element.style.opacity = 1; letter.element.style.transform = 'none'; });
+        } else {
+            initializeParameters();
+            requestAnimationFrame(animate);
+        }
         document.body.addEventListener('click', restart);
     </script>
 </body>

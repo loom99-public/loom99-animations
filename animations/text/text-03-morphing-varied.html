@@ -85,27 +85,6 @@
             }
         ];
 
-        const selectedMode = Random.pick(modes);
-        console.log(`Morph mode: ${selectedMode.name} - ${selectedMode.description}`);
-
-        // Randomization config
-        const config = {
-            timing: {
-                enabled: true,
-                durationVariance: 0.2,
-                staggerVariance: 0.2
-            },
-            colors: {
-                enabled: true,
-                hueShift: Random.range(-15, 15)
-            },
-            effects: {
-                enabled: true,
-                strokeVariance: 0.8,
-                glowVariance: 1.5
-            }
-        };
-
         // Color utilities
         const ColorRandom = {
             baseColors: {
@@ -121,15 +100,11 @@
             toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
         };
 
-        const palette = config.colors.enabled ? {
-            red: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.colors.hueShift)),
-            orange: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.colors.hueShift)),
-            yellow: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.colors.hueShift))
-        } : {
-            red: '#ff2d2d',
-            orange: '#ff6b00',
-            yellow: '#ffdd00'
-        };
+        // Variables that will be regenerated on each restart
+        let selectedMode;
+        let config;
+        let palette;
+        let shapes;
 
         function easeInOutCubic(t) {
             return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -219,82 +194,123 @@
             }
         }
 
-        const shapes = [];
+        function initializeParameters() {
+            // Clear existing shapes from SVG
+            while (svg.firstChild) {
+                svg.removeChild(svg.firstChild);
+            }
 
-        // DO - morphs from selected mode shapes
-        shapes.push(new MorphingShape(
-            selectedMode.getStartShape('M 100 20 L 100 100'),
-            'M 100 20 L 100 100',
-            palette.red, 0
-        ));
+            // Select random mode
+            selectedMode = Random.pick(modes);
+            console.log(`Morph mode: ${selectedMode.name} - ${selectedMode.description}`);
 
-        shapes.push(new MorphingShape(
-            selectedMode.getStartShape('M 100 20 L 160 20 L 160 60 L 160 100 L 100 100'),
-            'M 100 20 L 160 20 L 160 60 L 160 100 L 100 100',
-            palette.red, 100
-        ));
+            // Randomization config
+            config = {
+                timing: {
+                    enabled: true,
+                    durationVariance: 0.2,
+                    staggerVariance: 0.2
+                },
+                colors: {
+                    enabled: true,
+                    hueShift: Random.range(-15, 15)
+                },
+                effects: {
+                    enabled: true,
+                    strokeVariance: 0.8,
+                    glowVariance: 1.5
+                }
+            };
 
-        shapes.push(new MorphingShape(
-            selectedMode.getStartShape('M 200 60 L 200 20 L 280 20 L 280 60 L 280 100 L 200 100 L 200 60'),
-            'M 200 60 L 200 20 L 280 20 L 280 60 L 280 100 L 200 100 L 200 60',
-            palette.red, 200
-        ));
+            // Apply color shifts
+            palette = config.colors.enabled ? {
+                red: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.colors.hueShift)),
+                orange: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.colors.hueShift)),
+                yellow: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.colors.hueShift))
+            } : {
+                red: '#ff2d2d',
+                orange: '#ff6b00',
+                yellow: '#ffdd00'
+            };
 
-        // IT
-        shapes.push(new MorphingShape(
-            selectedMode.getStartShape('M 100 140 L 100 200'),
-            'M 100 140 L 100 200',
-            palette.orange, 300
-        ));
+            // Create new shapes array
+            shapes = [];
 
-        shapes.push(new MorphingShape(
-            selectedMode.getStartShape('M 170 140 L 170 200'),
-            'M 170 140 L 170 200',
-            palette.orange, 350
-        ));
+            // DO - morphs from selected mode shapes
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 100 20 L 100 100'),
+                'M 100 20 L 100 100',
+                palette.red, 0
+            ));
 
-        shapes.push(new MorphingShape(
-            selectedMode.getStartShape('M 140 140 L 200 140'),
-            'M 140 140 L 200 140',
-            palette.orange, 400
-        ));
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 100 20 L 160 20 L 160 60 L 160 100 L 100 100'),
+                'M 100 20 L 160 20 L 160 60 L 160 100 L 100 100',
+                palette.red, 100
+            ));
 
-        // NOW
-        shapes.push(new MorphingShape(
-            selectedMode.getStartShape('M 80 220 L 80 280'),
-            'M 80 220 L 80 280',
-            palette.yellow, 450
-        ));
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 200 60 L 200 20 L 280 20 L 280 60 L 280 100 L 200 100 L 200 60'),
+                'M 200 60 L 200 20 L 280 20 L 280 60 L 280 100 L 200 100 L 200 60',
+                palette.red, 200
+            ));
 
-        shapes.push(new MorphingShape(
-            selectedMode.getStartShape('M 80 220 L 140 280'),
-            'M 80 220 L 140 280',
-            palette.yellow, 500
-        ));
+            // IT
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 100 140 L 100 200'),
+                'M 100 140 L 100 200',
+                palette.orange, 300
+            ));
 
-        shapes.push(new MorphingShape(
-            selectedMode.getStartShape('M 140 220 L 140 280'),
-            'M 140 220 L 140 280',
-            palette.yellow, 550
-        ));
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 170 140 L 170 200'),
+                'M 170 140 L 170 200',
+                palette.orange, 350
+            ));
 
-        shapes.push(new MorphingShape(
-            selectedMode.getStartShape('M 180 250 L 180 220 L 250 220 L 250 250 L 250 280 L 180 280 L 180 250'),
-            'M 180 250 L 180 220 L 250 220 L 250 250 L 250 280 L 180 280 L 180 250',
-            palette.yellow, 600
-        ));
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 140 140 L 200 140'),
+                'M 140 140 L 200 140',
+                palette.orange, 400
+            ));
 
-        shapes.push(new MorphingShape(
-            selectedMode.getStartShape('M 280 220 L 300 280 L 320 250 L 340 280 L 360 220'),
-            'M 280 220 L 300 280 L 320 250 L 340 280 L 360 220',
-            palette.yellow, 650
-        ));
+            // NOW
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 80 220 L 80 280'),
+                'M 80 220 L 80 280',
+                palette.yellow, 450
+            ));
 
-        shapes.push(new MorphingShape(
-            selectedMode.getStartShape('M 390 220 L 390 265 M 390 275 L 390 280'),
-            'M 390 220 L 390 265 M 390 275 L 390 280',
-            palette.yellow, 700
-        ));
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 80 220 L 140 280'),
+                'M 80 220 L 140 280',
+                palette.yellow, 500
+            ));
+
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 140 220 L 140 280'),
+                'M 140 220 L 140 280',
+                palette.yellow, 550
+            ));
+
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 180 250 L 180 220 L 250 220 L 250 250 L 250 280 L 180 280 L 180 250'),
+                'M 180 250 L 180 220 L 250 220 L 250 250 L 250 280 L 180 280 L 180 250',
+                palette.yellow, 600
+            ));
+
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 280 220 L 300 280 L 320 250 L 340 280 L 360 220'),
+                'M 280 220 L 300 280 L 320 250 L 340 280 L 360 220',
+                palette.yellow, 650
+            ));
+
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 390 220 L 390 265 M 390 275 L 390 280'),
+                'M 390 220 L 390 265 M 390 275 L 390 280',
+                palette.yellow, 700
+            ));
+        }
 
         let startTime = null;
 
@@ -311,20 +327,19 @@
         }
 
         function restart() {
+            initializeParameters();  // Regenerate all random parameters
             startTime = null;
-            shapes.forEach(shape => {
-                shape.progress = 0;
-                shape.path.style.opacity = '0';
-            });
             requestAnimationFrame(animate);
         }
 
         if (prefersReducedMotion) {
+            initializeParameters();
             shapes.forEach(shape => {
                 shape.path.style.opacity = '1';
                 shape.path.setAttribute('d', shape.endPath);
             });
         } else {
+            initializeParameters();
             requestAnimationFrame(animate);
         }
 

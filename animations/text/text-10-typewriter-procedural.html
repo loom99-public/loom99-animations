@@ -9,39 +9,71 @@
     <script>
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const Random = { range: (min, max) => min + Math.random() * (max - min), int: (min, max) => Math.floor(Random.range(min, max + 1)) };
-        const config = { hueShift: Random.range(-60, 60), satShift: Random.range(-30, 30), lightShift: Random.range(-15, 15), charDelay: Random.range(30, 250), charDelayVar: Random.range(0, 150), pauseDelay: Random.range(200, 1200), cursorBlink: Random.range(0.3, 1.2), cursorWidth: Random.int(2, 8), cursorHeight: Random.range(60, 100) };
+
+        // Variables that will be regenerated on each restart
+        let config;
+        let colors;
+        let words;
+        let currentWordIndex;
+        let currentCharIndex;
+
         const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftColor: (hsl, hueShift, satShift, lightShift) => ({ h: (hsl.h + hueShift + 360) % 360, s: Math.max(0, Math.min(100, hsl.s + satShift)), l: Math.max(0, Math.min(100, hsl.l + lightShift)) }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
-        const colors = [ ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.red, config.hueShift, config.satShift, config.lightShift)), ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.orange, config.hueShift, config.satShift, config.lightShift)), ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.yellow, config.hueShift, config.satShift, config.lightShift)) ];
-        const cursors = document.querySelectorAll('.cursor');
-        cursors.forEach((cursor, i) => { cursor.style.width = `${config.cursorWidth}px`; cursor.style.height = `${config.cursorHeight}px`; cursor.style.animation = `blink ${config.cursorBlink}s infinite`; });
-        document.querySelector('.word1').style.color = colors[0]; document.querySelector('.word2').style.color = colors[1]; document.querySelector('.word3').style.color = colors[2];
-        const words = [ { text: 'DO', element: document.getElementById('word1'), delay: 0 }, { text: 'IT', element: document.getElementById('word2'), delay: Random.range(config.pauseDelay * 0.5, config.pauseDelay * 1.5) }, { text: 'NOW', element: document.getElementById('word3'), delay: Random.range(config.pauseDelay * 0.5, config.pauseDelay * 1.5) } ];
+
+        function typeCharacter() {
+            if (currentWordIndex >= words.length) { words.forEach(word => { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; }); return; }
+            const word = words[currentWordIndex], chars = word.text.split('');
+            if (currentCharIndex === 0) { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'inline-block'; }
+            if (currentCharIndex < chars.length) {
+                const span = document.createElement('span'); span.className = 'letter'; span.textContent = chars[currentCharIndex]; span.style.opacity = '1';
+                const cursor = word.element.querySelector('.cursor'); word.element.insertBefore(span, cursor);
+                currentCharIndex++; setTimeout(typeCharacter, config.charDelay + Random.range(-config.charDelayVar, config.charDelayVar));
+            } else {
+                const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none';
+                currentWordIndex++; currentCharIndex = 0;
+                const nextWord = words[currentWordIndex];
+                if (nextWord) { setTimeout(typeCharacter, nextWord.delay); }
+            }
+        }
+
+        function initializeParameters() {
+            // Generate config
+            config = { hueShift: Random.range(-60, 60), satShift: Random.range(-30, 30), lightShift: Random.range(-15, 15), charDelay: Random.range(30, 250), charDelayVar: Random.range(0, 150), pauseDelay: Random.range(200, 1200), cursorBlink: Random.range(0.3, 1.2), cursorWidth: Random.int(2, 8), cursorHeight: Random.range(60, 100) };
+
+            // Generate colors
+            colors = [ ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.red, config.hueShift, config.satShift, config.lightShift)), ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.orange, config.hueShift, config.satShift, config.lightShift)), ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.yellow, config.hueShift, config.satShift, config.lightShift)) ];
+
+            // Apply cursor styling
+            const cursors = document.querySelectorAll('.cursor');
+            cursors.forEach((cursor, i) => { cursor.style.width = `${config.cursorWidth}px`; cursor.style.height = `${config.cursorHeight}px`; cursor.style.animation = `blink ${config.cursorBlink}s infinite`; });
+
+            // Apply colors
+            document.querySelector('.word1').style.color = colors[0];
+            document.querySelector('.word2').style.color = colors[1];
+            document.querySelector('.word3').style.color = colors[2];
+
+            // Setup words
+            words = [ { text: 'DO', element: document.getElementById('word1'), delay: 0 }, { text: 'IT', element: document.getElementById('word2'), delay: Random.range(config.pauseDelay * 0.5, config.pauseDelay * 1.5) }, { text: 'NOW', element: document.getElementById('word3'), delay: Random.range(config.pauseDelay * 0.5, config.pauseDelay * 1.5) } ];
+
+            // Reset state
+            currentWordIndex = 0;
+            currentCharIndex = 0;
+
+            // Clear existing letters
+            words.forEach(word => { const letters = word.element.querySelectorAll('.letter'); letters.forEach(letter => letter.remove()); const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; });
+        }
+
+        function restart() {
+            initializeParameters();  // Regenerate all random parameters
+            setTimeout(typeCharacter, words[0].delay);
+        }
+
         if (!prefersReducedMotion) {
-            let currentWordIndex = 0, currentCharIndex = 0;
-            words.forEach(word => { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; });
-            function typeCharacter() {
-                if (currentWordIndex >= words.length) { words.forEach(word => { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; }); return; }
-                const word = words[currentWordIndex], chars = word.text.split('');
-                if (currentCharIndex === 0) { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'inline-block'; }
-                if (currentCharIndex < chars.length) {
-                    const span = document.createElement('span'); span.className = 'letter'; span.textContent = chars[currentCharIndex]; span.style.opacity = '1';
-                    const cursor = word.element.querySelector('.cursor'); word.element.insertBefore(span, cursor);
-                    currentCharIndex++; setTimeout(typeCharacter, config.charDelay + Random.range(-config.charDelayVar, config.charDelayVar));
-                } else {
-                    const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none';
-                    currentWordIndex++; currentCharIndex = 0;
-                    const nextWord = words[currentWordIndex];
-                    if (nextWord) { setTimeout(typeCharacter, nextWord.delay); }
-                }
-            }
-            function restart() {
-                currentWordIndex = 0; currentCharIndex = 0;
-                words.forEach(word => { const letters = word.element.querySelectorAll('.letter'); letters.forEach(letter => letter.remove()); const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; });
-                setTimeout(typeCharacter, words[0].delay);
-            }
-            setTimeout(typeCharacter, words[0].delay); document.body.addEventListener('click', restart);
+            initializeParameters();
+            setTimeout(typeCharacter, words[0].delay);
+            document.body.addEventListener('click', restart);
         } else {
-            words.forEach(word => {
+            const staticWords = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW', element: document.getElementById('word3') } ];
+            staticWords.forEach(word => {
                 const chars = word.text.split(''), cursor = word.element.querySelector('.cursor');
                 chars.forEach(char => { const span = document.createElement('span'); span.className = 'letter'; span.textContent = char; span.style.opacity = '1'; word.element.insertBefore(span, cursor); });
                 cursor.style.display = 'none';

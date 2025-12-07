@@ -35,26 +35,35 @@
     <script>
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const Random = { range: (min, max) => min + Math.random() * (max - min), int: (min, max) => Math.floor(Random.range(min, max + 1)) };
-        const config = {
-            rgbOffset: [Random.range(2, 10), Random.range(-10, -2), Random.range(1, 8)],
-            jitter: Random.range(5, 25),
-            skewRange: Random.range(3, 15),
-            scanOpacity: Random.range(0.2, 0.8),
-            glitchDur: Random.range(800, 1600),
-            totalDur: Random.range(1500, 2500),
-            hueShift: Random.range(-60, 60),
-            satShift: Random.range(-30, 30),
-            lightShift: Random.range(-15, 15),
-            frequency: Random.range(0.08, 0.15)
-        };
-        console.log('Procedural glitch config:', config);
+
+        // Variables that will be regenerated on each restart
+        let config;
+
+        function initializeParameters() {
+            config = {
+                rgbOffset: [Random.range(2, 10), Random.range(-10, -2), Random.range(1, 8)],
+                jitter: Random.range(5, 25),
+                skewRange: Random.range(3, 15),
+                scanOpacity: Random.range(0.2, 0.8),
+                glitchDur: Random.range(800, 1600),
+                totalDur: Random.range(1500, 2500),
+                hueShift: Random.range(-60, 60),
+                satShift: Random.range(-30, 30),
+                lightShift: Random.range(-15, 15),
+                frequency: Random.range(0.08, 0.15)
+            };
+            console.log('Procedural glitch config:', config);
+
+            // Apply color shifts
+            document.querySelectorAll('.line1').forEach(el => el.style.color = `hsl(${config.hueShift}, ${100 + config.satShift}%, ${59 + config.lightShift}%)`);
+            document.querySelectorAll('.line2').forEach(el => el.style.color = `hsl(${25 + config.hueShift}, ${100 + config.satShift}%, ${50 + config.lightShift}%)`);
+            document.querySelectorAll('.line3').forEach(el => el.style.color = `hsl(${50 + config.hueShift}, ${100 + config.satShift}%, ${50 + config.lightShift}%)`);
+        }
+
         if (!prefersReducedMotion) {
             const text = document.querySelector('.text');
             const glitchLayers = document.querySelectorAll('.glitch-layer');
             const scanline = document.querySelector('.scanline');
-            document.querySelectorAll('.line1').forEach(el => el.style.color = `hsl(${config.hueShift}, ${100 + config.satShift}%, ${59 + config.lightShift}%)`);
-            document.querySelectorAll('.line2').forEach(el => el.style.color = `hsl(${25 + config.hueShift}, ${100 + config.satShift}%, ${50 + config.lightShift}%)`);
-            document.querySelectorAll('.line3').forEach(el => el.style.color = `hsl(${50 + config.hueShift}, ${100 + config.satShift}%, ${50 + config.lightShift}%)`);
             let startTime = null;
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
@@ -88,9 +97,16 @@
                     scanline.style.opacity = 0; text.style.transform = 'none';
                 }
             }
-            function restart() { startTime = null; text.style.transform = 'none'; glitchLayers.forEach(layer => { layer.style.opacity = 0; }); scanline.style.opacity = 0; requestAnimationFrame(animate); }
+            function restart() {
+                initializeParameters();  // Regenerate all random parameters
+                startTime = null; text.style.transform = 'none'; glitchLayers.forEach(layer => { layer.style.opacity = 0; }); scanline.style.opacity = 0; requestAnimationFrame(animate);
+            }
+
+            initializeParameters();
             requestAnimationFrame(animate);
             document.body.addEventListener('click', restart);
+        } else {
+            initializeParameters();
         }
     </script>
 </body>

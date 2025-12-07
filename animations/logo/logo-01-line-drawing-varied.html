@@ -96,31 +96,13 @@
             }
         ];
 
-        // Select random mode
-        const selectedMode = Random.pick(modes);
-        console.log(`Animation mode: ${selectedMode.name} - ${selectedMode.description}`);
-
-        // Randomization config
-        const config = {
-            timing: {
-                enabled: true,
-                durationVariance: 0.15,
-                staggerVariance: 0.2
-            },
-            colors: {
-                enabled: true,
-                hueShift: Random.range(-15, 15)
-            },
-            motion: {
-                enabled: true,
-                useMode: true
-            },
-            effects: {
-                enabled: true,
-                strokeVariance: 1.5,
-                glowVariance: 2
-            }
-        };
+        // Variables that will be regenerated on each restart
+        let selectedMode;
+        let config;
+        let palette;
+        let DURATION;
+        let STAGGER;
+        let lines;
 
         // Color utilities
         const ColorRandom = {
@@ -135,17 +117,6 @@
                 l: hsl.l
             }),
             toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
-        };
-
-        // Apply color shifts
-        const palette = config.colors.enabled ? {
-            cyan: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.cyan, config.colors.hueShift)),
-            purple: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.purple, config.colors.hueShift)),
-            pink: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.pink, config.colors.hueShift))
-        } : {
-            cyan: '#00d4ff',
-            purple: '#7b2ff7',
-            pink: '#ff2d75'
         };
 
         const svg = document.getElementById('logo');
@@ -270,8 +241,6 @@
             }
         }
 
-        const lines = [];
-
         function addLine(startX, startY, points, color, delay, duration = 400, foldDuration = 180) {
             const line = new AnimatedLine(startX, startY, points, color, delay, duration, foldDuration);
             lines.push(line);
@@ -279,86 +248,133 @@
             return line;
         }
 
-        const CYAN = palette.cyan;
-        const PURPLE = palette.purple;
-        const PINK = palette.pink;
-
-        const DURATION = config.timing.enabled ?
-            Random.varyPercent(400, config.timing.durationVariance) : 400;
-        const STAGGER = config.timing.enabled ?
-            Random.varyPercent(80, config.timing.staggerVariance) : 80;
-
-        // Get start positions based on mode
-        const getStart = (index) => {
-            if (!config.motion.enabled || !config.motion.useMode) {
-                return { x: -100, y: 100 };
+        function initializeParameters() {
+            // Clear existing lines from SVG
+            while (svg.lastChild && svg.lastChild.classList && svg.lastChild.classList.contains('line')) {
+                svg.removeChild(svg.lastChild);
             }
-            const base = selectedMode.startDirection();
-            return {
-                x: Random.vary(base.x, 20),
-                y: Random.vary(base.y, 20)
+
+            // Select random mode
+            selectedMode = Random.pick(modes);
+            console.log(`Animation mode: ${selectedMode.name} - ${selectedMode.description}`);
+
+            // Randomization config
+            config = {
+                timing: {
+                    enabled: true,
+                    durationVariance: 0.15,
+                    staggerVariance: 0.2
+                },
+                colors: {
+                    enabled: true,
+                    hueShift: Random.range(-15, 15)
+                },
+                motion: {
+                    enabled: true,
+                    useMode: true
+                },
+                effects: {
+                    enabled: true,
+                    strokeVariance: 1.5,
+                    glowVariance: 2
+                }
             };
-        };
 
-        // L
-        const start0 = getStart(0);
-        addLine(start0.x, start0.y, [
-            {x: 40, y: 40},
-            {x: 40, y: 160},
-            {x: 100, y: 160}
-        ], CYAN, 0, DURATION);
+            // Apply color shifts
+            palette = config.colors.enabled ? {
+                cyan: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.cyan, config.colors.hueShift)),
+                purple: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.purple, config.colors.hueShift)),
+                pink: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.pink, config.colors.hueShift))
+            } : {
+                cyan: '#00d4ff',
+                purple: '#7b2ff7',
+                pink: '#ff2d75'
+            };
 
-        // O (first)
-        const start1 = getStart(1);
-        addLine(start1.x, start1.y, [
-            {x: 150, y: 60},
-            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 150, y: 140},
-            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 150, y: 60}
-        ], PURPLE, STAGGER, DURATION);
+            const CYAN = palette.cyan;
+            const PURPLE = palette.purple;
+            const PINK = palette.pink;
 
-        // O (second)
-        const start2 = getStart(2);
-        addLine(start2.x, start2.y, [
-            {x: 240, y: 60},
-            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 240, y: 140},
-            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 240, y: 60}
-        ], PURPLE, STAGGER * 2, DURATION);
+            DURATION = config.timing.enabled ?
+                Random.varyPercent(400, config.timing.durationVariance) : 400;
+            STAGGER = config.timing.enabled ?
+                Random.varyPercent(80, config.timing.staggerVariance) : 80;
 
-        // M
-        const start3 = getStart(3);
-        addLine(start3.x, start3.y, [
-            {x: 300, y: 160},
-            {x: 300, y: 40},
-            {x: 350, y: 100},
-            {x: 400, y: 40},
-            {x: 400, y: 160}
-        ], PINK, STAGGER * 3, DURATION);
+            // Get start positions based on mode
+            const getStart = (index) => {
+                if (!config.motion.enabled || !config.motion.useMode) {
+                    return { x: -100, y: 100 };
+                }
+                const base = selectedMode.startDirection();
+                return {
+                    x: Random.vary(base.x, 20),
+                    y: Random.vary(base.y, 20)
+                };
+            };
 
-        // 9 (first)
-        const start4 = getStart(4);
-        addLine(start4.x, start4.y, [
-            {x: 460, y: 70},
-            {type: 'Q', cx: 460, cy: 45, x: 480, y: 45},
-            {type: 'Q', cx: 500, cy: 45, x: 500, y: 70},
-            {type: 'Q', cx: 500, cy: 95, x: 480, y: 95},
-            {type: 'Q', cx: 460, cy: 95, x: 460, y: 70},
-            {x: 500, y: 70},
-            {type: 'Q', cx: 500, cy: 110, x: 485, y: 135},
-            {type: 'Q', cx: 470, cy: 160, x: 445, y: 165}
-        ], CYAN, STAGGER * 4, DURATION);
+            // Initialize lines array
+            lines = [];
 
-        // 9 (second)
-        const start5 = getStart(5);
-        addLine(start5.x, start5.y, [
-            {x: 540, y: 70},
-            {type: 'Q', cx: 540, cy: 45, x: 560, y: 45},
-            {type: 'Q', cx: 580, cy: 45, x: 580, y: 70},
-            {type: 'Q', cx: 580, cy: 95, x: 560, y: 95},
-            {type: 'Q', cx: 540, cy: 95, x: 540, y: 70},
-            {x: 580, y: 70},
-            {type: 'Q', cx: 580, cy: 110, x: 565, y: 135},
-            {type: 'Q', cx: 550, cy: 160, x: 525, y: 165}
-        ], CYAN, STAGGER * 5, DURATION);
+            // L
+            const start0 = getStart(0);
+            addLine(start0.x, start0.y, [
+                {x: 40, y: 40},
+                {x: 40, y: 160},
+                {x: 100, y: 160}
+            ], CYAN, 0, DURATION);
+
+            // O (first)
+            const start1 = getStart(1);
+            addLine(start1.x, start1.y, [
+                {x: 150, y: 60},
+                {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 150, y: 140},
+                {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 150, y: 60}
+            ], PURPLE, STAGGER, DURATION);
+
+            // O (second)
+            const start2 = getStart(2);
+            addLine(start2.x, start2.y, [
+                {x: 240, y: 60},
+                {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 240, y: 140},
+                {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 240, y: 60}
+            ], PURPLE, STAGGER * 2, DURATION);
+
+            // M
+            const start3 = getStart(3);
+            addLine(start3.x, start3.y, [
+                {x: 300, y: 160},
+                {x: 300, y: 40},
+                {x: 350, y: 100},
+                {x: 400, y: 40},
+                {x: 400, y: 160}
+            ], PINK, STAGGER * 3, DURATION);
+
+            // 9 (first)
+            const start4 = getStart(4);
+            addLine(start4.x, start4.y, [
+                {x: 460, y: 70},
+                {type: 'Q', cx: 460, cy: 45, x: 480, y: 45},
+                {type: 'Q', cx: 500, cy: 45, x: 500, y: 70},
+                {type: 'Q', cx: 500, cy: 95, x: 480, y: 95},
+                {type: 'Q', cx: 460, cy: 95, x: 460, y: 70},
+                {x: 500, y: 70},
+                {type: 'Q', cx: 500, cy: 110, x: 485, y: 135},
+                {type: 'Q', cx: 470, cy: 160, x: 445, y: 165}
+            ], CYAN, STAGGER * 4, DURATION);
+
+            // 9 (second)
+            const start5 = getStart(5);
+            addLine(start5.x, start5.y, [
+                {x: 540, y: 70},
+                {type: 'Q', cx: 540, cy: 45, x: 560, y: 45},
+                {type: 'Q', cx: 580, cy: 45, x: 580, y: 70},
+                {type: 'Q', cx: 580, cy: 95, x: 560, y: 95},
+                {type: 'Q', cx: 540, cy: 95, x: 540, y: 70},
+                {x: 580, y: 70},
+                {type: 'Q', cx: 580, cy: 110, x: 565, y: 135},
+                {type: 'Q', cx: 550, cy: 160, x: 525, y: 165}
+            ], CYAN, STAGGER * 5, DURATION);
+        }
 
         let startTime = null;
 
@@ -375,20 +391,13 @@
         }
 
         function restart() {
+            initializeParameters();  // Regenerate all random parameters
             startTime = null;
-            lines.forEach(line => {
-                line.progress = 0;
-                line.foldProgress = 0;
-                line.started = false;
-                line.finished = false;
-                line.folding = false;
-                line.foldComplete = false;
-                line.path.style.opacity = '0';
-            });
             requestAnimationFrame(animate);
         }
 
         if (prefersReducedMotion) {
+            initializeParameters();
             lines.forEach(line => {
                 line.foldComplete = true;
                 line.path.style.opacity = '1';
@@ -406,6 +415,7 @@
                 line.path.setAttribute('d', d);
             });
         } else {
+            initializeParameters();
             requestAnimationFrame(animate);
         }
 

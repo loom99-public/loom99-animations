@@ -88,32 +88,6 @@
             }
         ];
 
-        // Select random mode
-        const selectedMode = Random.pick(modes);
-        console.log(`Animation mode: ${selectedMode.name} - ${selectedMode.description}`);
-
-        // Randomization config
-        const config = {
-            timing: {
-                enabled: true,
-                durationVariance: 0.2,
-                staggerVariance: 0.2
-            },
-            colors: {
-                enabled: true,
-                hueShift: Random.range(-15, 15)
-            },
-            motion: {
-                enabled: true,
-                useMode: true
-            },
-            effects: {
-                enabled: true,
-                strokeVariance: 0.8,
-                glowVariance: 1.5
-            }
-        };
-
         // Color utilities
         const ColorRandom = {
             baseColors: {
@@ -129,19 +103,14 @@
             toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
         };
 
-        // Apply color shifts
-        const palette = config.colors.enabled ? {
-            red: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.colors.hueShift)),
-            orange: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.colors.hueShift)),
-            yellow: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.colors.hueShift))
-        } : {
-            red: '#ff2d2d',
-            orange: '#ff6b00',
-            yellow: '#ffdd00'
-        };
-
         const svg = document.getElementById('text');
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // Variables that will be regenerated on each restart
+        let selectedMode;
+        let config;
+        let palette;
+        let lines;
 
         function easeOutQuart(t) {
             return 1 - Math.pow(1 - t, 4);
@@ -258,8 +227,6 @@
             }
         }
 
-        const lines = [];
-
         function addLine(startX, startY, points, color, delay, duration = 350, foldDuration = 150) {
             const line = new AnimatedLine(startX, startY, points, color, delay, duration, foldDuration);
             lines.push(line);
@@ -267,171 +234,204 @@
             return line;
         }
 
-        const RED = palette.red;
-        const ORANGE = palette.orange;
-        const YELLOW = palette.yellow;
-
-        const BASE_DURATION = config.timing.enabled ?
-            Random.varyPercent(350, config.timing.durationVariance) : 350;
-        const SYLLABLE = 200;
-        const PAUSE = 100;
-
-        // Get start positions based on mode
-        const getStart = (index) => {
-            if (!config.motion.enabled || !config.motion.useMode) {
-                return { x: -150, y: 70 };
+        function initializeParameters() {
+            // Clear existing lines from SVG
+            while (svg.firstChild) {
+                svg.removeChild(svg.firstChild);
             }
-            const base = selectedMode.startDirection();
-            return {
-                x: Random.vary(base.x, 30),
-                y: Random.vary(base.y, 30)
+
+            // Select random mode
+            selectedMode = Random.pick(modes);
+            console.log(`Animation mode: ${selectedMode.name} - ${selectedMode.description}`);
+
+            // Randomization config
+            config = {
+                timing: {
+                    enabled: true,
+                    durationVariance: 0.2,
+                    staggerVariance: 0.2
+                },
+                colors: {
+                    enabled: true,
+                    hueShift: Random.range(-15, 15)
+                },
+                motion: {
+                    enabled: true,
+                    useMode: true
+                },
+                effects: {
+                    enabled: true,
+                    strokeVariance: 0.8,
+                    glowVariance: 1.5
+                }
             };
-        };
 
-        // ===== DO =====
-        const doStart = 0;
-        const doDur = config.timing.enabled ? Random.varyPercent(SYLLABLE, config.timing.durationVariance) : SYLLABLE;
+            // Apply color shifts
+            palette = config.colors.enabled ? {
+                red: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.colors.hueShift)),
+                orange: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.colors.hueShift)),
+                yellow: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.colors.hueShift))
+            } : {
+                red: '#ff2d2d',
+                orange: '#ff6b00',
+                yellow: '#ffdd00'
+            };
 
-        // D - vertical
-        const start0 = getStart(0);
-        addLine(start0.x, start0.y, [
-            {x: 100, y: 20},
-            {x: 100, y: 100}
-        ], RED, doStart, doDur);
+            // Create new lines array
+            lines = [];
 
-        // D - curve
-        const start1 = getStart(1);
-        addLine(start1.x, start1.y, [
-            {x: 100, y: 20},
-            {type: 'Q', cx: 160, cy: 20, x: 160, y: 60},
-            {type: 'Q', cx: 160, cy: 100, x: 100, y: 100}
-        ], RED, doStart + Random.vary(20, 5), doDur);
+            const RED = palette.red;
+            const ORANGE = palette.orange;
+            const YELLOW = palette.yellow;
 
-        // O - left arc
-        const start2 = getStart(2);
-        addLine(start2.x, start2.y, [
-            {x: 200, y: 60},
-            {type: 'Q', cx: 200, cy: 20, x: 240, y: 20},
-            {type: 'Q', cx: 280, cy: 20, x: 280, y: 60}
-        ], RED, doStart + Random.vary(40, 8), doDur);
+            const BASE_DURATION = config.timing.enabled ?
+                Random.varyPercent(350, config.timing.durationVariance) : 350;
+            const SYLLABLE = 200;
+            const PAUSE = 100;
 
-        // O - right arc
-        const start3 = getStart(3);
-        addLine(start3.x, start3.y, [
-            {x: 280, y: 60},
-            {type: 'Q', cx: 280, cy: 100, x: 240, y: 100},
-            {type: 'Q', cx: 200, cy: 100, x: 200, y: 60}
-        ], RED, doStart + Random.vary(50, 10), doDur);
+            // Get start positions based on mode
+            const getStart = (index) => {
+                if (!config.motion.enabled || !config.motion.useMode) {
+                    return { x: -150, y: 70 };
+                }
+                const base = selectedMode.startDirection();
+                return {
+                    x: Random.vary(base.x, 30),
+                    y: Random.vary(base.y, 30)
+                };
+            };
 
-        // ===== IT =====
-        const itStart = doStart + doDur + PAUSE;
-        const itDur = config.timing.enabled ? Random.varyPercent(SYLLABLE, config.timing.durationVariance) : SYLLABLE;
-        const itY = 140;
+            // ===== DO =====
+            const doStart = 0;
+            const doDur = config.timing.enabled ? Random.varyPercent(SYLLABLE, config.timing.durationVariance) : SYLLABLE;
 
-        // I - vertical
-        const start4 = getStart(4);
-        addLine(start4.x, start4.y, [
-            {x: 100, y: itY},
-            {x: 100, y: itY + 60}
-        ], ORANGE, itStart, itDur);
+            // D - vertical
+            const start0 = getStart(0);
+            addLine(start0.x, start0.y, [
+                {x: 100, y: 20},
+                {x: 100, y: 100}
+            ], RED, doStart, doDur);
 
-        // T - vertical
-        const start5 = getStart(5);
-        addLine(start5.x, start5.y, [
-            {x: 170, y: itY},
-            {x: 170, y: itY + 60}
-        ], ORANGE, itStart + Random.vary(30, 6), itDur);
+            // D - curve
+            const start1 = getStart(1);
+            addLine(start1.x, start1.y, [
+                {x: 100, y: 20},
+                {type: 'Q', cx: 160, cy: 20, x: 160, y: 60},
+                {type: 'Q', cx: 160, cy: 100, x: 100, y: 100}
+            ], RED, doStart + Random.vary(20, 5), doDur);
 
-        // T - horizontal
-        const start6 = getStart(6);
-        addLine(start6.x, start6.y, [
-            {x: 140, y: itY},
-            {x: 200, y: itY}
-        ], ORANGE, itStart + Random.vary(40, 8), itDur);
+            // O - left arc
+            const start2 = getStart(2);
+            addLine(start2.x, start2.y, [
+                {x: 200, y: 60},
+                {type: 'Q', cx: 200, cy: 20, x: 240, y: 20},
+                {type: 'Q', cx: 280, cy: 20, x: 280, y: 60}
+            ], RED, doStart + Random.vary(40, 8), doDur);
 
-        // ===== NOW =====
-        const nowStart = itStart + itDur + PAUSE;
-        const nowDur = config.timing.enabled ? Random.varyPercent(SYLLABLE, config.timing.durationVariance) : SYLLABLE;
-        const nowY = 220;
+            // O - right arc
+            const start3 = getStart(3);
+            addLine(start3.x, start3.y, [
+                {x: 280, y: 60},
+                {type: 'Q', cx: 280, cy: 100, x: 240, y: 100},
+                {type: 'Q', cx: 200, cy: 100, x: 200, y: 60}
+            ], RED, doStart + Random.vary(50, 10), doDur);
 
-        // N - left vertical
-        const start7 = getStart(7);
-        addLine(start7.x, start7.y, [
-            {x: 80, y: nowY},
-            {x: 80, y: nowY + 60}
-        ], YELLOW, nowStart, nowDur);
+            // ===== IT =====
+            const itStart = doStart + doDur + PAUSE;
+            const itDur = config.timing.enabled ? Random.varyPercent(SYLLABLE, config.timing.durationVariance) : SYLLABLE;
+            const itY = 140;
 
-        // N - diagonal
-        const start8 = getStart(8);
-        addLine(start8.x, start8.y, [
-            {x: 80, y: nowY},
-            {x: 140, y: nowY + 60}
-        ], YELLOW, nowStart + Random.vary(10, 3), nowDur);
+            // I - vertical
+            const start4 = getStart(4);
+            addLine(start4.x, start4.y, [
+                {x: 100, y: itY},
+                {x: 100, y: itY + 60}
+            ], ORANGE, itStart, itDur);
 
-        // N - right vertical
-        const start9 = getStart(9);
-        addLine(start9.x, start9.y, [
-            {x: 140, y: nowY},
-            {x: 140, y: nowY + 60}
-        ], YELLOW, nowStart + Random.vary(20, 5), nowDur);
+            // T - vertical
+            const start5 = getStart(5);
+            addLine(start5.x, start5.y, [
+                {x: 170, y: itY},
+                {x: 170, y: itY + 60}
+            ], ORANGE, itStart + Random.vary(30, 6), itDur);
 
-        // O - left arc
-        const start10 = getStart(10);
-        addLine(start10.x, start10.y, [
-            {x: 180, y: nowY + 30},
-            {type: 'Q', cx: 180, cy: nowY, x: 215, y: nowY},
-            {type: 'Q', cx: 250, cy: nowY, x: 250, y: nowY + 30}
-        ], YELLOW, nowStart + Random.vary(30, 6), nowDur);
+            // T - horizontal
+            const start6 = getStart(6);
+            addLine(start6.x, start6.y, [
+                {x: 140, y: itY},
+                {x: 200, y: itY}
+            ], ORANGE, itStart + Random.vary(40, 8), itDur);
 
-        // O - right arc
-        const start11 = getStart(11);
-        addLine(start11.x, start11.y, [
-            {x: 250, y: nowY + 30},
-            {type: 'Q', cx: 250, cy: nowY + 60, x: 215, y: nowY + 60},
-            {type: 'Q', cx: 180, cy: nowY + 60, x: 180, y: nowY + 30}
-        ], YELLOW, nowStart + Random.vary(40, 8), nowDur);
+            // ===== NOW =====
+            const nowStart = itStart + itDur + PAUSE;
+            const nowDur = config.timing.enabled ? Random.varyPercent(SYLLABLE, config.timing.durationVariance) : SYLLABLE;
+            const nowY = 220;
 
-        // W - first stroke
-        const start12 = getStart(12);
-        addLine(start12.x, start12.y, [
-            {x: 280, y: nowY},
-            {x: 300, y: nowY + 60}
-        ], YELLOW, nowStart + Random.vary(50, 10), nowDur);
+            // N - left vertical
+            const start7 = getStart(7);
+            addLine(start7.x, start7.y, [
+                {x: 80, y: nowY},
+                {x: 80, y: nowY + 60}
+            ], YELLOW, nowStart, nowDur);
 
-        // W - second stroke
-        const start13 = getStart(13);
-        addLine(start13.x, start13.y, [
-            {x: 300, y: nowY + 60},
-            {x: 320, y: nowY + 30}
-        ], YELLOW, nowStart + Random.vary(60, 12), nowDur);
+            // N - diagonal
+            const start8 = getStart(8);
+            addLine(start8.x, start8.y, [
+                {x: 80, y: nowY},
+                {x: 140, y: nowY + 60}
+            ], YELLOW, nowStart + Random.vary(10, 3), nowDur);
 
-        // W - third stroke
-        const start14 = getStart(14);
-        addLine(start14.x, start14.y, [
-            {x: 320, y: nowY + 30},
-            {x: 340, y: nowY + 60}
-        ], YELLOW, nowStart + Random.vary(70, 14), nowDur);
+            // N - right vertical
+            const start9 = getStart(9);
+            addLine(start9.x, start9.y, [
+                {x: 140, y: nowY},
+                {x: 140, y: nowY + 60}
+            ], YELLOW, nowStart + Random.vary(20, 5), nowDur);
 
-        // W - fourth stroke
-        const start15 = getStart(15);
-        addLine(start15.x, start15.y, [
-            {x: 340, y: nowY + 60},
-            {x: 360, y: nowY}
-        ], YELLOW, nowStart + Random.vary(80, 16), nowDur);
+            // O - left arc
+            const start10 = getStart(10);
+            addLine(start10.x, start10.y, [
+                {x: 180, y: nowY + 30},
+                {type: 'Q', cx: 180, cy: nowY, x: 215, y: nowY},
+                {type: 'Q', cx: 250, cy: nowY, x: 250, y: nowY + 30}
+            ], YELLOW, nowStart + Random.vary(30, 6), nowDur);
 
-        // ! - stem
-        const start16 = getStart(16);
-        addLine(start16.x, start16.y, [
-            {x: 390, y: nowY},
-            {x: 390, y: nowY + 45}
-        ], YELLOW, nowStart + Random.vary(90, 18), nowDur);
+            // O - right arc
+            const start11 = getStart(11);
+            addLine(start11.x, start11.y, [
+                {x: 250, y: nowY + 30},
+                {type: 'Q', cx: 250, cy: nowY + 60, x: 215, y: nowY + 60},
+                {type: 'Q', cx: 180, cy: nowY + 60, x: 180, y: nowY + 30}
+            ], YELLOW, nowStart + Random.vary(40, 8), nowDur);
 
-        // ! - dot
-        const start17 = getStart(17);
-        addLine(start17.x, start17.y, [
-            {x: 390, y: nowY + 55},
-            {x: 390, y: nowY + 60}
-        ], YELLOW, nowStart + Random.vary(100, 20), nowDur);
+            // W - first stroke
+            const start12 = getStart(12);
+            addLine(start12.x, start12.y, [
+                {x: 280, y: nowY},
+                {x: 300, y: nowY + 60}
+            ], YELLOW, nowStart + Random.vary(50, 10), nowDur);
+
+            // W - second stroke
+            const start13 = getStart(13);
+            addLine(start13.x, start13.y, [
+                {x: 300, y: nowY + 60},
+                {x: 320, y: nowY + 30}
+            ], YELLOW, nowStart + Random.vary(60, 12), nowDur);
+
+            // W - third stroke
+            const start14 = getStart(14);
+            addLine(start14.x, start14.y, [
+                {x: 320, y: nowY + 30},
+                {x: 340, y: nowY + 60}
+            ], YELLOW, nowStart + Random.vary(70, 14), nowDur);
+
+            // W - fourth stroke
+            const start15 = getStart(15);
+            addLine(start15.x, start15.y, [
+                {x: 340, y: nowY + 60},
+                {x: 360, y: nowY}
+            ], YELLOW, nowStart + Random.vary(80, 16), nowDur);
+        }
 
         let startTime = null;
 
@@ -448,20 +448,13 @@
         }
 
         function restart() {
+            initializeParameters();  // Regenerate all random parameters
             startTime = null;
-            lines.forEach(line => {
-                line.progress = 0;
-                line.foldProgress = 0;
-                line.started = false;
-                line.finished = false;
-                line.folding = false;
-                line.foldComplete = false;
-                line.path.style.opacity = '0';
-            });
             requestAnimationFrame(animate);
         }
 
         if (prefersReducedMotion) {
+            initializeParameters();
             lines.forEach(line => {
                 line.foldComplete = true;
                 line.path.style.opacity = '1';
@@ -477,6 +470,7 @@
                 line.path.setAttribute('d', d);
             });
         } else {
+            initializeParameters();
             requestAnimationFrame(animate);
         }
 

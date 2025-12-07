@@ -18,31 +18,61 @@
     <script>
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const Random = { range: (min, max) => min + Math.random() * (max - min), int: (min, max) => Math.floor(Random.range(min, max + 1)) };
-        const config = { hueShift: Random.range(-60, 60), satShift: Random.range(-30, 30), lightShift: Random.range(-15, 15), duration: Random.range(1000, 3000), startX: Random.range(0, 700), startY: Random.range(0, 280), dir: Random.int(0, 7) };
+
+        // Variables that will be regenerated on each restart
+        let config;
+        let selectedEasing;
+        let dir;
+
         const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftColor: (hsl, hueShift, satShift, lightShift) => ({ h: (hsl.h + hueShift + 360) % 360, s: Math.max(0, Math.min(100, hsl.s + satShift)), l: Math.max(0, Math.min(100, hsl.l + lightShift)) }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
-        const texts = document.querySelectorAll('text');
-        texts[0].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.red, config.hueShift, config.satShift, config.lightShift)));
-        texts[1].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.orange, config.hueShift, config.satShift, config.lightShift)));
-        texts[2].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.yellow, config.hueShift, config.satShift, config.lightShift)));
         const easingFuncs = [ t => t, t => 1 - Math.pow(1 - t, 3), t => t * t, t => Math.sin(t * Math.PI / 2) ];
-        const selectedEasing = easingFuncs[Random.int(0, easingFuncs.length - 1)];
-        if (!prefersReducedMotion) {
-            const maskShape = document.getElementById('maskShape');
+
+        function initializeParameters() {
+            // Generate config
+            config = { hueShift: Random.range(-60, 60), satShift: Random.range(-30, 30), lightShift: Random.range(-15, 15), duration: Random.range(1000, 3000), startX: Random.range(0, 700), startY: Random.range(0, 280), dir: Random.int(0, 7) };
+
+            // Apply colors
+            const texts = document.querySelectorAll('text');
+            texts[0].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.red, config.hueShift, config.satShift, config.lightShift)));
+            texts[1].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.orange, config.hueShift, config.satShift, config.lightShift)));
+            texts[2].setAttribute('fill', ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.yellow, config.hueShift, config.satShift, config.lightShift)));
+
+            // Select easing
+            selectedEasing = easingFuncs[Random.int(0, easingFuncs.length - 1)];
+
+            // Select direction
             const dirs = [ { x: 0, y: 0, grow: (p) => ({ x: 0, y: 0, w: 700 * p, h: 280 }) }, { x: 700, y: 0, grow: (p) => ({ x: 700 * (1 - p), y: 0, w: 700 * p, h: 280 }) }, { x: 350, y: 140, grow: (p) => ({ x: 350 - 350 * p, y: 140 - 140 * p, w: 700 * p, h: 280 * p }) }, { x: 0, y: 0, grow: (p) => ({ x: 0, y: 0, w: 700, h: 280 * p }) }, { x: 0, y: 280, grow: (p) => ({ x: 0, y: 280 * (1 - p), w: 700, h: 280 * p }) }, { x: Random.range(0, 700), y: Random.range(0, 280), grow: (p) => { const x = Math.min(700, Math.random() * 700 * p); const y = Math.min(280, Math.random() * 280 * p); return { x, y, w: Random.range(100, 700) * p, h: Random.range(50, 280) * p }; } } ];
-            const dir = dirs[Math.min(config.dir, dirs.length - 1)];
+            dir = dirs[Math.min(config.dir, dirs.length - 1)];
+
+            // Initialize mask
+            const maskShape = document.getElementById('maskShape');
             maskShape.setAttribute('x', dir.x); maskShape.setAttribute('y', dir.y); maskShape.setAttribute('width', '0'); maskShape.setAttribute('height', '0');
-            let startTime = null;
-            function animate(timestamp) {
-                if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
-                const progress = Math.min(1, elapsed / config.duration), eased = selectedEasing(progress);
-                const dims = dir.grow(eased);
-                maskShape.setAttribute('x', dims.x); maskShape.setAttribute('y', dims.y);
-                maskShape.setAttribute('width', dims.w); maskShape.setAttribute('height', dims.h);
-                if (progress < 1) { requestAnimationFrame(animate); }
-            }
-            function restart() { startTime = null; maskShape.setAttribute('x', dir.x); maskShape.setAttribute('y', dir.y); maskShape.setAttribute('width', '0'); maskShape.setAttribute('height', '0'); requestAnimationFrame(animate); }
-            requestAnimationFrame(animate); document.body.addEventListener('click', restart);
-        } else { const maskShape = document.getElementById('maskShape'); maskShape.setAttribute('x', '0'); maskShape.setAttribute('y', '0'); maskShape.setAttribute('width', '700'); maskShape.setAttribute('height', '280'); }
+        }
+
+        let startTime = null;
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
+            const progress = Math.min(1, elapsed / config.duration), eased = selectedEasing(progress);
+            const dims = dir.grow(eased);
+            const maskShape = document.getElementById('maskShape');
+            maskShape.setAttribute('x', dims.x); maskShape.setAttribute('y', dims.y);
+            maskShape.setAttribute('width', dims.w); maskShape.setAttribute('height', dims.h);
+            if (progress < 1) { requestAnimationFrame(animate); }
+        }
+        function restart() {
+            initializeParameters();  // Regenerate all random parameters
+            startTime = null;
+            requestAnimationFrame(animate);
+        }
+
+        if (!prefersReducedMotion) {
+            initializeParameters();
+            requestAnimationFrame(animate);
+            document.body.addEventListener('click', restart);
+        } else {
+            const maskShape = document.getElementById('maskShape');
+            maskShape.setAttribute('x', '0'); maskShape.setAttribute('y', '0'); maskShape.setAttribute('width', '700'); maskShape.setAttribute('height', '280');
+        }
     </script>
 </body>
 </html>

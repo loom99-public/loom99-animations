@@ -24,23 +24,18 @@
             vary: (base, variance) => base + Random.range(-variance, variance),
             varyPercent: (base, percent) => base * Random.range(1 - percent, 1 + percent),
         };
-        const config = {
-            timing: { enabled: true, durationVariance: 0.5, staggerVariance: 0.6 },
-            colors: { enabled: true, hueShift: Random.range(-60, 60), satShift: Random.range(-30, 30), lightShift: Random.range(-15, 15) },
-            effects: { enabled: true, strokeVariance: 2, glowVariance: 4 }
-        };
         const ColorRandom = {
             baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } },
             shiftColor: (hsl, hueShift, satShift, lightShift) => ({ h: (hsl.h + hueShift + 360) % 360, s: Math.max(0, Math.min(100, hsl.s + satShift)), l: Math.max(0, Math.min(100, hsl.l + lightShift)) }),
             toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
         };
-        const palette = config.colors.enabled ? {
-            red: ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.red, config.colors.hueShift, config.colors.satShift, config.colors.lightShift)),
-            orange: ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.orange, config.colors.hueShift, config.colors.satShift, config.colors.lightShift)),
-            yellow: ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.yellow, config.colors.hueShift, config.colors.satShift, config.colors.lightShift))
-        } : { red: '#ff2d2d', orange: '#ff6b00', yellow: '#ffdd00' };
-        const easingFunctions = [ t => t, t => 1 - Math.pow(1 - t, 3), t => t * t * t, t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 ];
-        const selectedEasing = Random.pick(easingFunctions);
+
+        // Variables that will be regenerated on each restart
+        let config;
+        let palette;
+        let selectedEasing;
+        let shapes;
+
         function interpolatePath(path1, path2, t) {
             const eased = selectedEasing(t);
             const points1 = parsePath(path1);
@@ -91,28 +86,65 @@
                 this.path.setAttribute('d', d);
             }
         }
-        const shapes = [];
-        shapes.push(new MorphingShape(getRandomStart(), 'M 100 20 L 100 100', palette.red, 0));
-        shapes.push(new MorphingShape(getRandomStart(), 'M 100 20 L 160 20 L 160 60 L 160 100 L 100 100', palette.red, Random.range(50, 150)));
-        shapes.push(new MorphingShape(getRandomStart(), 'M 200 60 L 200 20 L 280 20 L 280 60 L 280 100 L 200 100 L 200 60', palette.red, Random.range(100, 250)));
-        shapes.push(new MorphingShape(getRandomStart(), 'M 100 140 L 100 200', palette.orange, Random.range(200, 350)));
-        shapes.push(new MorphingShape(getRandomStart(), 'M 170 140 L 170 200', palette.orange, Random.range(250, 400)));
-        shapes.push(new MorphingShape(getRandomStart(), 'M 140 140 L 200 140', palette.orange, Random.range(300, 450)));
-        shapes.push(new MorphingShape(getRandomStart(), 'M 80 220 L 80 280', palette.yellow, Random.range(350, 500)));
-        shapes.push(new MorphingShape(getRandomStart(), 'M 80 220 L 140 280', palette.yellow, Random.range(400, 550)));
-        shapes.push(new MorphingShape(getRandomStart(), 'M 140 220 L 140 280', palette.yellow, Random.range(450, 600)));
-        shapes.push(new MorphingShape(getRandomStart(), 'M 180 250 L 180 220 L 250 220 L 250 250 L 250 280 L 180 280 L 180 250', palette.yellow, Random.range(500, 650)));
-        shapes.push(new MorphingShape(getRandomStart(), 'M 280 220 L 300 280 L 320 250 L 340 280 L 360 220', palette.yellow, Random.range(550, 700)));
-        shapes.push(new MorphingShape(getRandomStart(), 'M 390 220 L 390 265 M 390 275 L 390 280', palette.yellow, Random.range(600, 750)));
+
+        function initializeParameters() {
+            // Clear existing shapes from SVG
+            while (svg.firstChild) {
+                svg.removeChild(svg.firstChild);
+            }
+
+            // Randomization config (heavy)
+            config = {
+                timing: { enabled: true, durationVariance: 0.5, staggerVariance: 0.6 },
+                colors: { enabled: true, hueShift: Random.range(-60, 60), satShift: Random.range(-30, 30), lightShift: Random.range(-15, 15) },
+                effects: { enabled: true, strokeVariance: 2, glowVariance: 4 }
+            };
+
+            // Apply wild color shifts
+            palette = config.colors.enabled ? {
+                red: ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.red, config.colors.hueShift, config.colors.satShift, config.colors.lightShift)),
+                orange: ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.orange, config.colors.hueShift, config.colors.satShift, config.colors.lightShift)),
+                yellow: ColorRandom.toHSL(ColorRandom.shiftColor(ColorRandom.baseColors.yellow, config.colors.hueShift, config.colors.satShift, config.colors.lightShift))
+            } : { red: '#ff2d2d', orange: '#ff6b00', yellow: '#ffdd00' };
+
+            // Randomize easing function
+            const easingFunctions = [ t => t, t => 1 - Math.pow(1 - t, 3), t => t * t * t, t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 ];
+            selectedEasing = Random.pick(easingFunctions);
+
+            // Create new shapes array
+            shapes = [];
+            shapes.push(new MorphingShape(getRandomStart(), 'M 100 20 L 100 100', palette.red, 0));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 100 20 L 160 20 L 160 60 L 160 100 L 100 100', palette.red, Random.range(50, 150)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 200 60 L 200 20 L 280 20 L 280 60 L 280 100 L 200 100 L 200 60', palette.red, Random.range(100, 250)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 100 140 L 100 200', palette.orange, Random.range(200, 350)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 170 140 L 170 200', palette.orange, Random.range(250, 400)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 140 140 L 200 140', palette.orange, Random.range(300, 450)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 80 220 L 80 280', palette.yellow, Random.range(350, 500)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 80 220 L 140 280', palette.yellow, Random.range(400, 550)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 140 220 L 140 280', palette.yellow, Random.range(450, 600)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 180 250 L 180 220 L 250 220 L 250 250 L 250 280 L 180 280 L 180 250', palette.yellow, Random.range(500, 650)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 280 220 L 300 280 L 320 250 L 340 280 L 360 220', palette.yellow, Random.range(550, 700)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 390 220 L 390 265 M 390 275 L 390 280', palette.yellow, Random.range(600, 750)));
+        }
+
         let startTime = null;
         function animate(timestamp) {
             if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
             shapes.forEach(shape => shape.update(elapsed));
             const maxTime = 2500; if (elapsed < maxTime) { requestAnimationFrame(animate); }
         }
-        function restart() { startTime = null; shapes.forEach(shape => { shape.progress = 0; shape.path.style.opacity = '0'; }); requestAnimationFrame(animate); }
-        if (prefersReducedMotion) { shapes.forEach(shape => { shape.path.style.opacity = '1'; shape.path.setAttribute('d', shape.endPath); }); }
-        else { requestAnimationFrame(animate); }
+        function restart() {
+            initializeParameters();  // Regenerate all random parameters
+            startTime = null;
+            requestAnimationFrame(animate);
+        }
+        if (prefersReducedMotion) {
+            initializeParameters();
+            shapes.forEach(shape => { shape.path.style.opacity = '1'; shape.path.setAttribute('d', shape.endPath); });
+        } else {
+            initializeParameters();
+            requestAnimationFrame(animate);
+        }
         document.body.addEventListener('click', restart);
     </script>
 </body>

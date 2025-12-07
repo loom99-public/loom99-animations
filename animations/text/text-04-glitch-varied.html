@@ -43,18 +43,29 @@
             { name: 'subtle', rgbOffset: [2, -1, 1], jitter: 5, scanOp: 0.3 },
             { name: 'wild', rgbOffset: [6, -5, 4], jitter: 18, scanOp: 0.7 }
         ];
-        const mode = Random.pick(modes);
-        const config = { hueShift: Random.range(-15, 15), jitterMod: Random.range(0.8, 1.2) };
-        console.log('Glitch mode:', mode.name);
+
+        // Variables that will be regenerated on each restart
+        let mode;
+        let config;
+
+        function initializeParameters() {
+            mode = Random.pick(modes);
+            config = { hueShift: Random.range(-15, 15), jitterMod: Random.range(0.8, 1.2) };
+            console.log('Glitch mode:', mode.name);
+
+            // Apply color shifts
+            document.querySelectorAll('.line1').forEach(el => el.style.color = `hsl(${config.hueShift}, 100%, 59%)`);
+            document.querySelectorAll('.line2').forEach(el => el.style.color = `hsl(${25 + config.hueShift}, 100%, 50%)`);
+            document.querySelectorAll('.line3').forEach(el => el.style.color = `hsl(${50 + config.hueShift}, 100%, 50%)`);
+        }
+
         if (!prefersReducedMotion) {
             const text = document.querySelector('.text');
             const glitchLayers = document.querySelectorAll('.glitch-layer');
             const scanline = document.querySelector('.scanline');
             let startTime = null;
             const totalDuration = 2000; const glitchDuration = 1200;
-            document.querySelectorAll('.line1').forEach(el => el.style.color = `hsl(${config.hueShift}, 100%, 59%)`);
-            document.querySelectorAll('.line2').forEach(el => el.style.color = `hsl(${25 + config.hueShift}, 100%, 50%)`);
-            document.querySelectorAll('.line3').forEach(el => el.style.color = `hsl(${50 + config.hueShift}, 100%, 50%)`);
+
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
@@ -80,12 +91,17 @@
                 }
             }
             function restart() {
+                initializeParameters();  // Regenerate all random parameters
                 startTime = null; text.style.transform = 'none';
                 glitchLayers.forEach(layer => { layer.style.opacity = 0; });
                 scanline.style.opacity = 0; requestAnimationFrame(animate);
             }
+
+            initializeParameters();
             requestAnimationFrame(animate);
             document.body.addEventListener('click', restart);
+        } else {
+            initializeParameters();
         }
     </script>
 </body>

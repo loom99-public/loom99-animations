@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Do It Now - Reveal Mask Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            padding: 20px;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            svg text {
+                opacity: 1 !important;
+            }
+            svg rect {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg id="svg" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <mask id="circleMask">
+                    <circle id="maskCircle" cx="350" cy="140" r="0" fill="white"/>
+                </mask>
+            </defs>
+
+            <g mask="url(#circleMask)">
+                <text x="50" y="80" font-size="80" font-weight="900" fill="#ff2d2d" filter="drop-shadow(0 0 10px #ff2d2d)">DO</text>
+                <text x="50" y="170" font-size="60" font-weight="900" fill="#ff6b00" filter="drop-shadow(0 0 10px #ff6b00)">IT</text>
+                <text x="50" y="260" font-size="80" font-weight="900" fill="#ffdd00" filter="drop-shadow(0 0 10px #ffdd00)">NOW!</text>
+            </g>
+        </svg>
+    </div>
+
+    <script>
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (!prefersReducedMotion) {
+            const maskCircle = document.getElementById('maskCircle');
+
+            function easeOutCubic(t) {
+                return 1 - Math.pow(1 - t, 3);
+            }
+
+            let startTime = null;
+            const duration = 2000;
+            const maxRadius = 600;
+
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(1, elapsed / duration);
+                const eased = easeOutCubic(progress);
+
+                const radius = maxRadius * eased;
+                maskCircle.setAttribute('r', radius);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+
+            function restart() {
+                startTime = null;
+                maskCircle.setAttribute('r', 0);
+                requestAnimationFrame(animate);
+            }
+
+            requestAnimationFrame(animate);
+            document.body.addEventListener('click', restart);
+        } else {
+            const maskCircle = document.getElementById('maskCircle');
+            maskCircle.setAttribute('r', 600);
+        }
+    </script>
+</body>
+</html>

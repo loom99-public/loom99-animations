@@ -70,35 +70,77 @@
         if (!prefersReducedMotion) {
             const maskRect = document.getElementById('maskRect');
 
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitStartTime = null;
+            const EXIT_DURATION = 250;
+
             function easeOutCubic(t) {
                 return 1 - Math.pow(1 - t, 3);
             }
 
+            function easeInCubic(t) {
+                return t * t * t;
+            }
+
             let startTime = null;
-            const duration = 1800;
+            const ENTRANCE_DURATION = 1800;
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
-                const progress = Math.min(1, elapsed / duration);
-                const eased = easeOutCubic(progress);
 
-                const x = -600 + (600 * eased);
-                maskRect.setAttribute('x', x);
+                if (animationState === 'entrance') {
+                    const progress = Math.min(1, elapsed / ENTRANCE_DURATION);
+                    const eased = easeOutCubic(progress);
 
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
+                    const x = -600 + (600 * eased);
+                    maskRect.setAttribute('x', x);
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        animationState = 'hold';
+                    }
+                } else if (animationState === 'exit') {
+                    const exitElapsed = timestamp - exitStartTime;
+                    const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+                    const eased = easeInCubic(progress);
+
+                    // Reverse wipe - wipe away from right to left
+                    const x = 0 + (600 * eased);
+                    maskRect.setAttribute('x', x);
+
+                    if (exitElapsed < EXIT_DURATION) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        // Exit complete - restart
+                        restart();
+                    }
                 }
+            }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = performance.now();
+                requestAnimationFrame(animate);
             }
 
             function restart() {
                 startTime = null;
+                animationState = 'entrance';
                 maskRect.setAttribute('x', -600);
                 requestAnimationFrame(animate);
             }
 
             requestAnimationFrame(animate);
-            document.body.addEventListener('click', restart);
+
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         } else {
             const maskRect = document.getElementById('maskRect');
             maskRect.setAttribute('x', 0);

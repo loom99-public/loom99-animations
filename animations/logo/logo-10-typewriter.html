@@ -81,13 +81,17 @@
         const text = 'loom99';
         const logo = document.getElementById('logo');
 
-        if (!prefersReducedMotion) {
-            let currentIndex = 0;
-            const charDelay = 150;
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let currentIndex = 0;
+        let exitIndex = 0;
+        const CHAR_DELAY = 150;
+        const EXIT_CHAR_DELAY = 30;
 
+        if (!prefersReducedMotion) {
             function typeCharacter() {
                 if (currentIndex >= text.length) {
-                    // Typing complete - hide cursor
+                    // Typing complete
+                    animationState = 'hold';
                     const cursor = logo.querySelector('.cursor');
                     setTimeout(() => {
                         cursor.style.display = 'none';
@@ -105,11 +109,41 @@
                 logo.insertBefore(span, cursor);
 
                 currentIndex++;
-                setTimeout(typeCharacter, charDelay);
+                setTimeout(typeCharacter, CHAR_DELAY);
+            }
+
+            function deleteCharacter() {
+                const letters = logo.querySelectorAll('.letter');
+
+                if (exitIndex >= letters.length) {
+                    // Deletion complete - restart
+                    restart();
+                    return;
+                }
+
+                const letter = letters[letters.length - 1 - exitIndex];
+                letter.remove();
+
+                exitIndex++;
+                setTimeout(deleteCharacter, EXIT_CHAR_DELAY);
+            }
+
+            function startExit() {
+                if (animationState !== 'hold') return;
+
+                animationState = 'exit';
+                exitIndex = 0;
+
+                const cursor = logo.querySelector('.cursor');
+                cursor.style.display = 'inline-block';
+
+                deleteCharacter();
             }
 
             function restart() {
                 currentIndex = 0;
+                exitIndex = 0;
+                animationState = 'entrance';
 
                 const letters = logo.querySelectorAll('.letter');
                 letters.forEach(letter => letter.remove());
@@ -121,7 +155,14 @@
             }
 
             setTimeout(typeCharacter, 500);
-            document.body.addEventListener('click', restart);
+
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         } else {
             // Show all text immediately
             const cursor = logo.querySelector('.cursor');

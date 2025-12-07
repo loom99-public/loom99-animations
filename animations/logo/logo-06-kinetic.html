@@ -68,10 +68,18 @@
     <script>
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
+
         function easeOutBack(t) {
             const c1 = 1.70158;
             const c3 = c1 + 1;
             return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+        }
+
+        function easeInCubic(t) {
+            return t * t * t;
         }
 
         class LogoPart {
@@ -91,9 +99,12 @@
                 this.startY = Math.sin(angle) * distance;
                 this.startRotation = (Math.random() - 0.5) * 720;
                 this.startScale = 0;
+
+                // Exit angle (opposite direction)
+                this.exitAngle = angle + Math.PI;
             }
 
-            update(elapsed) {
+            updateEntrance(elapsed) {
                 if (elapsed < this.delay) {
                     return;
                 }
@@ -111,6 +122,26 @@
                 this.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`;
                 this.element.style.opacity = Math.min(1, progress * 2);
             }
+
+            updateExit(exitElapsed) {
+                const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(progress);
+
+                // Fly away in opposite direction
+                const distance = 500;
+                const x = Math.cos(this.exitAngle) * distance * eased;
+                const y = Math.sin(this.exitAngle) * distance * eased;
+                const rotation = (Math.random() - 0.5) * 360 * eased;
+
+                this.element.style.transformOrigin = `${this.centerX}px ${this.centerY}px`;
+                this.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg)`;
+                this.element.style.opacity = 1 - eased;
+            }
+
+            reset() {
+                this.element.style.opacity = 0;
+                this.element.style.transform = 'none';
+            }
         }
 
         const parts = [];
@@ -123,25 +154,43 @@
         });
 
         let startTime = null;
-        const totalDuration = 2500;
+        const ENTRANCE_TOTAL_DURATION = 2500;
 
         function animate(timestamp) {
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
 
-            parts.forEach(part => part.update(elapsed));
+            if (animationState === 'entrance') {
+                parts.forEach(part => part.updateEntrance(elapsed));
 
-            if (elapsed < totalDuration) {
-                requestAnimationFrame(animate);
+                if (elapsed < ENTRANCE_TOTAL_DURATION) {
+                    requestAnimationFrame(animate);
+                } else {
+                    animationState = 'hold';
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                parts.forEach(part => part.updateExit(exitElapsed));
+
+                if (exitElapsed < EXIT_DURATION) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Exit complete - restart
+                    restart();
+                }
             }
+        }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
         }
 
         function restart() {
             startTime = null;
-            parts.forEach(part => {
-                part.element.style.opacity = 0;
-                part.element.style.transform = 'none';
-            });
+            animationState = 'entrance';
+            parts.forEach(part => part.reset());
             requestAnimationFrame(animate);
         }
 
@@ -154,7 +203,13 @@
             requestAnimationFrame(animate);
         }
 
-        document.body.addEventListener('click', restart);
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance') {
+                restart();
+            }
+        });
     </script>
 </body>
 </html>

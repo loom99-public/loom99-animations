@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>loom99 Logo - Liquid Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            filter: url(#goo);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            svg {
+                filter: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg id="svg" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="goo">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
+                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" result="goo"/>
+                    <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+                </filter>
+
+                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#7b2ff7;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#ff2d75;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+
+            <g id="blobs"></g>
+        </svg>
+    </div>
+
+    <script>
+        const svg = document.getElementById('svg');
+        const blobsGroup = document.getElementById('blobs');
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function easeOutCubic(t) {
+            return 1 - Math.pow(1 - t, 3);
+        }
+
+        function easeInCubic(t) {
+            return t * t * t;
+        }
+
+        class Blob {
+            constructor(targetX, targetY, targetR, hue) {
+                this.startX = 300 + (Math.random() - 0.5) * 100;
+                this.startY = -30;
+                this.startR = 6;
+
+                this.targetX = targetX;
+                this.targetY = targetY;
+                this.targetR = targetR;
+
+                this.x = this.startX;
+                this.y = this.startY;
+                this.r = this.startR;
+
+                this.hue = hue;
+
+                this.circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                this.circle.setAttribute('fill', `hsl(${hue}, 80%, 60%)`);
+                blobsGroup.appendChild(this.circle);
+
+                this.delay = Math.random() * 400;
+                this.duration = 1500 + Math.random() * 500;
+            }
+
+            update(elapsed) {
+                if (elapsed < this.delay) {
+                    this.circle.setAttribute('r', 0);
+                    return;
+                }
+
+                const localTime = elapsed - this.delay;
+                const progress = Math.min(1, localTime / this.duration);
+
+                if (progress < 0.7) {
+                    const t = progress / 0.7;
+                    const dropEase = easeInCubic(t);
+                    const spreadEase = easeOutCubic(t);
+
+                    this.y = this.startY + (this.targetY - this.startY) * dropEase;
+                    this.x = this.startX + (this.targetX - this.startX) * spreadEase;
+                    this.r = this.startR + (this.targetR - this.startR) * spreadEase;
+                } else {
+                    const t = (progress - 0.7) / 0.3;
+                    const settleEase = easeOutCubic(t);
+
+                    this.x = this.x + (this.targetX - this.x) * settleEase;
+                    this.y = this.y + (this.targetY - this.y) * settleEase;
+                    this.r = this.r + (this.targetR - this.r) * settleEase;
+                }
+
+                this.circle.setAttribute('cx', this.x);
+                this.circle.setAttribute('cy', this.y);
+                this.circle.setAttribute('r', this.r);
+            }
+        }
+
+        const blobs = [];
+
+        // L (cyan)
+        [[40, 60, 12], [40, 100, 12], [40, 140, 12], [70, 160, 12], [100, 160, 12]].forEach(([x, y, r]) => {
+            blobs.push(new Blob(x, y, r, 190));
+        });
+
+        // O (first - purple)
+        for (let angle = 0; angle < 360; angle += 30) {
+            const rad = angle * Math.PI / 180;
+            const x = 150 + Math.cos(rad) * 40;
+            const y = 100 + Math.sin(rad) * 40;
+            blobs.push(new Blob(x, y, 10, 280));
+        }
+
+        // O (second - purple)
+        for (let angle = 0; angle < 360; angle += 30) {
+            const rad = angle * Math.PI / 180;
+            const x = 240 + Math.cos(rad) * 40;
+            const y = 100 + Math.sin(rad) * 40;
+            blobs.push(new Blob(x, y, 10, 280));
+        }
+
+        // M (pink)
+        [[300, 60, 12], [300, 100, 12], [300, 140, 12],
+         [325, 80, 10], [350, 100, 10], [375, 80, 10],
+         [400, 60, 12], [400, 100, 12], [400, 140, 12]].forEach(([x, y, r]) => {
+            blobs.push(new Blob(x, y, r, 330));
+        });
+
+        // 9 (first - cyan)
+        for (let angle = 0; angle < 360; angle += 40) {
+            const rad = angle * Math.PI / 180;
+            const x = 480 + Math.cos(rad) * 20;
+            const y = 60 + Math.sin(rad) * 20;
+            blobs.push(new Blob(x, y, 8, 190));
+        }
+        [[480, 90, 10], [480, 120, 10], [480, 150, 10]].forEach(([x, y, r]) => {
+            blobs.push(new Blob(x, y, r, 190));
+        });
+
+        // 9 (second - cyan)
+        for (let angle = 0; angle < 360; angle += 40) {
+            const rad = angle * Math.PI / 180;
+            const x = 560 + Math.cos(rad) * 20;
+            const y = 60 + Math.sin(rad) * 20;
+            blobs.push(new Blob(x, y, 8, 190));
+        }
+        [[560, 90, 10], [560, 120, 10], [560, 150, 10]].forEach(([x, y, r]) => {
+            blobs.push(new Blob(x, y, r, 190));
+        });
+
+        let startTime = null;
+        const totalDuration = 3000;
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+
+            blobs.forEach(blob => blob.update(elapsed));
+
+            if (elapsed < totalDuration) {
+                requestAnimationFrame(animate);
+            }
+        }
+
+        function restart() {
+            startTime = null;
+            blobs.forEach(blob => {
+                blob.x = blob.startX;
+                blob.y = blob.startY;
+                blob.r = blob.startR;
+                blob.circle.setAttribute('r', 0);
+            });
+            requestAnimationFrame(animate);
+        }
+
+        if (prefersReducedMotion) {
+            blobs.forEach(blob => {
+                blob.x = blob.targetX;
+                blob.y = blob.targetY;
+                blob.r = blob.targetR;
+                blob.circle.setAttribute('cx', blob.x);
+                blob.circle.setAttribute('cy', blob.y);
+                blob.circle.setAttribute('r', blob.r);
+            });
+        } else {
+            requestAnimationFrame(animate);
+        }
+
+        document.body.addEventListener('click', restart);
+    </script>
+</body>
+</html>

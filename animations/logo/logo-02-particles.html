@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>loom99 Logo - Particle Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            canvas {
+                display: none;
+            }
+        }
+
+        .reduced-motion-text {
+            display: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 60px;
+            font-weight: 700;
+            text-align: center;
+            background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff2d75);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .reduced-motion-text {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="canvas"></canvas>
+        <div class="reduced-motion-text">loom99</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (prefersReducedMotion) {
+            // Skip animation for reduced motion
+        } else {
+            // Set canvas size
+            canvas.width = 600;
+            canvas.height = 200;
+
+            function easeOutCubic(t) {
+                return 1 - Math.pow(1 - t, 3);
+            }
+
+            class Particle {
+                constructor(targetX, targetY, color) {
+                    // Start position (random explosion from center)
+                    const centerX = canvas.width / 2;
+                    const centerY = canvas.height / 2;
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = Math.random() * 400 + 200;
+
+                    this.startX = centerX + Math.cos(angle) * distance;
+                    this.startY = centerY + Math.sin(angle) * distance;
+
+                    // Target position (logo position)
+                    this.targetX = targetX;
+                    this.targetY = targetY;
+
+                    this.x = this.startX;
+                    this.y = this.startY;
+                    this.color = color;
+                    this.size = 2.5;
+                    this.opacity = 0;
+                }
+
+                update(progress) {
+                    // Ease into position
+                    const eased = easeOutCubic(progress);
+                    this.x = this.startX + (this.targetX - this.startX) * eased;
+                    this.y = this.startY + (this.targetY - this.startY) * eased;
+
+                    // Fade in during movement
+                    this.opacity = Math.min(1, progress * 2);
+                }
+
+                draw() {
+                    ctx.globalAlpha = this.opacity;
+                    ctx.fillStyle = this.color;
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.globalAlpha = 1;
+                }
+            }
+
+            // Function to sample points along a path
+            function samplePath(path, spacing = 4) {
+                const points = [];
+                const totalLength = path.getTotalLength();
+
+                for (let i = 0; i < totalLength; i += spacing) {
+                    const point = path.getPointAtLength(i);
+                    points.push({ x: point.x, y: point.y });
+                }
+
+                return points;
+            }
+
+            // Create temporary SVG to extract path points
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', canvas.width);
+            svg.setAttribute('height', canvas.height);
+            svg.setAttribute('viewBox', '0 0 600 200');
+            svg.style.position = 'absolute';
+            svg.style.visibility = 'hidden';
+            document.body.appendChild(svg);
+
+            const particles = [];
+
+            // Define logo paths and colors
+            const paths = [
+                // L
+                { d: 'M 40 40 L 40 160 L 100 160', color: '#00d4ff' },
+                // O (first)
+                { d: 'M 150 60 A 40 40 0 1 1 149.99 60.01', color: '#7b2ff7' },
+                // O (second)
+                { d: 'M 240 60 A 40 40 0 1 1 239.99 60.01', color: '#7b2ff7' },
+                // M
+                { d: 'M 300 160 L 300 40 L 350 100 L 400 40 L 400 160', color: '#ff2d75' },
+                // 9 (first)
+                { d: 'M 480 60 A 20 20 0 1 1 479.99 60.01 M 480 80 L 480 160', color: '#00d4ff' },
+                // 9 (second)
+                { d: 'M 560 60 A 20 20 0 1 1 559.99 60.01 M 560 80 L 560 160', color: '#00d4ff' }
+            ];
+
+            paths.forEach(pathData => {
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathData.d);
+                path.setAttribute('stroke', pathData.color);
+                path.setAttribute('stroke-width', '12');
+                path.setAttribute('fill', 'none');
+                svg.appendChild(path);
+
+                const points = samplePath(path, 4);
+                points.forEach(point => {
+                    particles.push(new Particle(point.x, point.y, pathData.color));
+                });
+            });
+
+            document.body.removeChild(svg);
+
+            let startTime = null;
+            const duration = 2000;
+
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(1, elapsed / duration);
+
+                // Clear canvas
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Update and draw particles
+                particles.forEach(particle => {
+                    particle.update(progress);
+                    particle.draw();
+                });
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+
+            function restart() {
+                startTime = null;
+                particles.forEach(particle => {
+                    particle.opacity = 0;
+                    particle.x = particle.startX;
+                    particle.y = particle.startY;
+                });
+                requestAnimationFrame(animate);
+            }
+
+            requestAnimationFrame(animate);
+            canvas.addEventListener('click', restart);
+        }
+    </script>
+</body>
+</html>

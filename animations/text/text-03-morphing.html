@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Do It Now - Morphing Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            padding: 20px;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            svg path {
+                opacity: 1 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg id="svg" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+    </div>
+
+    <script>
+        const svg = document.getElementById('svg');
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function easeInOutCubic(t) {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+
+        // Interpolate between two path commands
+        function interpolatePath(path1, path2, t) {
+            const eased = easeInOutCubic(t);
+
+            // Simple interpolation for similar paths
+            const points1 = parsePath(path1);
+            const points2 = parsePath(path2);
+
+            let result = '';
+            for (let i = 0; i < points1.length; i++) {
+                const p1 = points1[i];
+                const p2 = points2[i];
+
+                if (p1.type === 'M' || p1.type === 'L') {
+                    const x = p1.x + (p2.x - p1.x) * eased;
+                    const y = p1.y + (p2.y - p1.y) * eased;
+                    result += `${i === 0 ? 'M' : ' L'} ${x} ${y}`;
+                } else if (p1.type === 'Q') {
+                    const x = p1.x + (p2.x - p1.x) * eased;
+                    const y = p1.y + (p2.y - p1.y) * eased;
+                    const cx = p1.cx + (p2.cx - p1.cx) * eased;
+                    const cy = p1.cy + (p2.cy - p1.cy) * eased;
+                    result += ` Q ${cx} ${cy} ${x} ${y}`;
+                }
+            }
+            return result;
+        }
+
+        function parsePath(d) {
+            const points = [];
+            const commands = d.match(/[ML][^ML]*/g) || [];
+
+            commands.forEach((cmd, i) => {
+                const type = cmd[0];
+                const coords = cmd.slice(1).trim().split(/[\s,]+/).map(Number);
+
+                if (type === 'M' || type === 'L') {
+                    points.push({ type: type, x: coords[0], y: coords[1] });
+                }
+            });
+
+            return points;
+        }
+
+        class MorphingShape {
+            constructor(startPath, endPath, color, delay) {
+                this.startPath = startPath;
+                this.endPath = endPath;
+                this.color = color;
+                this.delay = delay;
+                this.progress = 0;
+
+                this.path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                this.path.setAttribute('stroke', color);
+                this.path.setAttribute('stroke-width', '4');
+                this.path.setAttribute('stroke-linecap', 'round');
+                this.path.setAttribute('stroke-linejoin', 'round');
+                this.path.setAttribute('fill', 'none');
+                this.path.style.filter = `drop-shadow(0 0 6px ${color})`;
+                this.path.style.opacity = '0';
+                svg.appendChild(this.path);
+            }
+
+            update(elapsed) {
+                if (elapsed < this.delay) {
+                    this.path.style.opacity = '0';
+                    return;
+                }
+
+                this.path.style.opacity = '1';
+
+                const localTime = elapsed - this.delay;
+                const duration = 1200;
+                this.progress = Math.min(1, localTime / duration);
+
+                const d = interpolatePath(this.startPath, this.endPath, this.progress);
+                this.path.setAttribute('d', d);
+            }
+        }
+
+        const shapes = [];
+
+        // DO - morphs from circles
+        shapes.push(new MorphingShape(
+            'M 130 70 L 130 70 L 130 70', // Start small
+            'M 100 20 L 100 100', // D vertical
+            '#ff2d2d', 0
+        ));
+
+        shapes.push(new MorphingShape(
+            'M 160 60 L 160 60 L 160 60',
+            'M 100 20 L 160 20 L 160 60 L 160 100 L 100 100', // D curve (simplified)
+            '#ff2d2d', 100
+        ));
+
+        shapes.push(new MorphingShape(
+            'M 240 60 L 240 60 L 240 60',
+            'M 200 60 L 200 20 L 280 20 L 280 60 L 280 100 L 200 100 L 200 60', // O (box to circle approx)
+            '#ff2d2d', 200
+        ));
+
+        // IT - morphs from lines
+        shapes.push(new MorphingShape(
+            'M 100 170 L 100 170',
+            'M 100 140 L 100 200', // I
+            '#ff6b00', 300
+        ));
+
+        shapes.push(new MorphingShape(
+            'M 170 170 L 170 170 L 170 170',
+            'M 170 140 L 170 200', // T vertical
+            '#ff6b00', 350
+        ));
+
+        shapes.push(new MorphingShape(
+            'M 170 140 L 170 140',
+            'M 140 140 L 200 140', // T horizontal
+            '#ff6b00', 400
+        ));
+
+        // NOW - morphs from triangles
+        shapes.push(new MorphingShape(
+            'M 110 250 L 80 220 L 80 280',
+            'M 80 220 L 80 280', // N left
+            '#ffdd00', 450
+        ));
+
+        shapes.push(new MorphingShape(
+            'M 110 250 L 80 220 L 140 280',
+            'M 80 220 L 140 280', // N diagonal
+            '#ffdd00', 500
+        ));
+
+        shapes.push(new MorphingShape(
+            'M 110 250 L 140 220 L 140 280',
+            'M 140 220 L 140 280', // N right
+            '#ffdd00', 550
+        ));
+
+        shapes.push(new MorphingShape(
+            'M 215 250 L 180 220 L 250 220 L 250 280 L 180 280',
+            'M 180 250 L 180 220 L 250 220 L 250 250 L 250 280 L 180 280 L 180 250', // O
+            '#ffdd00', 600
+        ));
+
+        shapes.push(new MorphingShape(
+            'M 310 240 L 280 220 L 360 280',
+            'M 280 220 L 300 280 L 320 250 L 340 280 L 360 220', // W
+            '#ffdd00', 650
+        ));
+
+        shapes.push(new MorphingShape(
+            'M 390 240 L 390 240',
+            'M 390 220 L 390 265 M 390 275 L 390 280', // !
+            '#ffdd00', 700
+        ));
+
+        let startTime = null;
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+
+            shapes.forEach(shape => shape.update(elapsed));
+
+            const maxTime = 2000;
+            if (elapsed < maxTime) {
+                requestAnimationFrame(animate);
+            }
+        }
+
+        function restart() {
+            startTime = null;
+            shapes.forEach(shape => {
+                shape.progress = 0;
+                shape.path.style.opacity = '0';
+            });
+            requestAnimationFrame(animate);
+        }
+
+        if (prefersReducedMotion) {
+            shapes.forEach(shape => {
+                shape.path.style.opacity = '1';
+                shape.path.setAttribute('d', shape.endPath);
+            });
+        } else {
+            requestAnimationFrame(animate);
+        }
+
+        document.body.addEventListener('click', restart);
+    </script>
+</body>
+</html>

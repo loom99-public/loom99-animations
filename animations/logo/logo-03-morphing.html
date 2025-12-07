@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>loom99 Logo - Morphing Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            svg path {
+                opacity: 1 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg id="svg" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#7b2ff7;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#ff2d75;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+        </svg>
+    </div>
+
+    <script>
+        const svg = document.getElementById('svg');
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function easeInOutCubic(t) {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+
+        class MorphingPath {
+            constructor(startPath, endPath, color, delay) {
+                this.startPath = startPath;
+                this.endPath = endPath;
+                this.color = color;
+                this.delay = delay;
+                this.duration = 1500;
+
+                this.path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                this.path.setAttribute('stroke', color);
+                this.path.setAttribute('stroke-width', '12');
+                this.path.setAttribute('stroke-linecap', 'round');
+                this.path.setAttribute('stroke-linejoin', 'round');
+                this.path.setAttribute('fill', 'none');
+                this.path.style.filter = `drop-shadow(0 0 8px ${color})`;
+                this.path.style.opacity = '0';
+                svg.appendChild(this.path);
+            }
+
+            interpolate(t) {
+                const eased = easeInOutCubic(t);
+
+                // Parse paths
+                const start = this.parsePath(this.startPath);
+                const end = this.parsePath(this.endPath);
+
+                // Build interpolated path
+                let d = '';
+                const maxLen = Math.max(start.length, end.length);
+
+                for (let i = 0; i < maxLen; i++) {
+                    const s = start[i] || start[start.length - 1];
+                    const e = end[i] || end[end.length - 1];
+
+                    if (e.cmd === 'M' || e.cmd === 'L') {
+                        const x = s.x + (e.x - s.x) * eased;
+                        const y = s.y + (e.y - s.y) * eased;
+                        d += `${i === 0 ? 'M' : ' L'} ${x} ${y}`;
+                    } else if (e.cmd === 'A') {
+                        const x = s.x + (e.x - s.x) * eased;
+                        const y = s.y + (e.y - s.y) * eased;
+                        d += ` A ${e.rx} ${e.ry} ${e.rot} ${e.laf} ${e.sf} ${x} ${y}`;
+                    }
+                }
+
+                return d;
+            }
+
+            parsePath(d) {
+                const points = [];
+                const parts = d.match(/[MLAZ][^MLAZ]*/gi) || [];
+
+                parts.forEach(part => {
+                    const cmd = part[0];
+                    const nums = part.slice(1).trim().split(/[\s,]+/).map(Number);
+
+                    if (cmd === 'M' || cmd === 'L') {
+                        points.push({ cmd, x: nums[0], y: nums[1] });
+                    } else if (cmd === 'A') {
+                        points.push({ cmd, rx: nums[0], ry: nums[1], rot: nums[2], laf: nums[3], sf: nums[4], x: nums[5], y: nums[6] });
+                    } else if (cmd === 'Z') {
+                        points.push({ cmd: 'Z' });
+                    }
+                });
+
+                return points;
+            }
+
+            update(elapsed) {
+                if (elapsed < this.delay) {
+                    this.path.style.opacity = '0';
+                    return;
+                }
+
+                this.path.style.opacity = '1';
+
+                const localTime = elapsed - this.delay;
+                const progress = Math.min(1, localTime / this.duration);
+
+                const d = this.interpolate(progress);
+                this.path.setAttribute('d', d);
+            }
+        }
+
+        const paths = [];
+
+        // L - morphs from a square
+        paths.push(new MorphingPath(
+            'M 40 40 L 100 40 L 100 100 L 40 100 Z',
+            'M 40 40 L 40 160 L 100 160',
+            '#00d4ff', 0
+        ));
+
+        // O (first) - morphs from a square to circle
+        paths.push(new MorphingPath(
+            'M 130 80 L 170 80 L 170 120 L 130 120 Z',
+            'M 150 60 A 40 40 0 1 1 150 140 A 40 40 0 1 1 150 60',
+            '#7b2ff7', 150
+        ));
+
+        // O (second) - morphs from a triangle to circle
+        paths.push(new MorphingPath(
+            'M 240 60 L 280 100 L 200 100 Z',
+            'M 240 60 A 40 40 0 1 1 240 140 A 40 40 0 1 1 240 60',
+            '#7b2ff7', 300
+        ));
+
+        // M - morphs from a rectangle
+        paths.push(new MorphingPath(
+            'M 300 80 L 400 80 L 400 120 L 300 120 Z',
+            'M 300 160 L 300 40 L 350 100 L 400 40 L 400 160',
+            '#ff2d75', 450
+        ));
+
+        // 9 (first) - morphs from a small circle
+        paths.push(new MorphingPath(
+            'M 480 100 A 30 30 0 1 1 479.99 100.01',
+            'M 480 60 A 20 20 0 1 1 479.99 60.01 M 480 80 L 480 160',
+            '#00d4ff', 600
+        ));
+
+        // 9 (second) - morphs from a small circle
+        paths.push(new MorphingPath(
+            'M 560 100 A 30 30 0 1 1 559.99 100.01',
+            'M 560 60 A 20 20 0 1 1 559.99 60.01 M 560 80 L 560 160',
+            '#00d4ff', 750
+        ));
+
+        let startTime = null;
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+
+            paths.forEach(path => path.update(elapsed));
+
+            const maxTime = 2500;
+            if (elapsed < maxTime) {
+                requestAnimationFrame(animate);
+            }
+        }
+
+        function restart() {
+            startTime = null;
+            paths.forEach(path => {
+                path.path.style.opacity = '0';
+            });
+            requestAnimationFrame(animate);
+        }
+
+        if (prefersReducedMotion) {
+            paths.forEach(path => {
+                path.path.style.opacity = '1';
+                path.path.setAttribute('d', path.endPath);
+            });
+        } else {
+            requestAnimationFrame(animate);
+        }
+
+        document.body.addEventListener('click', restart);
+    </script>
+</body>
+</html>

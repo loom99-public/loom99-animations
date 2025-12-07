@@ -117,40 +117,41 @@
             }
         ];
 
-        const selectedMode = Random.pick(modes);
-        console.log(`Reveal mode: ${selectedMode.name} - ${selectedMode.description}`);
+        let selectedMode;
+        let config;
+        let duration;
 
-        // Randomization config
-        const config = {
-            timing: {
-                enabled: true,
-                variance: 0.2
-            },
-            motion: {
-                enabled: true,
-                useMode: true
-            }
-        };
+        function initializeParameters() {
+            selectedMode = Random.pick(modes);
+            console.log(`Reveal mode: ${selectedMode.name} - ${selectedMode.description}`);
+
+            // Randomization config
+            config = {
+                timing: {
+                    enabled: true,
+                    variance: 0.2
+                },
+                motion: {
+                    enabled: true,
+                    useMode: true
+                }
+            };
+
+            const baseDuration = 1800;
+            duration = config.timing.enabled ?
+                Random.varyPercent(baseDuration, config.timing.variance) : baseDuration;
+        }
 
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         if (!prefersReducedMotion) {
             const maskRect = document.getElementById('maskRect');
 
-            // Set initial position based on mode
-            maskRect.setAttribute('x', selectedMode.startX);
-            maskRect.setAttribute('y', selectedMode.startY);
-            maskRect.setAttribute('width', selectedMode.width);
-            maskRect.setAttribute('height', selectedMode.height);
-
             function easeOutCubic(t) {
                 return 1 - Math.pow(1 - t, 3);
             }
 
             let startTime = null;
-            const baseDuration = 1800;
-            const duration = config.timing.enabled ?
-                Random.varyPercent(baseDuration, config.timing.variance) : baseDuration;
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
@@ -170,12 +171,21 @@
             }
 
             function restart() {
+                initializeParameters();
                 startTime = null;
                 maskRect.setAttribute('x', selectedMode.startX);
                 maskRect.setAttribute('y', selectedMode.startY);
+                maskRect.setAttribute('width', selectedMode.width);
+                maskRect.setAttribute('height', selectedMode.height);
                 requestAnimationFrame(animate);
             }
 
+            initializeParameters();
+            // Set initial position based on mode
+            maskRect.setAttribute('x', selectedMode.startX);
+            maskRect.setAttribute('y', selectedMode.startY);
+            maskRect.setAttribute('width', selectedMode.width);
+            maskRect.setAttribute('height', selectedMode.height);
             requestAnimationFrame(animate);
             document.body.addEventListener('click', restart);
         } else {

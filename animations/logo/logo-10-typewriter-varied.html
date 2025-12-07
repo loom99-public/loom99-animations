@@ -117,25 +117,30 @@
             }
         ];
 
-        const selectedMode = Random.pick(modes);
-        console.log(`Typewriter mode: ${selectedMode.name} - ${selectedMode.description}`);
+        let selectedMode;
+        let config;
 
-        // Randomization config
-        const config = {
-            timing: {
-                enabled: true,
-                useMode: true
-            }
-        };
+        function initializeParameters() {
+            selectedMode = Random.pick(modes);
+            console.log(`Typewriter mode: ${selectedMode.name} - ${selectedMode.description}`);
+
+            // Randomization config
+            config = {
+                timing: {
+                    enabled: true,
+                    useMode: true
+                }
+            };
+
+            // Update cursor blink speed
+            cursor.style.animationDuration = `${selectedMode.blinkSpeed}s`;
+        }
 
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         const text = 'loom99';
         const logo = document.getElementById('logo');
         const cursor = logo.querySelector('.cursor');
-
-        // Update cursor blink speed
-        cursor.style.animationDuration = `${selectedMode.blinkSpeed}s`;
 
         if (!prefersReducedMotion) {
             let currentIndex = 0;
@@ -173,6 +178,7 @@
             }
 
             function restart() {
+                initializeParameters();
                 currentIndex = 0;
 
                 const letters = logo.querySelectorAll('.letter');
@@ -183,6 +189,7 @@
                 setTimeout(typeCharacter, 500);
             }
 
+            initializeParameters();
             setTimeout(typeCharacter, 500);
             document.body.addEventListener('click', restart);
         } else {

@@ -67,26 +67,32 @@
             range: (min, max) => min + Math.random() * (max - min),
         };
 
-        // Wild wave configuration
-        const config = {
-            waveCount: Random.range(1, 8),
-            amplitude: Random.range(10, 60),
-            frequency: Random.range(1, 10),
-            scaleAmount: Random.range(0, 0.5),
-            damping: Random.range(0.3, 1.5),
-            duration: Random.range(2000, 5000),
-            phaseRandomness: Random.range(0, Math.PI * 4)
-        };
+        let config;
+        let phaseOffsets;
 
-        console.log('Wave config:', config);
+        function initializeParameters() {
+            // Wild wave configuration
+            config = {
+                waveCount: Random.range(1, 8),
+                amplitude: Random.range(10, 60),
+                frequency: Random.range(1, 10),
+                scaleAmount: Random.range(0, 0.5),
+                damping: Random.range(0.3, 1.5),
+                duration: Random.range(2000, 5000),
+                phaseRandomness: Random.range(0, Math.PI * 4)
+            };
+
+            console.log('Wave config:', config);
+
+            // Random phase offsets for each element
+            const parts = document.querySelectorAll('.logo-part');
+            phaseOffsets = Array.from(parts).map(() => Random.range(0, config.phaseRandomness));
+        }
 
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         if (!prefersReducedMotion) {
             const parts = document.querySelectorAll('.logo-part');
-
-            // Random phase offsets for each element
-            const phaseOffsets = Array.from(parts).map(() => Random.range(0, config.phaseRandomness));
 
             let startTime = null;
 
@@ -129,10 +135,12 @@
             }
 
             function restart() {
+                initializeParameters();
                 startTime = null;
                 requestAnimationFrame(animate);
             }
 
+            initializeParameters();
             requestAnimationFrame(animate);
             document.body.addEventListener('click', restart);
         }

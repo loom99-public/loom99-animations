@@ -68,24 +68,23 @@
             range: (min, max) => min + Math.random() * (max - min),
         };
 
-        // Wild 3D config
-        const config = {
-            perspective: Random.range(500, 2000),
-            maxRotateX: Random.range(-360, 360),
-            maxRotateY: Random.range(-360, 360),
-            maxRotateZ: Random.range(-180, 180),
-            duration: Random.range(1500, 4000),
-            wobbleFreq: Random.range(1, 5)
-        };
+        let config;
+        let easing;
 
-        console.log('3D config:', config);
+        function initializeParameters() {
+            // Wild 3D config
+            config = {
+                perspective: Random.range(500, 2000),
+                maxRotateX: Random.range(-360, 360),
+                maxRotateY: Random.range(-360, 360),
+                maxRotateZ: Random.range(-180, 180),
+                duration: Random.range(1500, 4000),
+                wobbleFreq: Random.range(1, 5)
+            };
 
-        document.body.style.perspective = `${config.perspective}px`;
+            console.log('3D config:', config);
 
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-        if (!prefersReducedMotion) {
-            const svg = document.getElementById('svg');
+            document.body.style.perspective = `${config.perspective}px`;
 
             // Random easing
             const easingFunctions = [
@@ -94,7 +93,13 @@
                 t => t * t,
                 t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
             ];
-            const easing = easingFunctions[Math.floor(Math.random() * easingFunctions.length)];
+            easing = easingFunctions[Math.floor(Math.random() * easingFunctions.length)];
+        }
+
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (!prefersReducedMotion) {
+            const svg = document.getElementById('svg');
 
             let startTime = null;
 
@@ -125,11 +130,13 @@
             }
 
             function restart() {
+                initializeParameters();
                 startTime = null;
                 svg.style.opacity = 0;
                 requestAnimationFrame(animate);
             }
 
+            initializeParameters();
             requestAnimationFrame(animate);
             document.body.addEventListener('click', restart);
         }

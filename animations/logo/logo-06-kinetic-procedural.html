@@ -70,15 +70,19 @@
             range: (min, max) => min + Math.random() * (max - min),
         };
 
-        // Heavy randomization
-        const config = {
-            rotationRange: Random.range(360, 1440),
-            scaleRange: Random.range(-0.5, 1.5),
-            bounceOvershoot: Random.range(1.2, 3.0),
-            distance: Random.range(200, 800)
-        };
+        let config;
 
-        console.log('Kinetic config:', config);
+        function initializeParameters() {
+            // Heavy randomization
+            config = {
+                rotationRange: Random.range(360, 1440),
+                scaleRange: Random.range(-0.5, 1.5),
+                bounceOvershoot: Random.range(1.2, 3.0),
+                distance: Random.range(200, 800)
+            };
+
+            console.log('Kinetic config:', config);
+        }
 
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -127,14 +131,17 @@
             }
         }
 
-        const parts = [];
+        let parts = [];
         const elements = document.querySelectorAll('.logo-part');
 
-        elements.forEach((element, index) => {
-            const angle = Random.range(0, Math.PI * 2);
-            const delay = Random.range(0, 800);
-            parts.push(new LogoPart(element, delay, angle));
-        });
+        function createParts() {
+            parts = [];
+            elements.forEach((element, index) => {
+                const angle = Random.range(0, Math.PI * 2);
+                const delay = Random.range(0, 800);
+                parts.push(new LogoPart(element, delay, angle));
+            });
+        }
 
         let startTime = null;
         const totalDuration = 3500;
@@ -151,6 +158,8 @@
         }
 
         function restart() {
+            initializeParameters();
+            createParts();
             startTime = null;
             parts.forEach(part => {
                 part.element.style.opacity = 0;
@@ -165,6 +174,8 @@
                 part.element.style.transform = 'none';
             });
         } else {
+            initializeParameters();
+            createParts();
             requestAnimationFrame(animate);
         }
 

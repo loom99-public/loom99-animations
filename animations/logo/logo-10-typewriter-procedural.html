@@ -74,36 +74,44 @@
             range: (min, max) => min + Math.random() * (max - min),
         };
 
-        // Wild typing configuration
-        const config = {
-            baseDelay: Random.range(30, 500),
-            variance: Random.range(20, 300),
-            pauseProbability: Random.range(0, 0.8),
-            pauseDuration: Random.range(100, 2000),
-            blinkSpeed: Random.range(0.2, 2.0),
-            typoChance: Random.range(0, 0.3),
-            backspaceDelay: Random.range(100, 500)
-        };
+        let config;
 
-        console.log('Typewriter config:', config);
+        function initializeParameters() {
+            // Wild typing configuration
+            config = {
+                baseDelay: Random.range(30, 500),
+                variance: Random.range(20, 300),
+                pauseProbability: Random.range(0, 0.8),
+                pauseDuration: Random.range(100, 2000),
+                blinkSpeed: Random.range(0.2, 2.0),
+                typoChance: Random.range(0, 0.3),
+                backspaceDelay: Random.range(100, 500)
+            };
+
+            console.log('Typewriter config:', config);
+
+            // Wild cursor blink
+            const blinkKeyframes = `
+                @keyframes wildBlink {
+                    0%, 49% { opacity: 1; }
+                    50%, 100% { opacity: 0; }
+                }
+            `;
+            const style = document.createElement('style');
+            style.textContent = blinkKeyframes;
+            style.id = 'blink-style';
+            // Remove old style if exists
+            const oldStyle = document.getElementById('blink-style');
+            if (oldStyle) oldStyle.remove();
+            document.head.appendChild(style);
+            cursor.style.animation = `wildBlink ${config.blinkSpeed}s infinite`;
+        }
 
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         const text = 'loom99';
         const logo = document.getElementById('logo');
         const cursor = logo.querySelector('.cursor');
-
-        // Wild cursor blink
-        const blinkKeyframes = `
-            @keyframes wildBlink {
-                0%, 49% { opacity: 1; }
-                50%, 100% { opacity: 0; }
-            }
-        `;
-        const style = document.createElement('style');
-        style.textContent = blinkKeyframes;
-        document.head.appendChild(style);
-        cursor.style.animation = `wildBlink ${config.blinkSpeed}s infinite`;
 
         if (!prefersReducedMotion) {
             let currentIndex = 0;
@@ -164,6 +172,7 @@
             }
 
             function restart() {
+                initializeParameters();
                 currentIndex = 0;
                 typoMode = false;
 
@@ -175,6 +184,7 @@
                 setTimeout(typeCharacter, Random.range(200, 1000));
             }
 
+            initializeParameters();
             setTimeout(typeCharacter, Random.range(200, 1000));
             document.body.addEventListener('click', restart);
         } else {

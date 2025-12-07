@@ -76,22 +76,21 @@
             'horizontal', 'vertical', 'diagonal', 'radial', 'iris', 'multi-rect'
         ];
 
-        const revealType = Random.pick(revealTypes);
-        console.log('Reveal type:', revealType);
+        let revealType;
+        let config;
+        let easing;
 
-        const config = {
-            type: revealType,
-            duration: Random.range(1000, 3000),
-            startX: Random.range(-800, 800),
-            startY: Random.range(-300, 300),
-            angle: Random.range(0, 360)
-        };
+        function initializeParameters() {
+            revealType = Random.pick(revealTypes);
+            console.log('Reveal type:', revealType);
 
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-        if (!prefersReducedMotion) {
-            const maskRect = document.getElementById('maskRect');
-            const maskCircle = document.getElementById('maskCircle');
+            config = {
+                type: revealType,
+                duration: Random.range(1000, 3000),
+                startX: Random.range(-800, 800),
+                startY: Random.range(-300, 300),
+                angle: Random.range(0, 360)
+            };
 
             // Random easing
             const easings = [
@@ -100,7 +99,14 @@
                 t => t * t,
                 t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
             ];
-            const easing = Random.pick(easings);
+            easing = Random.pick(easings);
+        }
+
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (!prefersReducedMotion) {
+            const maskRect = document.getElementById('maskRect');
+            const maskCircle = document.getElementById('maskCircle');
 
             let startTime = null;
 
@@ -148,13 +154,17 @@
             }
 
             function restart() {
+                initializeParameters();
                 startTime = null;
                 maskRect.setAttribute('x', config.startX);
                 maskRect.setAttribute('y', config.startY);
+                maskRect.setAttribute('width', 600);
+                maskRect.setAttribute('height', 200);
                 maskCircle.setAttribute('r', 0);
                 requestAnimationFrame(animate);
             }
 
+            initializeParameters();
             requestAnimationFrame(animate);
             document.body.addEventListener('click', restart);
         } else {

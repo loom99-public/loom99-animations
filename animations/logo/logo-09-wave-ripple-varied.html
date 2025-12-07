@@ -101,22 +101,39 @@
             }
         ];
 
-        const selectedMode = Random.pick(modes);
-        console.log(`Wave mode: ${selectedMode.name} - ${selectedMode.description}`);
+        let selectedMode;
+        let config;
+        let duration;
+        let amplitude;
 
-        // Randomization config
-        const config = {
-            timing: {
-                enabled: true,
-                variance: 0.15
-            },
-            motion: {
-                enabled: true,
-                useMode: true,
-                amplitudeVariance: 5,
-                phaseOffset: Random.range(0, Math.PI * 2)
-            }
-        };
+        function initializeParameters() {
+            selectedMode = Random.pick(modes);
+            console.log(`Wave mode: ${selectedMode.name} - ${selectedMode.description}`);
+
+            // Randomization config
+            config = {
+                timing: {
+                    enabled: true,
+                    variance: 0.15
+                },
+                motion: {
+                    enabled: true,
+                    useMode: true,
+                    amplitudeVariance: 5,
+                    phaseOffset: Random.range(0, Math.PI * 2)
+                }
+            };
+
+            const baseDuration = 3000;
+            duration = config.timing.enabled ?
+                baseDuration * Random.range(1 - config.timing.variance, 1 + config.timing.variance) :
+                baseDuration;
+
+            amplitude = config.motion.enabled ?
+                Random.range(selectedMode.amplitude - config.motion.amplitudeVariance,
+                           selectedMode.amplitude + config.motion.amplitudeVariance) :
+                selectedMode.amplitude;
+        }
 
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -124,15 +141,6 @@
             const parts = document.querySelectorAll('.logo-part');
 
             let startTime = null;
-            const baseDuration = 3000;
-            const duration = config.timing.enabled ?
-                baseDuration * Random.range(1 - config.timing.variance, 1 + config.timing.variance) :
-                baseDuration;
-
-            const amplitude = config.motion.enabled ?
-                Random.range(selectedMode.amplitude - config.motion.amplitudeVariance,
-                           selectedMode.amplitude + config.motion.amplitudeVariance) :
-                selectedMode.amplitude;
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
@@ -168,10 +176,12 @@
             }
 
             function restart() {
+                initializeParameters();
                 startTime = null;
                 requestAnimationFrame(animate);
             }
 
+            initializeParameters();
             requestAnimationFrame(animate);
             document.body.addEventListener('click', restart);
         }

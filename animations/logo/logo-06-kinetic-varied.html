@@ -94,27 +94,32 @@
             }
         ];
 
-        const selectedMode = Random.pick(modes);
-        console.log(`Kinetic mode: ${selectedMode.name} - ${selectedMode.description}`);
+        let selectedMode;
+        let config;
 
-        // Randomization config
-        const config = {
-            timing: {
-                enabled: true,
-                durationVariance: 0.15,
-                delayVariance: 0.2
-            },
-            motion: {
-                enabled: true,
-                useMode: true,
-                rotationRange: Random.range(360, 720),
-                scaleRange: Random.range(0, 0.3),
-                bounceOvershoot: Random.range(1.5, 2.0)
-            },
-            effects: {
-                enabled: true
-            }
-        };
+        function initializeParameters() {
+            selectedMode = Random.pick(modes);
+            console.log(`Kinetic mode: ${selectedMode.name} - ${selectedMode.description}`);
+
+            // Randomization config
+            config = {
+                timing: {
+                    enabled: true,
+                    durationVariance: 0.15,
+                    delayVariance: 0.2
+                },
+                motion: {
+                    enabled: true,
+                    useMode: true,
+                    rotationRange: Random.range(360, 720),
+                    scaleRange: Random.range(0, 0.3),
+                    bounceOvershoot: Random.range(1.5, 2.0)
+                },
+                effects: {
+                    enabled: true
+                }
+            };
+        }
 
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -166,16 +171,19 @@
             }
         }
 
-        const parts = [];
+        let parts = [];
         const elements = document.querySelectorAll('.logo-part');
 
-        elements.forEach((element, index) => {
-            const angle = config.motion.useMode ?
-                selectedMode.getAngle(index, elements.length) :
-                (index / elements.length) * Math.PI * 2;
-            const delay = index * 120;
-            parts.push(new LogoPart(element, delay, angle));
-        });
+        function createParts() {
+            parts = [];
+            elements.forEach((element, index) => {
+                const angle = config.motion.useMode ?
+                    selectedMode.getAngle(index, elements.length) :
+                    (index / elements.length) * Math.PI * 2;
+                const delay = index * 120;
+                parts.push(new LogoPart(element, delay, angle));
+            });
+        }
 
         let startTime = null;
         const totalDuration = 2500;
@@ -192,6 +200,8 @@
         }
 
         function restart() {
+            initializeParameters();
+            createParts();
             startTime = null;
             parts.forEach(part => {
                 part.element.style.opacity = 0;
@@ -206,6 +216,8 @@
                 part.element.style.transform = 'none';
             });
         } else {
+            initializeParameters();
+            createParts();
             requestAnimationFrame(animate);
         }
 

@@ -88,63 +88,71 @@
             }
         ];
 
-        const selectedMode = Random.pick(modes);
-        console.log(`Liquid mode: ${selectedMode.name} - ${selectedMode.description}`);
+        let selectedMode;
+        let config;
+        let palette;
 
-        // Randomization config
-        const config = {
-            timing: {
-                enabled: true,
-                delayVariance: 0.2,
-                durationVariance: 0.15
-            },
-            colors: {
-                enabled: true,
-                hueShift: Random.range(-15, 15)
-            },
-            motion: {
-                enabled: true,
-                useMode: true
-            },
-            effects: {
-                enabled: true,
-                blobSizeVariance: 2
-            }
-        };
+        function initializeParameters() {
+            selectedMode = Random.pick(modes);
+            console.log(`Liquid mode: ${selectedMode.name} - ${selectedMode.description}`);
 
-        // Color utilities
-        const ColorRandom = {
-            baseColors: {
-                cyan: { h: 190, s: 100, l: 50 },
-                purple: { h: 265, s: 85, l: 57 },
-                pink: { h: 340, s: 100, l: 63 }
-            },
-            shiftHue: (hsl, shift) => ({
-                h: (hsl.h + shift + 360) % 360,
-                s: hsl.s,
-                l: hsl.l
-            }),
-            toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
-        };
+            // Randomization config
+            config = {
+                timing: {
+                    enabled: true,
+                    delayVariance: 0.2,
+                    durationVariance: 0.15
+                },
+                colors: {
+                    enabled: true,
+                    hueShift: Random.range(-15, 15)
+                },
+                motion: {
+                    enabled: true,
+                    useMode: true
+                },
+                effects: {
+                    enabled: true,
+                    blobSizeVariance: 2
+                }
+            };
 
-        const palette = config.colors.enabled ? {
-            cyan: ColorRandom.baseColors.cyan.h + config.colors.hueShift,
-            purple: ColorRandom.baseColors.purple.h + config.colors.hueShift,
-            pink: ColorRandom.baseColors.pink.h + config.colors.hueShift
-        } : {
-            cyan: 190,
-            purple: 280,
-            pink: 330
-        };
+            // Color utilities
+            const ColorRandom = {
+                baseColors: {
+                    cyan: { h: 190, s: 100, l: 50 },
+                    purple: { h: 265, s: 85, l: 57 },
+                    pink: { h: 340, s: 100, l: 63 }
+                },
+                shiftHue: (hsl, shift) => ({
+                    h: (hsl.h + shift + 360) % 360,
+                    s: hsl.s,
+                    l: hsl.l
+                }),
+                toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
+            };
+
+            palette = config.colors.enabled ? {
+                cyan: ColorRandom.baseColors.cyan.h + config.colors.hueShift,
+                purple: ColorRandom.baseColors.purple.h + config.colors.hueShift,
+                pink: ColorRandom.baseColors.pink.h + config.colors.hueShift
+            } : {
+                cyan: 190,
+                purple: 280,
+                pink: 330
+            };
+
+            // Apply goo filter strength
+            blur.setAttribute('stdDeviation', selectedMode.gooStrength);
+        }
 
         const svg = document.getElementById('svg');
         const blobsGroup = document.getElementById('blobs');
         const blur = document.getElementById('blur');
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        // Apply goo filter strength
+        // Apply goo filter
         svg.style.filter = `url(#goo)`;
-        blur.setAttribute('stdDeviation', selectedMode.gooStrength);
 
         function easeOutCubic(t) {
             return 1 - Math.pow(1 - t, 3);
@@ -219,57 +227,63 @@
             }
         }
 
-        const blobs = [];
+        let blobs = [];
 
-        // L (cyan)
-        [[40, 60, 12], [40, 100, 12], [40, 140, 12], [70, 160, 12], [100, 160, 12]].forEach(([x, y, r]) => {
-            blobs.push(new Blob(x, y, r, palette.cyan));
-        });
+        function createBlobs() {
+            // Clear existing blobs
+            blobsGroup.innerHTML = '';
+            blobs = [];
 
-        // O (first - purple)
-        for (let angle = 0; angle < 360; angle += 30) {
-            const rad = angle * Math.PI / 180;
-            const x = 150 + Math.cos(rad) * 40;
-            const y = 100 + Math.sin(rad) * 40;
-            blobs.push(new Blob(x, y, 10, palette.purple));
+            // L (cyan)
+            [[40, 60, 12], [40, 100, 12], [40, 140, 12], [70, 160, 12], [100, 160, 12]].forEach(([x, y, r]) => {
+                blobs.push(new Blob(x, y, r, palette.cyan));
+            });
+
+            // O (first - purple)
+            for (let angle = 0; angle < 360; angle += 30) {
+                const rad = angle * Math.PI / 180;
+                const x = 150 + Math.cos(rad) * 40;
+                const y = 100 + Math.sin(rad) * 40;
+                blobs.push(new Blob(x, y, 10, palette.purple));
+            }
+
+            // O (second - purple)
+            for (let angle = 0; angle < 360; angle += 30) {
+                const rad = angle * Math.PI / 180;
+                const x = 240 + Math.cos(rad) * 40;
+                const y = 100 + Math.sin(rad) * 40;
+                blobs.push(new Blob(x, y, 10, palette.purple));
+            }
+
+            // M (pink)
+            [[300, 60, 12], [300, 100, 12], [300, 140, 12],
+             [325, 80, 10], [350, 100, 10], [375, 80, 10],
+             [400, 60, 12], [400, 100, 12], [400, 140, 12]].forEach(([x, y, r]) => {
+                blobs.push(new Blob(x, y, r, palette.pink));
+            });
+
+            // 9 (first - cyan)
+            for (let angle = 0; angle < 360; angle += 40) {
+                const rad = angle * Math.PI / 180;
+                const x = 480 + Math.cos(rad) * 20;
+                const y = 70 + Math.sin(rad) * 20;
+                blobs.push(new Blob(x, y, 8, palette.cyan));
+            }
+            [[490, 95, 9], [480, 115, 9], [465, 135, 9], [450, 155, 9], [440, 165, 8]].forEach(([x, y, r]) => {
+                blobs.push(new Blob(x, y, r, palette.cyan));
+            });
+
+            // 9 (second - cyan)
+            for (let angle = 0; angle < 360; angle += 40) {
+                const rad = angle * Math.PI / 180;
+                const x = 560 + Math.cos(rad) * 20;
+                const y = 70 + Math.sin(rad) * 20;
+                blobs.push(new Blob(x, y, 8, palette.cyan));
+            }
+            [[570, 95, 9], [560, 115, 9], [545, 135, 9], [530, 155, 9], [520, 165, 8]].forEach(([x, y, r]) => {
+                blobs.push(new Blob(x, y, r, palette.cyan));
+            });
         }
-
-        // O (second - purple)
-        for (let angle = 0; angle < 360; angle += 30) {
-            const rad = angle * Math.PI / 180;
-            const x = 240 + Math.cos(rad) * 40;
-            const y = 100 + Math.sin(rad) * 40;
-            blobs.push(new Blob(x, y, 10, palette.purple));
-        }
-
-        // M (pink)
-        [[300, 60, 12], [300, 100, 12], [300, 140, 12],
-         [325, 80, 10], [350, 100, 10], [375, 80, 10],
-         [400, 60, 12], [400, 100, 12], [400, 140, 12]].forEach(([x, y, r]) => {
-            blobs.push(new Blob(x, y, r, palette.pink));
-        });
-
-        // 9 (first - cyan)
-        for (let angle = 0; angle < 360; angle += 40) {
-            const rad = angle * Math.PI / 180;
-            const x = 480 + Math.cos(rad) * 20;
-            const y = 70 + Math.sin(rad) * 20;
-            blobs.push(new Blob(x, y, 8, palette.cyan));
-        }
-        [[490, 95, 9], [480, 115, 9], [465, 135, 9], [450, 155, 9], [440, 165, 8]].forEach(([x, y, r]) => {
-            blobs.push(new Blob(x, y, r, palette.cyan));
-        });
-
-        // 9 (second - cyan)
-        for (let angle = 0; angle < 360; angle += 40) {
-            const rad = angle * Math.PI / 180;
-            const x = 560 + Math.cos(rad) * 20;
-            const y = 70 + Math.sin(rad) * 20;
-            blobs.push(new Blob(x, y, 8, palette.cyan));
-        }
-        [[570, 95, 9], [560, 115, 9], [545, 135, 9], [530, 155, 9], [520, 165, 8]].forEach(([x, y, r]) => {
-            blobs.push(new Blob(x, y, r, palette.cyan));
-        });
 
         let startTime = null;
         const totalDuration = 3000;
@@ -286,17 +300,15 @@
         }
 
         function restart() {
+            initializeParameters();
+            createBlobs();
             startTime = null;
-            blobs.forEach(blob => {
-                blob.x = blob.startX;
-                blob.y = blob.startY;
-                blob.r = blob.startR;
-                blob.circle.setAttribute('r', 0);
-            });
             requestAnimationFrame(animate);
         }
 
         if (prefersReducedMotion) {
+            initializeParameters();
+            createBlobs();
             blobs.forEach(blob => {
                 blob.x = blob.targetX;
                 blob.y = blob.targetY;
@@ -306,6 +318,8 @@
                 blob.circle.setAttribute('r', blob.r);
             });
         } else {
+            initializeParameters();
+            createBlobs();
             requestAnimationFrame(animate);
         }
 

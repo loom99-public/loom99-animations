@@ -101,30 +101,6 @@
             }
         ];
 
-        const selectedMode = Random.pick(modes);
-        console.log(`Morphing mode: ${selectedMode.name} - ${selectedMode.description}`);
-
-        // Randomization config
-        const config = {
-            timing: {
-                enabled: true,
-                durationVariance: 0.2,
-                staggerVariance: 0.15
-            },
-            colors: {
-                enabled: true,
-                hueShift: Random.range(-15, 15)
-            },
-            motion: {
-                enabled: true,
-                useMode: true
-            },
-            effects: {
-                enabled: true,
-                strokeVariance: 1
-            }
-        };
-
         // Color utilities
         const ColorRandom = {
             baseColors: {
@@ -140,16 +116,6 @@
             toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
         };
 
-        const palette = config.colors.enabled ? {
-            cyan: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.cyan, config.colors.hueShift)),
-            purple: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.purple, config.colors.hueShift)),
-            pink: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.pink, config.colors.hueShift))
-        } : {
-            cyan: '#00d4ff',
-            purple: '#7b2ff7',
-            pink: '#ff2d75'
-        };
-
         const svg = document.getElementById('svg');
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -159,7 +125,14 @@
             t => 1 - Math.pow(1 - t, 3),
             t => t * t * (3 - 2 * t)
         ];
-        const selectedEasing = Random.pick(easingFunctions);
+
+        // Variables that will be regenerated on each restart
+        let selectedMode;
+        let config;
+        let palette;
+        let selectedEasing;
+        let paths;
+        let BASE_STAGGER;
 
         class MorphingPath {
             constructor(startPath, endPath, color, delay) {
@@ -249,52 +222,95 @@
             }
         }
 
-        const paths = [];
+        function initializeParameters() {
+            // Clear existing paths from SVG
+            while (svg.lastChild && svg.lastChild.tagName === 'path') {
+                svg.removeChild(svg.lastChild);
+            }
 
-        const BASE_STAGGER = config.timing.enabled ?
-            Random.varyPercent(150, config.timing.staggerVariance) : 150;
+            selectedMode = Random.pick(modes);
+            console.log(`Morphing mode: ${selectedMode.name} - ${selectedMode.description}`);
 
-        // L - morphs from selected start shape
-        paths.push(new MorphingPath(
-            selectedMode.shapes.L,
-            'M 40 40 L 40 160 L 100 160',
-            palette.cyan, 0
-        ));
+            // Randomization config
+            config = {
+                timing: {
+                    enabled: true,
+                    durationVariance: 0.2,
+                    staggerVariance: 0.15
+                },
+                colors: {
+                    enabled: true,
+                    hueShift: Random.range(-15, 15)
+                },
+                motion: {
+                    enabled: true,
+                    useMode: true
+                },
+                effects: {
+                    enabled: true,
+                    strokeVariance: 1
+                }
+            };
 
-        // O (first)
-        paths.push(new MorphingPath(
-            selectedMode.shapes.O1,
-            'M 150 60 A 40 40 0 1 1 150 140 A 40 40 0 1 1 150 60',
-            palette.purple, BASE_STAGGER
-        ));
+            palette = config.colors.enabled ? {
+                cyan: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.cyan, config.colors.hueShift)),
+                purple: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.purple, config.colors.hueShift)),
+                pink: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.pink, config.colors.hueShift))
+            } : {
+                cyan: '#00d4ff',
+                purple: '#7b2ff7',
+                pink: '#ff2d75'
+            };
 
-        // O (second)
-        paths.push(new MorphingPath(
-            selectedMode.shapes.O2,
-            'M 240 60 A 40 40 0 1 1 240 140 A 40 40 0 1 1 240 60',
-            palette.purple, BASE_STAGGER * 2
-        ));
+            selectedEasing = Random.pick(easingFunctions);
 
-        // M
-        paths.push(new MorphingPath(
-            selectedMode.shapes.M,
-            'M 300 160 L 300 40 L 350 100 L 400 40 L 400 160',
-            palette.pink, BASE_STAGGER * 3
-        ));
+            paths = [];
 
-        // 9 (first)
-        paths.push(new MorphingPath(
-            selectedMode.shapes.N1,
-            'M 460 70 L 480 50 L 500 70 L 480 90 L 460 70 L 475 120 L 445 160',
-            palette.cyan, BASE_STAGGER * 4
-        ));
+            BASE_STAGGER = config.timing.enabled ?
+                Random.varyPercent(150, config.timing.staggerVariance) : 150;
 
-        // 9 (second)
-        paths.push(new MorphingPath(
-            selectedMode.shapes.N2,
-            'M 540 70 L 560 50 L 580 70 L 560 90 L 540 70 L 555 120 L 525 160',
-            palette.cyan, BASE_STAGGER * 5
-        ));
+            // L - morphs from selected start shape
+            paths.push(new MorphingPath(
+                selectedMode.shapes.L,
+                'M 40 40 L 40 160 L 100 160',
+                palette.cyan, 0
+            ));
+
+            // O (first)
+            paths.push(new MorphingPath(
+                selectedMode.shapes.O1,
+                'M 150 60 A 40 40 0 1 1 150 140 A 40 40 0 1 1 150 60',
+                palette.purple, BASE_STAGGER
+            ));
+
+            // O (second)
+            paths.push(new MorphingPath(
+                selectedMode.shapes.O2,
+                'M 240 60 A 40 40 0 1 1 240 140 A 40 40 0 1 1 240 60',
+                palette.purple, BASE_STAGGER * 2
+            ));
+
+            // M
+            paths.push(new MorphingPath(
+                selectedMode.shapes.M,
+                'M 300 160 L 300 40 L 350 100 L 400 40 L 400 160',
+                palette.pink, BASE_STAGGER * 3
+            ));
+
+            // 9 (first)
+            paths.push(new MorphingPath(
+                selectedMode.shapes.N1,
+                'M 460 70 L 480 50 L 500 70 L 480 90 L 460 70 L 475 120 L 445 160',
+                palette.cyan, BASE_STAGGER * 4
+            ));
+
+            // 9 (second)
+            paths.push(new MorphingPath(
+                selectedMode.shapes.N2,
+                'M 540 70 L 560 50 L 580 70 L 560 90 L 540 70 L 555 120 L 525 160',
+                palette.cyan, BASE_STAGGER * 5
+            ));
+        }
 
         let startTime = null;
 
@@ -311,19 +327,19 @@
         }
 
         function restart() {
+            initializeParameters();  // Regenerate all random parameters
             startTime = null;
-            paths.forEach(path => {
-                path.path.style.opacity = '0';
-            });
             requestAnimationFrame(animate);
         }
 
         if (prefersReducedMotion) {
+            initializeParameters();
             paths.forEach(path => {
                 path.path.style.opacity = '1';
                 path.path.setAttribute('d', path.endPath);
             });
         } else {
+            initializeParameters();
             requestAnimationFrame(animate);
         }
 

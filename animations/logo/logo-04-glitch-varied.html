@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>loom99 Logo - Glitch Animation (Varied)</title>
     <style>
@@ -137,26 +136,6 @@
             }
         ];
 
-        const selectedMode = Random.pick(modes);
-        console.log(`Glitch mode: ${selectedMode.name} - ${selectedMode.description}`);
-
-        // Randomization config
-        const config = {
-            timing: {
-                enabled: true,
-                variance: 0.15
-            },
-            motion: {
-                enabled: true,
-                useMode: true
-            },
-            effects: {
-                enabled: true,
-                rgbVariance: 2,
-                jitterVariance: 3
-            }
-        };
-
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         if (!prefersReducedMotion) {
@@ -166,17 +145,46 @@
             const offsetG = document.getElementById('offset-g');
             const offsetB = document.getElementById('offset-b');
 
-            // Apply mode-based settings with variation
-            const rgbOffset = config.motion.useMode && config.effects.enabled ?
-                Random.vary(selectedMode.rgbOffset, config.effects.rgbVariance) : selectedMode.rgbOffset;
-            const jitterMax = config.motion.useMode && config.effects.enabled ?
-                Random.vary(selectedMode.jitterIntensity, config.effects.jitterVariance) : selectedMode.jitterIntensity;
-            const glitchDuration = config.timing.enabled ?
-                selectedMode.glitchDuration * Random.range(1 - config.timing.variance, 1 + config.timing.variance) :
-                selectedMode.glitchDuration;
+            // Variables that will be regenerated on each restart
+            let selectedMode;
+            let config;
+            let rgbOffset;
+            let jitterMax;
+            let glitchDuration;
+            let startTime;
 
-            let startTime = null;
             const totalDuration = 2000;
+
+            function initializeParameters() {
+                selectedMode = Random.pick(modes);
+                console.log(`Glitch mode: ${selectedMode.name} - ${selectedMode.description}`);
+
+                // Randomization config
+                config = {
+                    timing: {
+                        enabled: true,
+                        variance: 0.15
+                    },
+                    motion: {
+                        enabled: true,
+                        useMode: true
+                    },
+                    effects: {
+                        enabled: true,
+                        rgbVariance: 2,
+                        jitterVariance: 3
+                    }
+                };
+
+                // Apply mode-based settings with variation
+                rgbOffset = config.motion.useMode && config.effects.enabled ?
+                    Random.vary(selectedMode.rgbOffset, config.effects.rgbVariance) : selectedMode.rgbOffset;
+                jitterMax = config.motion.useMode && config.effects.enabled ?
+                    Random.vary(selectedMode.jitterIntensity, config.effects.jitterVariance) : selectedMode.jitterIntensity;
+                glitchDuration = config.timing.enabled ?
+                    selectedMode.glitchDuration * Random.range(1 - config.timing.variance, 1 + config.timing.variance) :
+                    selectedMode.glitchDuration;
+            }
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
@@ -244,6 +252,7 @@
             }
 
             function restart() {
+                initializeParameters();  // Regenerate all random parameters
                 startTime = null;
                 logo.style.transform = 'none';
                 glitchLayers.forEach(layer => {
@@ -253,6 +262,7 @@
                 requestAnimationFrame(animate);
             }
 
+            initializeParameters();
             requestAnimationFrame(animate);
             document.body.addEventListener('click', restart);
         }

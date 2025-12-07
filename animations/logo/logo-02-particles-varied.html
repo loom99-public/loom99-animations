@@ -63,25 +63,14 @@
                 { name: 'rain', startPattern: 'top-rain' },
                 { name: 'sides', startPattern: 'side-converge' }
             ];
-            const selectedMode = Random.pick(modes);
-            console.log(`Particle mode: ${selectedMode.name}`);
 
-            // Config
-            const config = {
-                particles: {
-                    enabled: true,
-                    sizeVariance: 0.3,
-                    spacingVariance: 0.15
-                },
-                timing: {
-                    enabled: true,
-                    durationVariance: 0.2
-                },
-                colors: {
-                    enabled: true,
-                    hueShift: Random.range(-10, 10)
-                }
-            };
+            // Variables that will be regenerated on each restart
+            let selectedMode;
+            let config;
+            let particles;
+            let colors;
+            let startTime;
+            let duration;
 
             function easeOutCubic(t) {
                 return 1 - Math.pow(1 - t, 3);
@@ -151,57 +140,79 @@
                 return points;
             }
 
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', canvas.width);
-            svg.setAttribute('height', canvas.height);
-            svg.setAttribute('viewBox', '0 0 600 200');
-            svg.style.position = 'absolute';
-            svg.style.visibility = 'hidden';
-            document.body.appendChild(svg);
+            function initializeParameters() {
+                // Select random mode
+                selectedMode = Random.pick(modes);
+                console.log(`Particle mode: ${selectedMode.name}`);
 
-            const particles = [];
+                // Config
+                config = {
+                    particles: {
+                        enabled: true,
+                        sizeVariance: 0.3,
+                        spacingVariance: 0.15
+                    },
+                    timing: {
+                        enabled: true,
+                        durationVariance: 0.2
+                    },
+                    colors: {
+                        enabled: true,
+                        hueShift: Random.range(-10, 10)
+                    }
+                };
 
-            // Apply color shift
-            const shiftHue = (h) => (h + config.colors.hueShift + 360) % 360;
-            const colors = config.colors.enabled ? {
-                cyan: `hsl(${shiftHue(190)}, 100%, 50%)`,
-                purple: `hsl(${shiftHue(265)}, 85%, 57%)`,
-                pink: `hsl(${shiftHue(340)}, 100%, 63%)`
-            } : {
-                cyan: '#00d4ff',
-                purple: '#7b2ff7',
-                pink: '#ff2d75'
-            };
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('width', canvas.width);
+                svg.setAttribute('height', canvas.height);
+                svg.setAttribute('viewBox', '0 0 600 200');
+                svg.style.position = 'absolute';
+                svg.style.visibility = 'hidden';
+                document.body.appendChild(svg);
 
-            const paths = [
-                { d: 'M 40 40 L 40 160 L 100 160', color: colors.cyan },
-                { d: 'M 150 60 A 40 40 0 1 1 149.99 60.01', color: colors.purple },
-                { d: 'M 240 60 A 40 40 0 1 1 239.99 60.01', color: colors.purple },
-                { d: 'M 300 160 L 300 40 L 350 100 L 400 40 L 400 160', color: colors.pink },
-                { d: 'M 460 70 C 460 45, 500 45, 500 70 C 500 95, 460 95, 460 70 M 500 70 C 500 95, 495 130, 475 155 C 460 175, 440 170, 435 160', color: colors.cyan },
-                { d: 'M 540 70 C 540 45, 580 45, 580 70 C 580 95, 540 95, 540 70 M 580 70 C 580 95, 575 130, 555 155 C 540 175, 520 170, 515 160', color: colors.cyan }
-            ];
+                particles = [];
 
-            paths.forEach(pathData => {
-                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                path.setAttribute('d', pathData.d);
-                path.setAttribute('stroke', pathData.color);
-                path.setAttribute('stroke-width', '12');
-                path.setAttribute('fill', 'none');
-                svg.appendChild(path);
+                // Apply color shift
+                const shiftHue = (h) => (h + config.colors.hueShift + 360) % 360;
+                colors = config.colors.enabled ? {
+                    cyan: `hsl(${shiftHue(190)}, 100%, 50%)`,
+                    purple: `hsl(${shiftHue(265)}, 85%, 57%)`,
+                    pink: `hsl(${shiftHue(340)}, 100%, 63%)`
+                } : {
+                    cyan: '#00d4ff',
+                    purple: '#7b2ff7',
+                    pink: '#ff2d75'
+                };
 
-                const points = samplePath(path, 4);
-                points.forEach(point => {
-                    particles.push(new Particle(point.x, point.y, pathData.color, selectedMode.startPattern));
+                const paths = [
+                    { d: 'M 40 40 L 40 160 L 100 160', color: colors.cyan },
+                    { d: 'M 150 60 A 40 40 0 1 1 149.99 60.01', color: colors.purple },
+                    { d: 'M 240 60 A 40 40 0 1 1 239.99 60.01', color: colors.purple },
+                    { d: 'M 300 160 L 300 40 L 350 100 L 400 40 L 400 160', color: colors.pink },
+                    { d: 'M 460 70 C 460 45, 500 45, 500 70 C 500 95, 460 95, 460 70 M 500 70 C 500 95, 495 130, 475 155 C 460 175, 440 170, 435 160', color: colors.cyan },
+                    { d: 'M 540 70 C 540 45, 580 45, 580 70 C 580 95, 540 95, 540 70 M 580 70 C 580 95, 575 130, 555 155 C 540 175, 520 170, 515 160', color: colors.cyan }
+                ];
+
+                paths.forEach(pathData => {
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', pathData.d);
+                    path.setAttribute('stroke', pathData.color);
+                    path.setAttribute('stroke-width', '12');
+                    path.setAttribute('fill', 'none');
+                    svg.appendChild(path);
+
+                    const points = samplePath(path, 4);
+                    points.forEach(point => {
+                        particles.push(new Particle(point.x, point.y, pathData.color, selectedMode.startPattern));
+                    });
                 });
-            });
 
-            document.body.removeChild(svg);
+                document.body.removeChild(svg);
 
-            let startTime = null;
-            const baseDuration = 2000;
-            const duration = config.timing.enabled ?
-                Random.varyPercent(baseDuration, config.timing.durationVariance) : baseDuration;
+                const baseDuration = 2000;
+                duration = config.timing.enabled ?
+                    Random.varyPercent(baseDuration, config.timing.durationVariance) : baseDuration;
+            }
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
@@ -222,15 +233,12 @@
             }
 
             function restart() {
+                initializeParameters();  // Regenerate all random parameters
                 startTime = null;
-                particles.forEach(particle => {
-                    particle.opacity = 0;
-                    particle.x = particle.startX;
-                    particle.y = particle.startY;
-                });
                 requestAnimationFrame(animate);
             }
 
+            initializeParameters();
             requestAnimationFrame(animate);
             canvas.addEventListener('click', restart);
         }

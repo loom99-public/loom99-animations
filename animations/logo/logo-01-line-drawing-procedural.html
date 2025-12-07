@@ -60,30 +60,6 @@
             varyPercent: (base, percent) => base * Random.range(1 - percent, 1 + percent),
         };
 
-        // Randomization config (heavy)
-        const config = {
-            timing: {
-                enabled: true,
-                durationVariance: 0.5,
-                staggerVariance: 0.6
-            },
-            colors: {
-                enabled: true,
-                hueShift: Random.range(-60, 60),
-                satShift: Random.range(-30, 30),
-                lightShift: Random.range(-20, 20)
-            },
-            motion: {
-                enabled: true,
-                randomStart: true
-            },
-            effects: {
-                enabled: true,
-                strokeVariance: 5,
-                glowVariance: 10
-            }
-        };
-
         // Color utilities
         const ColorRandom = {
             baseColors: {
@@ -99,45 +75,17 @@
             toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
         };
 
-        // Apply wild color shifts
-        const palette = config.colors.enabled ? {
-            cyan: ColorRandom.toHSL(ColorRandom.shiftColor(
-                ColorRandom.baseColors.cyan,
-                config.colors.hueShift,
-                config.colors.satShift,
-                config.colors.lightShift
-            )),
-            purple: ColorRandom.toHSL(ColorRandom.shiftColor(
-                ColorRandom.baseColors.purple,
-                config.colors.hueShift,
-                config.colors.satShift,
-                config.colors.lightShift
-            )),
-            pink: ColorRandom.toHSL(ColorRandom.shiftColor(
-                ColorRandom.baseColors.pink,
-                config.colors.hueShift,
-                config.colors.satShift,
-                config.colors.lightShift
-            ))
-        } : {
-            cyan: '#00d4ff',
-            purple: '#7b2ff7',
-            pink: '#ff2d75'
-        };
-
         const svg = document.getElementById('logo');
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        // Randomize easing function
-        const easingFunctions = [
-            t => t,
-            t => 1 - Math.pow(1 - t, 4),
-            t => t * t * t * t,
-            t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
-            t => 1 - Math.pow(1 - t, 3),
-            t => t * (2 - t)
-        ];
-        const selectedEasing = Random.pick(easingFunctions);
+        // Variables that will be regenerated on each restart
+        let config;
+        let palette;
+        let selectedEasing;
+        let lines;
+        let BASE_DURATION;
+        let BASE_STAGGER;
+        let getRandomStart;
 
         class AnimatedLine {
             constructor(startX, startY, points, color, delay, duration, foldDuration = 200) {
@@ -254,8 +202,6 @@
             }
         }
 
-        const lines = [];
-
         function addLine(startX, startY, points, color, delay, duration = 400, foldDuration = 180) {
             const line = new AnimatedLine(startX, startY, points, color, delay, duration, foldDuration);
             lines.push(line);
@@ -263,95 +209,166 @@
             return line;
         }
 
-        const CYAN = palette.cyan;
-        const PURPLE = palette.purple;
-        const PINK = palette.pink;
+        function initializeParameters() {
+            // Clear existing lines from SVG
+            while (svg.lastChild && svg.lastChild.classList && svg.lastChild.classList.contains('line')) {
+                svg.removeChild(svg.lastChild);
+            }
 
-        // Randomize timing heavily
-        const BASE_DURATION = Random.range(200, 600);
-        const BASE_STAGGER = Random.range(40, 150);
+            // Randomization config (heavy)
+            config = {
+                timing: {
+                    enabled: true,
+                    durationVariance: 0.5,
+                    staggerVariance: 0.6
+                },
+                colors: {
+                    enabled: true,
+                    hueShift: Random.range(-60, 60),
+                    satShift: Random.range(-30, 30),
+                    lightShift: Random.range(-20, 20)
+                },
+                motion: {
+                    enabled: true,
+                    randomStart: true
+                },
+                effects: {
+                    enabled: true,
+                    strokeVariance: 5,
+                    glowVariance: 10
+                }
+            };
 
-        // Randomize start positions heavily
-        const getRandomStart = () => {
-            const directions = [
-                { x: Random.range(-200, -50), y: Random.range(0, 200) },
-                { x: Random.range(650, 800), y: Random.range(0, 200) },
-                { x: Random.range(100, 500), y: Random.range(-150, -50) },
-                { x: Random.range(100, 500), y: Random.range(250, 350) }
+            // Apply wild color shifts
+            palette = config.colors.enabled ? {
+                cyan: ColorRandom.toHSL(ColorRandom.shiftColor(
+                    ColorRandom.baseColors.cyan,
+                    config.colors.hueShift,
+                    config.colors.satShift,
+                    config.colors.lightShift
+                )),
+                purple: ColorRandom.toHSL(ColorRandom.shiftColor(
+                    ColorRandom.baseColors.purple,
+                    config.colors.hueShift,
+                    config.colors.satShift,
+                    config.colors.lightShift
+                )),
+                pink: ColorRandom.toHSL(ColorRandom.shiftColor(
+                    ColorRandom.baseColors.pink,
+                    config.colors.hueShift,
+                    config.colors.satShift,
+                    config.colors.lightShift
+                ))
+            } : {
+                cyan: '#00d4ff',
+                purple: '#7b2ff7',
+                pink: '#ff2d75'
+            };
+
+            // Randomize easing function
+            const easingFunctions = [
+                t => t,
+                t => 1 - Math.pow(1 - t, 4),
+                t => t * t * t * t,
+                t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+                t => 1 - Math.pow(1 - t, 3),
+                t => t * (2 - t)
             ];
-            return Random.pick(directions);
-        };
+            selectedEasing = Random.pick(easingFunctions);
 
-        // L
-        const dur0 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
-        const start0 = config.motion.randomStart ? getRandomStart() : { x: -100, y: 100 };
-        addLine(start0.x, start0.y, [
-            {x: 40, y: 40},
-            {x: 40, y: 160},
-            {x: 100, y: 160}
-        ], CYAN, 0, dur0);
+            const CYAN = palette.cyan;
+            const PURPLE = palette.purple;
+            const PINK = palette.pink;
 
-        // O (first)
-        const dur1 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
-        const delay1 = Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
-        const start1 = config.motion.randomStart ? getRandomStart() : { x: -100, y: 100 };
-        addLine(start1.x, start1.y, [
-            {x: 150, y: 60},
-            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 150, y: 140},
-            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 150, y: 60}
-        ], PURPLE, delay1, dur1);
+            // Randomize timing heavily
+            BASE_DURATION = Random.range(200, 600);
+            BASE_STAGGER = Random.range(40, 150);
 
-        // O (second)
-        const dur2 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
-        const delay2 = delay1 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
-        const start2 = config.motion.randomStart ? getRandomStart() : { x: 240, y: -50 };
-        addLine(start2.x, start2.y, [
-            {x: 240, y: 60},
-            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 240, y: 140},
-            {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 240, y: 60}
-        ], PURPLE, delay2, dur2);
+            // Randomize start positions heavily
+            getRandomStart = () => {
+                const directions = [
+                    { x: Random.range(-200, -50), y: Random.range(0, 200) },
+                    { x: Random.range(650, 800), y: Random.range(0, 200) },
+                    { x: Random.range(100, 500), y: Random.range(-150, -50) },
+                    { x: Random.range(100, 500), y: Random.range(250, 350) }
+                ];
+                return Random.pick(directions);
+            };
 
-        // M
-        const dur3 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
-        const delay3 = delay2 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
-        const start3 = config.motion.randomStart ? getRandomStart() : { x: 350, y: -50 };
-        addLine(start3.x, start3.y, [
-            {x: 300, y: 160},
-            {x: 300, y: 40},
-            {x: 350, y: 100},
-            {x: 400, y: 40},
-            {x: 400, y: 160}
-        ], PINK, delay3, dur3);
+            // Initialize lines array
+            lines = [];
 
-        // 9 (first)
-        const dur4 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
-        const delay4 = delay3 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
-        const start4 = config.motion.randomStart ? getRandomStart() : { x: 700, y: 100 };
-        addLine(start4.x, start4.y, [
-            {x: 460, y: 70},
-            {type: 'Q', cx: 460, cy: 45, x: 480, y: 45},
-            {type: 'Q', cx: 500, cy: 45, x: 500, y: 70},
-            {type: 'Q', cx: 500, cy: 95, x: 480, y: 95},
-            {type: 'Q', cx: 460, cy: 95, x: 460, y: 70},
-            {x: 500, y: 70},
-            {type: 'Q', cx: 500, cy: 110, x: 485, y: 135},
-            {type: 'Q', cx: 470, cy: 160, x: 445, y: 165}
-        ], CYAN, delay4, dur4);
+            // L
+            const dur0 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const start0 = config.motion.randomStart ? getRandomStart() : { x: -100, y: 100 };
+            addLine(start0.x, start0.y, [
+                {x: 40, y: 40},
+                {x: 40, y: 160},
+                {x: 100, y: 160}
+            ], CYAN, 0, dur0);
 
-        // 9 (second)
-        const dur5 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
-        const delay5 = delay4 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
-        const start5 = config.motion.randomStart ? getRandomStart() : { x: 650, y: 250 };
-        addLine(start5.x, start5.y, [
-            {x: 540, y: 70},
-            {type: 'Q', cx: 540, cy: 45, x: 560, y: 45},
-            {type: 'Q', cx: 580, cy: 45, x: 580, y: 70},
-            {type: 'Q', cx: 580, cy: 95, x: 560, y: 95},
-            {type: 'Q', cx: 540, cy: 95, x: 540, y: 70},
-            {x: 580, y: 70},
-            {type: 'Q', cx: 580, cy: 110, x: 565, y: 135},
-            {type: 'Q', cx: 550, cy: 160, x: 525, y: 165}
-        ], CYAN, delay5, dur5);
+            // O (first)
+            const dur1 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const delay1 = Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start1 = config.motion.randomStart ? getRandomStart() : { x: -100, y: 100 };
+            addLine(start1.x, start1.y, [
+                {x: 150, y: 60},
+                {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 150, y: 140},
+                {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 150, y: 60}
+            ], PURPLE, delay1, dur1);
+
+            // O (second)
+            const dur2 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const delay2 = delay1 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start2 = config.motion.randomStart ? getRandomStart() : { x: 240, y: -50 };
+            addLine(start2.x, start2.y, [
+                {x: 240, y: 60},
+                {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 240, y: 140},
+                {type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 240, y: 60}
+            ], PURPLE, delay2, dur2);
+
+            // M
+            const dur3 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const delay3 = delay2 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start3 = config.motion.randomStart ? getRandomStart() : { x: 350, y: -50 };
+            addLine(start3.x, start3.y, [
+                {x: 300, y: 160},
+                {x: 300, y: 40},
+                {x: 350, y: 100},
+                {x: 400, y: 40},
+                {x: 400, y: 160}
+            ], PINK, delay3, dur3);
+
+            // 9 (first)
+            const dur4 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const delay4 = delay3 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start4 = config.motion.randomStart ? getRandomStart() : { x: 700, y: 100 };
+            addLine(start4.x, start4.y, [
+                {x: 460, y: 70},
+                {type: 'Q', cx: 460, cy: 45, x: 480, y: 45},
+                {type: 'Q', cx: 500, cy: 45, x: 500, y: 70},
+                {type: 'Q', cx: 500, cy: 95, x: 480, y: 95},
+                {type: 'Q', cx: 460, cy: 95, x: 460, y: 70},
+                {x: 500, y: 70},
+                {type: 'Q', cx: 500, cy: 110, x: 485, y: 135},
+                {type: 'Q', cx: 470, cy: 160, x: 445, y: 165}
+            ], CYAN, delay4, dur4);
+
+            // 9 (second)
+            const dur5 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const delay5 = delay4 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start5 = config.motion.randomStart ? getRandomStart() : { x: 650, y: 250 };
+            addLine(start5.x, start5.y, [
+                {x: 540, y: 70},
+                {type: 'Q', cx: 540, cy: 45, x: 560, y: 45},
+                {type: 'Q', cx: 580, cy: 45, x: 580, y: 70},
+                {type: 'Q', cx: 580, cy: 95, x: 560, y: 95},
+                {type: 'Q', cx: 540, cy: 95, x: 540, y: 70},
+                {x: 580, y: 70},
+                {type: 'Q', cx: 580, cy: 110, x: 565, y: 135},
+                {type: 'Q', cx: 550, cy: 160, x: 525, y: 165}
+            ], CYAN, delay5, dur5);
+        }
 
         let startTime = null;
 
@@ -368,20 +385,13 @@
         }
 
         function restart() {
+            initializeParameters();  // Regenerate all random parameters
             startTime = null;
-            lines.forEach(line => {
-                line.progress = 0;
-                line.foldProgress = 0;
-                line.started = false;
-                line.finished = false;
-                line.folding = false;
-                line.foldComplete = false;
-                line.path.style.opacity = '0';
-            });
             requestAnimationFrame(animate);
         }
 
         if (prefersReducedMotion) {
+            initializeParameters();
             lines.forEach(line => {
                 line.foldComplete = true;
                 line.path.style.opacity = '1';
@@ -399,6 +409,7 @@
                 line.path.setAttribute('d', d);
             });
         } else {
+            initializeParameters();
             requestAnimationFrame(animate);
         }
 

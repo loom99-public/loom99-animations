@@ -54,30 +54,6 @@
             varyPercent: (base, percent) => base * Random.range(1 - percent, 1 + percent),
         };
 
-        // Randomization config (heavy)
-        const config = {
-            timing: {
-                enabled: true,
-                durationVariance: 0.5,
-                staggerVariance: 0.6
-            },
-            colors: {
-                enabled: true,
-                hueShift: Random.range(-60, 60),
-                satShift: Random.range(-30, 30),
-                lightShift: Random.range(-20, 20)
-            },
-            motion: {
-                enabled: true,
-                randomShapes: true
-            },
-            effects: {
-                enabled: true,
-                strokeVariance: 5,
-                glowVariance: 8
-            }
-        };
-
         // Color utilities
         const ColorRandom = {
             baseColors: {
@@ -93,33 +69,16 @@
             toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
         };
 
-        const palette = config.colors.enabled ? {
-            cyan: ColorRandom.toHSL(ColorRandom.shiftColor(
-                ColorRandom.baseColors.cyan,
-                config.colors.hueShift,
-                config.colors.satShift,
-                config.colors.lightShift
-            )),
-            purple: ColorRandom.toHSL(ColorRandom.shiftColor(
-                ColorRandom.baseColors.purple,
-                config.colors.hueShift,
-                config.colors.satShift,
-                config.colors.lightShift
-            )),
-            pink: ColorRandom.toHSL(ColorRandom.shiftColor(
-                ColorRandom.baseColors.pink,
-                config.colors.hueShift,
-                config.colors.satShift,
-                config.colors.lightShift
-            ))
-        } : {
-            cyan: '#00d4ff',
-            purple: '#7b2ff7',
-            pink: '#ff2d75'
-        };
-
         const svg = document.getElementById('svg');
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // Variables that will be regenerated on each restart
+        let config;
+        let palette;
+        let selectedEasing;
+        let paths;
+        let BASE_STAGGER;
+        let generateRandomShape;
 
         // Randomize easing
         const easingFunctions = [
@@ -130,41 +89,6 @@
             t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
             t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
         ];
-        const selectedEasing = Random.pick(easingFunctions);
-
-        // Generate random start shapes
-        function generateRandomShape(centerX, centerY, size) {
-            const shapeTypes = [
-                // Circle
-                () => `M ${centerX + size} ${centerY} A ${size} ${size} 0 1 1 ${centerX + size} ${centerY + 0.1}`,
-                // Square
-                () => `M ${centerX - size} ${centerY - size} L ${centerX + size} ${centerY - size} L ${centerX + size} ${centerY + size} L ${centerX - size} ${centerY + size} Z`,
-                // Triangle
-                () => `M ${centerX} ${centerY - size} L ${centerX + size} ${centerY + size} L ${centerX - size} ${centerY + size} Z`,
-                // Star-ish
-                () => {
-                    const points = [];
-                    for (let i = 0; i < 5; i++) {
-                        const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
-                        const r = i % 2 === 0 ? size : size / 2;
-                        points.push(`${centerX + Math.cos(angle) * r} ${centerY + Math.sin(angle) * r}`);
-                    }
-                    return `M ${points[0]} L ${points.slice(1).join(' L ')} Z`;
-                },
-                // Random polygon
-                () => {
-                    const sides = Random.int(3, 8);
-                    const points = [];
-                    for (let i = 0; i < sides; i++) {
-                        const angle = (i / sides) * Math.PI * 2;
-                        const r = size * Random.range(0.5, 1);
-                        points.push(`${centerX + Math.cos(angle) * r} ${centerY + Math.sin(angle) * r}`);
-                    }
-                    return `M ${points[0]} L ${points.slice(1).join(' L ')} Z`;
-                }
-            ];
-            return Random.pick(shapeTypes)();
-        }
 
         class MorphingPath {
             constructor(startPath, endPath, color, delay) {
@@ -255,57 +179,149 @@
             }
         }
 
-        const paths = [];
+        function initializeParameters() {
+            // Clear existing paths from SVG
+            while (svg.lastChild) {
+                svg.removeChild(svg.lastChild);
+            }
 
-        const BASE_STAGGER = Random.range(50, 300);
+            // Randomization config (heavy)
+            config = {
+                timing: {
+                    enabled: true,
+                    durationVariance: 0.5,
+                    staggerVariance: 0.6
+                },
+                colors: {
+                    enabled: true,
+                    hueShift: Random.range(-60, 60),
+                    satShift: Random.range(-30, 30),
+                    lightShift: Random.range(-20, 20)
+                },
+                motion: {
+                    enabled: true,
+                    randomShapes: true
+                },
+                effects: {
+                    enabled: true,
+                    strokeVariance: 5,
+                    glowVariance: 8
+                }
+            };
 
-        // L
-        paths.push(new MorphingPath(
-            generateRandomShape(70, 100, 40),
-            'M 40 40 L 40 160 L 100 160',
-            palette.cyan,
-            Random.varyPercent(0, config.timing.staggerVariance)
-        ));
+            palette = config.colors.enabled ? {
+                cyan: ColorRandom.toHSL(ColorRandom.shiftColor(
+                    ColorRandom.baseColors.cyan,
+                    config.colors.hueShift,
+                    config.colors.satShift,
+                    config.colors.lightShift
+                )),
+                purple: ColorRandom.toHSL(ColorRandom.shiftColor(
+                    ColorRandom.baseColors.purple,
+                    config.colors.hueShift,
+                    config.colors.satShift,
+                    config.colors.lightShift
+                )),
+                pink: ColorRandom.toHSL(ColorRandom.shiftColor(
+                    ColorRandom.baseColors.pink,
+                    config.colors.hueShift,
+                    config.colors.satShift,
+                    config.colors.lightShift
+                ))
+            } : {
+                cyan: '#00d4ff',
+                purple: '#7b2ff7',
+                pink: '#ff2d75'
+            };
 
-        // O (first)
-        paths.push(new MorphingPath(
-            generateRandomShape(150, 100, 35),
-            'M 150 60 A 40 40 0 1 1 150 140 A 40 40 0 1 1 150 60',
-            palette.purple,
-            Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance)
-        ));
+            selectedEasing = Random.pick(easingFunctions);
 
-        // O (second)
-        paths.push(new MorphingPath(
-            generateRandomShape(240, 100, 35),
-            'M 240 60 A 40 40 0 1 1 240 140 A 40 40 0 1 1 240 60',
-            palette.purple,
-            Random.varyPercent(BASE_STAGGER * 2, config.timing.staggerVariance)
-        ));
+            // Generate random start shapes
+            generateRandomShape = (centerX, centerY, size) => {
+                const shapeTypes = [
+                    // Circle
+                    () => `M ${centerX + size} ${centerY} A ${size} ${size} 0 1 1 ${centerX + size} ${centerY + 0.1}`,
+                    // Square
+                    () => `M ${centerX - size} ${centerY - size} L ${centerX + size} ${centerY - size} L ${centerX + size} ${centerY + size} L ${centerX - size} ${centerY + size} Z`,
+                    // Triangle
+                    () => `M ${centerX} ${centerY - size} L ${centerX + size} ${centerY + size} L ${centerX - size} ${centerY + size} Z`,
+                    // Star-ish
+                    () => {
+                        const points = [];
+                        for (let i = 0; i < 5; i++) {
+                            const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+                            const r = i % 2 === 0 ? size : size / 2;
+                            points.push(`${centerX + Math.cos(angle) * r} ${centerY + Math.sin(angle) * r}`);
+                        }
+                        return `M ${points[0]} L ${points.slice(1).join(' L ')} Z`;
+                    },
+                    // Random polygon
+                    () => {
+                        const sides = Random.int(3, 8);
+                        const points = [];
+                        for (let i = 0; i < sides; i++) {
+                            const angle = (i / sides) * Math.PI * 2;
+                            const r = size * Random.range(0.5, 1);
+                            points.push(`${centerX + Math.cos(angle) * r} ${centerY + Math.sin(angle) * r}`);
+                        }
+                        return `M ${points[0]} L ${points.slice(1).join(' L ')} Z`;
+                    }
+                ];
+                return Random.pick(shapeTypes)();
+            };
 
-        // M
-        paths.push(new MorphingPath(
-            generateRandomShape(350, 100, 50),
-            'M 300 160 L 300 40 L 350 100 L 400 40 L 400 160',
-            palette.pink,
-            Random.varyPercent(BASE_STAGGER * 3, config.timing.staggerVariance)
-        ));
+            paths = [];
 
-        // 9 (first)
-        paths.push(new MorphingPath(
-            generateRandomShape(480, 100, 30),
-            'M 460 70 L 480 50 L 500 70 L 480 90 L 460 70 L 475 120 L 445 160',
-            palette.cyan,
-            Random.varyPercent(BASE_STAGGER * 4, config.timing.staggerVariance)
-        ));
+            BASE_STAGGER = Random.range(50, 300);
 
-        // 9 (second)
-        paths.push(new MorphingPath(
-            generateRandomShape(560, 100, 30),
-            'M 540 70 L 560 50 L 580 70 L 560 90 L 540 70 L 555 120 L 525 160',
-            palette.cyan,
-            Random.varyPercent(BASE_STAGGER * 5, config.timing.staggerVariance)
-        ));
+            // L
+            paths.push(new MorphingPath(
+                generateRandomShape(70, 100, 40),
+                'M 40 40 L 40 160 L 100 160',
+                palette.cyan,
+                Random.varyPercent(0, config.timing.staggerVariance)
+            ));
+
+            // O (first)
+            paths.push(new MorphingPath(
+                generateRandomShape(150, 100, 35),
+                'M 150 60 A 40 40 0 1 1 150 140 A 40 40 0 1 1 150 60',
+                palette.purple,
+                Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance)
+            ));
+
+            // O (second)
+            paths.push(new MorphingPath(
+                generateRandomShape(240, 100, 35),
+                'M 240 60 A 40 40 0 1 1 240 140 A 40 40 0 1 1 240 60',
+                palette.purple,
+                Random.varyPercent(BASE_STAGGER * 2, config.timing.staggerVariance)
+            ));
+
+            // M
+            paths.push(new MorphingPath(
+                generateRandomShape(350, 100, 50),
+                'M 300 160 L 300 40 L 350 100 L 400 40 L 400 160',
+                palette.pink,
+                Random.varyPercent(BASE_STAGGER * 3, config.timing.staggerVariance)
+            ));
+
+            // 9 (first)
+            paths.push(new MorphingPath(
+                generateRandomShape(480, 100, 30),
+                'M 460 70 L 480 50 L 500 70 L 480 90 L 460 70 L 475 120 L 445 160',
+                palette.cyan,
+                Random.varyPercent(BASE_STAGGER * 4, config.timing.staggerVariance)
+            ));
+
+            // 9 (second)
+            paths.push(new MorphingPath(
+                generateRandomShape(560, 100, 30),
+                'M 540 70 L 560 50 L 580 70 L 560 90 L 540 70 L 555 120 L 525 160',
+                palette.cyan,
+                Random.varyPercent(BASE_STAGGER * 5, config.timing.staggerVariance)
+            ));
+        }
 
         let startTime = null;
 
@@ -322,19 +338,19 @@
         }
 
         function restart() {
+            initializeParameters();  // Regenerate all random parameters
             startTime = null;
-            paths.forEach(path => {
-                path.path.style.opacity = '0';
-            });
             requestAnimationFrame(animate);
         }
 
         if (prefersReducedMotion) {
+            initializeParameters();
             paths.forEach(path => {
                 path.path.style.opacity = '1';
                 path.path.setAttribute('d', path.endPath);
             });
         } else {
+            initializeParameters();
             requestAnimationFrame(animate);
         }
 

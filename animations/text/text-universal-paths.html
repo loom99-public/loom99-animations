@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Text Animation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .container { width: 100%; max-width: 1000px; padding: 20px; }
+        svg { width: 100%; height: auto; }
+        .text-path {
+            fill: currentColor;
+            opacity: 0;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .text-path { opacity: 1 !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg id="svg" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+            <g id="textGroup"></g>
+        </svg>
+    </div>
+
+    <script>
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const svg = document.getElementById('svg');
+        const textGroup = document.getElementById('textGroup');
+
+        // Read URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramHoldDuration = urlParams.get('holdDuration');
+        const paramDuration = urlParams.get('duration');
+        const paramHueShift = urlParams.get('hueShift');
+
+        // Animation state
+        let animationState = 'waiting'; // 'waiting', 'entrance', 'hold', 'exit'
+        let startTime = null;
+        let exitStartTime = null;
+        let holdTimeout = null;
+        let pathElements = [];
+        let currentPathData = null;
+
+        const HOLD_DURATION = paramHoldDuration ? parseInt(paramHoldDuration) : 2000;
+        const ENTRANCE_DURATION = paramDuration ? parseInt(paramDuration) : 1500;
+        const EXIT_DURATION = 300;
+
+        // Easing functions
+        function easeOutQuart(t) { return 1 - Math.pow(1 - t, 4); }
+        function easeInQuart(t) { return t * t * t * t; }
+        function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+        // Default text paths (DO MORE NOW in Anton-like style)
+        const defaultPaths = [
+            { d: "M50 80L50 20L90 20Q120 20 120 50Q120 80 90 80L50 80ZM70 60L85 60Q95 60 95 50Q95 40 85 40L70 40L70 60ZM140 50Q140 20 180 20Q220 20 220 50L220 80L140 80L140 50ZM160 60L200 60L200 50Q200 40 180 40Q160 40 160 50L160 60Z", text: "DO", color: "#ff2d2d", y: 80 },
+            { d: "M50 170L50 110L80 110L100 150L120 110L150 110L150 170L130 170L130 130L110 170L90 170L70 130L70 170L50 170ZM170 140Q170 110 210 110Q250 110 250 140Q250 170 210 170Q170 170 170 140ZM190 140Q190 155 210 155Q230 155 230 140Q230 125 210 125Q190 125 190 140ZM270 170L270 110L310 110Q340 110 340 130Q340 145 320 150L345 170L320 170L300 150L290 150L290 170L270 170ZM290 135L305 135Q315 135 315 130Q315 125 305 125L290 125L290 135ZM360 170L360 110L420 110L420 125L380 125L380 135L415 135L415 150L380 150L380 155L420 155L420 170L360 170Z", text: "MORE", color: "#ff6b00", y: 170 },
+            { d: "M50 260L50 200L70 200L100 240L100 200L120 200L120 260L100 260L70 220L70 260L50 260ZM140 230Q140 200 180 200Q220 200 220 230Q220 260 180 260Q140 260 140 230ZM160 230Q160 245 180 245Q200 245 200 230Q200 215 180 215Q160 215 160 230ZM240 260L240 200L270 200L290 240L310 200L340 200L300 260L280 260L240 260ZM350 260L390 200L410 200L450 260L425 260L420 250L380 250L375 260L350 260ZM390 235L410 235L400 215L390 235Z", text: "NOW", color: "#ffdd00", y: 260 }
+        ];
+
+        function createPathElements(pathData) {
+            // Clear existing paths
+            textGroup.innerHTML = '';
+            pathElements = [];
+
+            pathData.forEach((item, index) => {
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', item.d);
+                path.setAttribute('class', 'text-path');
+                path.style.color = item.color;
+                path.style.fill = item.color;
+                path.style.filter = `drop-shadow(0 0 10px ${item.color})`;
+                path.dataset.index = index;
+                path.dataset.delay = index * 200; // Stagger delay
+                textGroup.appendChild(path);
+                pathElements.push({
+                    element: path,
+                    delay: index * 200,
+                    color: item.color
+                });
+            });
+        }
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+
+            if (animationState === 'entrance') {
+                let allDone = true;
+                pathElements.forEach((item, index) => {
+                    const localTime = elapsed - item.delay;
+                    if (localTime < 0) {
+                        item.element.style.opacity = 0;
+                        allDone = false;
+                    } else if (localTime < ENTRANCE_DURATION) {
+                        const progress = localTime / ENTRANCE_DURATION;
+                        const eased = easeOutCubic(progress);
+                        item.element.style.opacity = eased;
+                        item.element.style.transform = `translateY(${20 * (1 - eased)}px)`;
+                        allDone = false;
+                    } else {
+                        item.element.style.opacity = 1;
+                        item.element.style.transform = 'translateY(0)';
+                    }
+                });
+
+                if (allDone) {
+                    animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
+                } else {
+                    requestAnimationFrame(animate);
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInQuart(progress);
+
+                pathElements.forEach((item, index) => {
+                    item.element.style.opacity = 1 - eased;
+                    item.element.style.transform = `translateY(${-30 * eased}px) scale(${1 - 0.2 * eased})`;
+                });
+
+                if (progress >= 1) {
+                    restart();
+                } else {
+                    requestAnimationFrame(animate);
+                }
+            }
+        }
+
+        function startExit() {
+            if (holdTimeout) clearTimeout(holdTimeout);
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
+        }
+
+        function restart() {
+            if (holdTimeout) clearTimeout(holdTimeout);
+            animationState = 'entrance';
+            startTime = null;
+            exitStartTime = null;
+            pathElements.forEach(item => {
+                item.element.style.opacity = 0;
+                item.element.style.transform = '';
+            });
+            requestAnimationFrame(animate);
+        }
+
+        function startAnimation(pathData) {
+            currentPathData = pathData || defaultPaths;
+            createPathElements(currentPathData);
+            animationState = 'entrance';
+            startTime = null;
+            requestAnimationFrame(animate);
+        }
+
+        // Listen for messages from parent (gallery editor)
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'updateTextPaths') {
+                const pathData = event.data.pathData;
+                if (pathData && pathData.length > 0) {
+                    if (holdTimeout) clearTimeout(holdTimeout);
+                    startAnimation(pathData);
+                }
+            }
+        });
+
+        // Click to restart
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance' || animationState === 'waiting') {
+                restart();
+            }
+        });
+
+        // Start with default animation
+        if (!prefersReducedMotion) {
+            startAnimation(defaultPaths);
+        } else {
+            createPathElements(defaultPaths);
+            pathElements.forEach(item => {
+                item.element.style.opacity = 1;
+            });
+        }
+    </script>
+</body>
+</html>

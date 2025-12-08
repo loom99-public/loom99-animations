@@ -127,6 +127,21 @@
             requestAnimationFrame(animate);
         }
 
+        
+        // Update text content from path data
+        function updateTextFromPaths(pathData) {
+            // This animation accepts dynamic text paths via postMessage
+            // The gallery editor sends path data when "Generate" is clicked
+            console.log('Received text paths:', pathData);
+        }
+
+        // Listen for messages from parent (gallery editor)
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'updateTextPaths') {
+                updateTextFromPaths(event.data.pathData);
+            }
+        });
+
         if (!prefersReducedMotion) {
             initializeParameters();
             requestAnimationFrame(animate);

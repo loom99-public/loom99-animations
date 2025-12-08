@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>loom99 Animations Gallery</title>
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -457,6 +458,22 @@
 
         .editor-btn-copy.copied {
             background: #00d4ff;
+        }
+
+        .editor-btn-apply {
+            background: linear-gradient(135deg, #00d4ff, #7b2ff7);
+            color: #fff;
+            width: 100%;
+        }
+
+        .editor-btn-apply:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
+        }
+
+        .editor-btn-apply.generating {
+            background: #3a3a5e;
+            pointer-events: none;
         }
 
         .text-control {
@@ -1823,6 +1840,140 @@
     </div>
 
     <script>
+        // Font cache and loading
+        const fontCache = new Map();
+        const availableFonts = [
+            { name: 'Anton', file: 'Anton-Regular' },
+            { name: 'Roboto Bold', file: 'Roboto-Bold' },
+            { name: 'Oswald', file: 'Oswald-Bold' },
+            { name: 'Bangers', file: 'Bangers-Regular' },
+            { name: 'Bungee', file: 'Bungee-Regular' },
+            { name: 'Black Ops One', file: 'BlackOpsOne-Regular' },
+            { name: 'Permanent Marker', file: 'PermanentMarker-Regular' },
+            { name: 'Press Start 2P', file: 'PressStart2P-Regular' }
+        ];
+
+        async function loadFont(fontFile) {
+            if (fontCache.has(fontFile)) {
+                return fontCache.get(fontFile);
+            }
+            try {
+                const font = await opentype.load(`fonts/${fontFile}.ttf`);
+                fontCache.set(fontFile, font);
+                return font;
+            } catch (err) {
+                console.error('Failed to load font:', fontFile, err);
+                return null;
+            }
+        }
+
+        function textToSvgPaths(font, text, fontSize = 80) {
+            const lines = text.split('\n').filter(l => l.trim());
+            const paths = [];
+            const lineHeight = fontSize * 1.2;
+            let yOffset = fontSize;
+
+            for (const line of lines) {
+                const path = font.getPath(line, 50, yOffset, fontSize);
+                paths.push({
+                    d: path.toPathData(2),
+                    y: yOffset,
+                    text: line
+                });
+                yOffset += lineHeight;
+            }
+
+            return {
+                paths,
+                viewBox: `0 0 700 ${Math.max(280, yOffset + 20)}`,
+                fontSize
+            };
+        }
+
+        function generateTextPathData(font, text, layout = 'stacked') {
+            // Parse text into words/lines
+            const words = text.trim().split(/\s+/);
+            const pathData = [];
+
+            if (layout === 'stacked') {
+                // Stack words vertically like "DO MORE NOW"
+                const sizes = [80, 60, 80]; // Different sizes for visual interest
+                let y = 80;
+                words.forEach((word, i) => {
+                    const size = sizes[i % sizes.length];
+                    const path = font.getPath(word, 50, y, size);
+                    pathData.push({
+                        d: path.toPathData(2),
+                        text: word,
+                        color: i === 0 ? '#ff2d2d' : i === 1 ? '#ff6b00' : '#ffdd00',
+                        y: y,
+                        fontSize: size
+                    });
+                    y += size * 1.1;
+                });
+            } else {
+                // Single line
+                const path = font.getPath(text, 50, 150, 60);
+                pathData.push({
+                    d: path.toPathData(2),
+                    text: text,
+                    color: '#00d4ff',
+                    y: 150,
+                    fontSize: 60
+                });
+            }
+
+            return pathData;
+        }
+
+        async function applyTextToAnimation(button) {
+            const card = button.closest('.animation-card');
+            const panel = card.querySelector('.editor-panel');
+            const iframe = card.querySelector('.preview-frame');
+
+            if (!panel || !iframe) return;
+
+            const fontFile = panel.querySelector('.param-font')?.value || 'Anton-Regular';
+            const text = panel.querySelector('.param-text')?.value || 'DO MORE NOW';
+
+            // Show generating state
+            button.classList.add('generating');
+            button.textContent = '⏳ Generating...';
+
+            try {
+                const font = await loadFont(fontFile);
+                if (!font) {
+                    throw new Error('Font not loaded');
+                }
+
+                const pathData = generateTextPathData(font, text, 'stacked');
+
+                // Send path data to iframe via postMessage
+                iframe.contentWindow.postMessage({
+                    type: 'updateTextPaths',
+                    pathData: pathData,
+                    params: getParamsFromEditor(card)
+                }, '*');
+
+                button.textContent = '✓ Applied!';
+                setTimeout(() => {
+                    button.classList.remove('generating');
+                    button.textContent = '✨ Generate';
+                }, 1500);
+
+            } catch (err) {
+                console.error('Text generation failed:', err);
+                button.textContent = '✗ Failed';
+                setTimeout(() => {
+                    button.classList.remove('generating');
+                    button.textContent = '✨ Generate';
+                }, 2000);
+            }
+        }
+
+        // Preload default font
+        loadFont('Anton-Regular');
+
         // Store current animation URLs per card
         const cardUrls = new WeakMap();
 
@@ -2133,6 +2284,29 @@
                             <label>Hold Duration</label>
                             <input type="range" class="param-hold" min="500" max="5000" value="2000">
                             <div class="editor-value">2000ms</div>
+                        </div>
+                    </div>
+                    <div class="editor-row">
+                        <div class="editor-control">
+                            <label>Font</label>
+                            <select class="param-font">
+                                <option value="Anton-Regular">Anton</option>
+                                <option value="Roboto-Bold">Roboto Bold</option>
+                                <option value="Oswald-Bold">Oswald</option>
+                                <option value="Bangers-Regular">Bangers</option>
+                                <option value="Bungee-Regular">Bungee</option>
+                                <option value="BlackOpsOne-Regular">Black Ops One</option>
+                                <option value="PermanentMarker-Regular">Permanent Marker</option>
+                                <option value="PressStart2P-Regular">Press Start 2P</option>
+                            </select>
+                        </div>
+                        <div class="editor-control text-control">
+                            <label>Text</label>
+                            <input type="text" class="param-text" value="DO MORE NOW" placeholder="Enter text...">
+                        </div>
+                        <div class="editor-control">
+                            <label>Apply Text</label>
+                            <button class="editor-btn editor-btn-apply" onclick="applyTextToAnimation(this)">✨ Generate</button>
                         </div>
                     </div>
                     <div class="editor-row">

@@ -297,21 +297,171 @@
         .preview-container {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease;
+            transition: max-height 0.5s ease;
             margin-top: 0;
         }
 
         .preview-container.visible {
-            max-height: 600px;
+            max-height: 1200px;
             margin-top: 12px;
         }
 
         .preview-frame {
             width: 100%;
-            height: 400px;
+            height: 350px;
             border: 2px solid #3a3a5e;
-            border-radius: 6px;
+            border-radius: 6px 6px 0 0;
             background: #1a1a2e;
+        }
+
+        .editor-panel {
+            background: #12121f;
+            border: 2px solid #3a3a5e;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            padding: 16px;
+        }
+
+        .editor-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .editor-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .editor-control {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .editor-control label {
+            display: block;
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .editor-control input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #2a2a3e;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .editor-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #7b2ff7;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .editor-control input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #7b2ff7;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .editor-control select {
+            width: 100%;
+            padding: 8px 10px;
+            background: #2a2a3e;
+            border: 1px solid #3a3a5e;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .editor-control input[type="text"] {
+            width: 100%;
+            padding: 8px 10px;
+            background: #2a2a3e;
+            border: 1px solid #3a3a5e;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        .editor-control input[type="text"]:focus,
+        .editor-control select:focus {
+            outline: none;
+            border-color: #7b2ff7;
+        }
+
+        .editor-value {
+            font-size: 11px;
+            color: #00d4ff;
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .editor-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .editor-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .editor-btn-random {
+            background: linear-gradient(135deg, #7b2ff7, #00d4ff);
+            color: #fff;
+        }
+
+        .editor-btn-random:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(123, 47, 247, 0.4);
+        }
+
+        .editor-btn-replay {
+            background: #2a2a3e;
+            color: #00d4ff;
+        }
+
+        .editor-btn-replay:hover {
+            background: #3a3a5e;
+        }
+
+        .editor-btn-copy {
+            background: linear-gradient(135deg, #ff2d75, #ffdd00);
+            color: #1a1a2e;
+        }
+
+        .editor-btn-copy:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 45, 117, 0.4);
+        }
+
+        .editor-btn-copy.copied {
+            background: #00d4ff;
+        }
+
+        .text-control {
+            flex: 2;
+            min-width: 200px;
         }
 
         .footer {
@@ -456,7 +606,7 @@
                         </div>
                     </div>
                     <div class="animation-row">
-                        <div class="row-label">Do It Now</div>
+                        <div class="row-label">Do More Now</div>
                         <div class="animation-grid">
                             <div class="animation-card">
                                 <div class="card-header">
@@ -584,7 +734,7 @@
                         </div>
                     </div>
                     <div class="animation-row">
-                        <div class="row-label">Do It Now</div>
+                        <div class="row-label">Do More Now</div>
                         <div class="animation-grid">
                             <div class="animation-card">
                                 <div class="card-header">
@@ -712,7 +862,7 @@
                         </div>
                     </div>
                     <div class="animation-row">
-                        <div class="row-label">Do It Now</div>
+                        <div class="row-label">Do More Now</div>
                         <div class="animation-grid">
                             <div class="animation-card">
                                 <div class="card-header">
@@ -840,7 +990,7 @@
                         </div>
                     </div>
                     <div class="animation-row">
-                        <div class="row-label">Do It Now</div>
+                        <div class="row-label">Do More Now</div>
                         <div class="animation-grid">
                             <div class="animation-card">
                                 <div class="card-header">
@@ -968,7 +1118,7 @@
                         </div>
                     </div>
                     <div class="animation-row">
-                        <div class="row-label">Do It Now</div>
+                        <div class="row-label">Do More Now</div>
                         <div class="animation-grid">
                             <div class="animation-card">
                                 <div class="card-header">
@@ -1096,7 +1246,7 @@
                         </div>
                     </div>
                     <div class="animation-row">
-                        <div class="row-label">Do It Now</div>
+                        <div class="row-label">Do More Now</div>
                         <div class="animation-grid">
                             <div class="animation-card">
                                 <div class="card-header">
@@ -1224,7 +1374,7 @@
                         </div>
                     </div>
                     <div class="animation-row">
-                        <div class="row-label">Do It Now</div>
+                        <div class="row-label">Do More Now</div>
                         <div class="animation-grid">
                             <div class="animation-card">
                                 <div class="card-header">
@@ -1352,7 +1502,7 @@
                         </div>
                     </div>
                     <div class="animation-row">
-                        <div class="row-label">Do It Now</div>
+                        <div class="row-label">Do More Now</div>
                         <div class="animation-grid">
                             <div class="animation-card">
                                 <div class="card-header">
@@ -1480,7 +1630,7 @@
                         </div>
                     </div>
                     <div class="animation-row">
-                        <div class="row-label">Do It Now</div>
+                        <div class="row-label">Do More Now</div>
                         <div class="animation-grid">
                             <div class="animation-card">
                                 <div class="card-header">
@@ -1608,7 +1758,7 @@
                         </div>
                     </div>
                     <div class="animation-row">
-                        <div class="row-label">Do It Now</div>
+                        <div class="row-label">Do More Now</div>
                         <div class="animation-grid">
                             <div class="animation-card">
                                 <div class="card-header">
@@ -1673,6 +1823,9 @@
     </div>
 
     <script>
+        // Store current animation URLs per card
+        const cardUrls = new WeakMap();
+
         function toggleSection(header) {
             const section = header.parentElement;
             const wasExpanded = section.classList.contains('expanded');
@@ -1694,6 +1847,9 @@
             const iframe = card.querySelector('.preview-frame');
             const isVisible = container.classList.contains('visible');
 
+            // Store URL for this card
+            cardUrls.set(card, url);
+
             // Close all other previews in the same section
             const section = button.closest('.technique-section');
             section.querySelectorAll('.preview-container').forEach(c => {
@@ -1714,12 +1870,194 @@
                 iframe.src = '';
                 button.classList.remove('active');
             } else {
-                // Open this preview
+                // Open this preview with current params
                 container.classList.add('visible');
-                iframe.src = url;
+                loadAnimationWithParams(card, url);
                 button.classList.add('active');
             }
         }
+
+        function getParamsFromEditor(card) {
+            const panel = card.querySelector('.editor-panel');
+            if (!panel) return {};
+
+            return {
+                duration: panel.querySelector('.param-duration')?.value || 1500,
+                hueShift: panel.querySelector('.param-hue')?.value || 0,
+                stagger: panel.querySelector('.param-stagger')?.value || 80,
+                glow: panel.querySelector('.param-glow')?.value || 8,
+                easeIn: panel.querySelector('.param-ease-in')?.value || 'ease-in-quart',
+                easeOut: panel.querySelector('.param-ease-out')?.value || 'ease-out-quart',
+                text: panel.querySelector('.param-text')?.value || 'DO MORE NOW'
+            };
+        }
+
+        function loadAnimationWithParams(card, url) {
+            const iframe = card.querySelector('.preview-frame');
+            const params = getParamsFromEditor(card);
+            const queryString = new URLSearchParams(params).toString();
+            iframe.src = url + (queryString ? '?' + queryString : '');
+        }
+
+        function randomizeParams(button) {
+            const card = button.closest('.animation-card');
+            const panel = card.querySelector('.editor-panel');
+            if (!panel) return;
+
+            // Randomize values
+            const duration = Math.floor(500 + Math.random() * 3500);
+            const hueShift = Math.floor(-180 + Math.random() * 360);
+            const stagger = Math.floor(Math.random() * 500);
+            const glow = Math.floor(Math.random() * 30);
+
+            const easings = ['linear', 'ease-in', 'ease-in-quad', 'ease-in-cubic', 'ease-in-quart'];
+            const easeOutOptions = ['linear', 'ease-out', 'ease-out-quad', 'ease-out-cubic', 'ease-out-quart'];
+            const easeIn = easings[Math.floor(Math.random() * easings.length)];
+            const easeOut = easeOutOptions[Math.floor(Math.random() * easeOutOptions.length)];
+
+            // Update controls
+            const durationInput = panel.querySelector('.param-duration');
+            const hueInput = panel.querySelector('.param-hue');
+            const staggerInput = panel.querySelector('.param-stagger');
+            const glowInput = panel.querySelector('.param-glow');
+            const easeInSelect = panel.querySelector('.param-ease-in');
+            const easeOutSelect = panel.querySelector('.param-ease-out');
+
+            if (durationInput) {
+                durationInput.value = duration;
+                durationInput.nextElementSibling.textContent = duration + 'ms';
+            }
+            if (hueInput) {
+                hueInput.value = hueShift;
+                hueInput.nextElementSibling.textContent = hueShift + '°';
+            }
+            if (staggerInput) {
+                staggerInput.value = stagger;
+                staggerInput.nextElementSibling.textContent = stagger + 'ms';
+            }
+            if (glowInput) {
+                glowInput.value = glow;
+                glowInput.nextElementSibling.textContent = glow + 'px';
+            }
+            if (easeInSelect) easeInSelect.value = easeIn;
+            if (easeOutSelect) easeOutSelect.value = easeOut;
+
+            // Reload animation
+            replayAnimation(button);
+        }
+
+        function replayAnimation(button) {
+            const card = button.closest('.animation-card');
+            const url = cardUrls.get(card);
+            if (url) {
+                loadAnimationWithParams(card, url);
+            }
+        }
+
+        async function copySvgAnimation(button) {
+            const card = button.closest('.animation-card');
+            const iframe = card.querySelector('.preview-frame');
+            const params = getParamsFromEditor(card);
+
+            try {
+                // Get SVG content from iframe
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const svg = iframeDoc.querySelector('svg');
+
+                if (svg) {
+                    // Clone and prepare SVG for export
+                    const svgClone = svg.cloneNode(true);
+
+                    // Add inline styles for portability
+                    svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+                    // Create a standalone SVG with CSS animation
+                    const svgContent = createAnimatedSvg(svgClone, params);
+
+                    await navigator.clipboard.writeText(svgContent);
+
+                    // Visual feedback
+                    button.classList.add('copied');
+                    const originalText = button.textContent;
+                    button.textContent = '✓ Copied!';
+                    setTimeout(() => {
+                        button.classList.remove('copied');
+                        button.textContent = originalText;
+                    }, 2000);
+                } else {
+                    // Fallback: copy iframe URL with params
+                    const url = cardUrls.get(card);
+                    const queryString = new URLSearchParams(params).toString();
+                    await navigator.clipboard.writeText(url + (queryString ? '?' + queryString : ''));
+
+                    button.textContent = '✓ URL Copied!';
+                    setTimeout(() => {
+                        button.textContent = '📋 Copy SVG';
+                    }, 2000);
+                }
+            } catch (err) {
+                console.error('Copy failed:', err);
+                button.textContent = '✗ Failed';
+                setTimeout(() => {
+                    button.textContent = '📋 Copy SVG';
+                }, 2000);
+            }
+        }
+
+        function createAnimatedSvg(svgElement, params) {
+            // Create a self-contained animated SVG for GitHub README
+            const duration = params.duration / 1000;
+            const hueShift = params.hueShift || 0;
+
+            // Get easing function CSS equivalent
+            const easingMap = {
+                'linear': 'linear',
+                'ease-in': 'ease-in',
+                'ease-in-quad': 'cubic-bezier(0.55, 0.085, 0.68, 0.53)',
+                'ease-in-cubic': 'cubic-bezier(0.55, 0.055, 0.675, 0.19)',
+                'ease-in-quart': 'cubic-bezier(0.895, 0.03, 0.685, 0.22)',
+                'ease-out': 'ease-out',
+                'ease-out-quad': 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                'ease-out-cubic': 'cubic-bezier(0.215, 0.61, 0.355, 1)',
+                'ease-out-quart': 'cubic-bezier(0.165, 0.84, 0.44, 1)'
+            };
+
+            const easing = easingMap[params.easeOut] || 'ease-out';
+
+            // Build SVG string with embedded animation
+            let svgString = svgElement.outerHTML;
+
+            // Add animation styles
+            const styleTag = `
+<style>
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animated-element {
+    animation: fadeIn ${duration}s ${easing} forwards;
+    filter: hue-rotate(${hueShift}deg);
+  }
+</style>`;
+
+            // Insert style into SVG
+            svgString = svgString.replace('<svg', styleTag + '<svg');
+
+            return `<!-- Animated SVG - Generated by loom99 Animation Editor -->\n${svgString}`;
+        }
+
+        // Update value displays when sliders change
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('param-duration')) {
+                e.target.nextElementSibling.textContent = e.target.value + 'ms';
+            } else if (e.target.classList.contains('param-hue')) {
+                e.target.nextElementSibling.textContent = e.target.value + '°';
+            } else if (e.target.classList.contains('param-stagger')) {
+                e.target.nextElementSibling.textContent = e.target.value + 'ms';
+            } else if (e.target.classList.contains('param-glow')) {
+                e.target.nextElementSibling.textContent = e.target.value + 'px';
+            }
+        });
 
         // Auto-expand first section (Line Drawing - user favorite)
         document.addEventListener('DOMContentLoaded', function() {
@@ -1727,7 +2065,76 @@
             if (firstSection) {
                 firstSection.classList.add('expanded');
             }
+
+            // Add editor panels to all preview containers that don't have them
+            document.querySelectorAll('.preview-container').forEach(container => {
+                if (!container.querySelector('.editor-panel')) {
+                    container.insertAdjacentHTML('beforeend', createEditorPanelHtml());
+                }
+            });
         });
+
+        function createEditorPanelHtml() {
+            return `
+                <div class="editor-panel">
+                    <div class="editor-row">
+                        <div class="editor-control">
+                            <label>Duration (ms)</label>
+                            <input type="range" class="param-duration" min="500" max="4000" value="1500">
+                            <div class="editor-value">1500ms</div>
+                        </div>
+                        <div class="editor-control">
+                            <label>Hue Shift</label>
+                            <input type="range" class="param-hue" min="-180" max="180" value="0">
+                            <div class="editor-value">0°</div>
+                        </div>
+                        <div class="editor-control">
+                            <label>Stagger</label>
+                            <input type="range" class="param-stagger" min="0" max="500" value="80">
+                            <div class="editor-value">80ms</div>
+                        </div>
+                        <div class="editor-control">
+                            <label>Glow</label>
+                            <input type="range" class="param-glow" min="0" max="30" value="8">
+                            <div class="editor-value">8px</div>
+                        </div>
+                    </div>
+                    <div class="editor-row">
+                        <div class="editor-control">
+                            <label>Ease In</label>
+                            <select class="param-ease-in">
+                                <option value="linear">Linear</option>
+                                <option value="ease-in">Ease In</option>
+                                <option value="ease-in-quad">Ease In Quad</option>
+                                <option value="ease-in-cubic">Ease In Cubic</option>
+                                <option value="ease-in-quart" selected>Ease In Quart</option>
+                            </select>
+                        </div>
+                        <div class="editor-control">
+                            <label>Ease Out</label>
+                            <select class="param-ease-out">
+                                <option value="linear">Linear</option>
+                                <option value="ease-out">Ease Out</option>
+                                <option value="ease-out-quad">Ease Out Quad</option>
+                                <option value="ease-out-cubic">Ease Out Cubic</option>
+                                <option value="ease-out-quart" selected>Ease Out Quart</option>
+                            </select>
+                        </div>
+                        <div class="editor-control text-control">
+                            <label>Text (for text animations)</label>
+                            <input type="text" class="param-text" value="DO MORE NOW" placeholder="Animation text...">
+                        </div>
+                    </div>
+                    <div class="editor-row">
+                        <div class="editor-buttons">
+                            <button class="editor-btn editor-btn-random" onclick="randomizeParams(this)">🎲 Random</button>
+                            <button class="editor-btn editor-btn-replay" onclick="replayAnimation(this)">↻ Replay</button>
+                            <button class="editor-btn editor-btn-copy" onclick="copySvgAnimation(this)">📋 Copy SVG</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
     </script>
 </body>
 </html>

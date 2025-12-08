@@ -75,6 +75,62 @@
                 }
                 this.circle.setAttribute('cx', this.x); this.circle.setAttribute('cy', this.y); this.circle.setAttribute('r', this.r);
             }
+            remove() {
+                if (this.circle && this.circle.parentNode) {
+                    this.circle.parentNode.removeChild(this.circle);
+                }
+            }
+        }
+
+        // Function to generate blobs from path data using circle packing
+        function generateBlobsFromPaths(pathData) {
+            const newBlobs = [];
+            const colors = [palette.red, palette.orange, palette.yellow];
+
+            // Create a temporary canvas for point-in-path testing
+            const canvas = document.createElement('canvas');
+            canvas.width = 700;
+            canvas.height = 280;
+            const ctx = canvas.getContext('2d');
+
+            pathData.forEach((item, index) => {
+                const color = colors[index % colors.length];
+                const path = new Path2D(item.d);
+
+                // Calculate bounds from the path data
+                let bounds;
+                if (item.bounds) {
+                    bounds = item.bounds;
+                } else {
+                    const y = item.y || (80 + index * 80);
+                    bounds = { x1: 50, x2: 450, y1: y - 60, y2: y + 20 };
+                }
+
+                // Calculate target blob count based on area
+                const area = (bounds.x2 - bounds.x1) * (bounds.y2 - bounds.y1);
+                const targetCount = Math.floor(area / 400);
+
+                // Generate blobs using random point-in-path testing
+                const blobsForLetter = [];
+                let attempts = 0;
+                const maxAttempts = targetCount * 20;
+
+                while (blobsForLetter.length < targetCount && attempts < maxAttempts) {
+                    const x = bounds.x1 + Math.random() * (bounds.x2 - bounds.x1);
+                    const y = bounds.y1 + Math.random() * (bounds.y2 - bounds.y1);
+
+                    if (ctx.isPointInPath(path, x, y)) {
+                        const radius = 8 + Math.random() * 12;
+                        blobsForLetter.push(new Blob(x, y, radius, color));
+                    }
+                    attempts++;
+                }
+
+                newBlobs.push(...blobsForLetter);
+                console.log(`Generated ${blobsForLetter.length} blobs for "${item.text}" (target: ${targetCount})`);
+            });
+
+            return newBlobs;
         }
 
         function initializeParameters() {
@@ -175,6 +231,49 @@
                 startExit();
             } else if (animationState === 'entrance') {
                 restart();
+            }
+        });
+
+        // Listen for messages from parent (gallery editor)
+        window.addEventListener('message', function(event) {
+            // Validate origin - allow same origin and localhost dev servers
+            const allowedOrigins = [
+                window.location.origin,
+                "http://localhost:8888",
+                "http://127.0.0.1:8888",
+                "null"  // file:// protocol for local development
+            ];
+
+            if (!allowedOrigins.includes(event.origin)) {
+                console.warn("Rejected postMessage from unauthorized origin:", event.origin);
+                return;
+            }
+
+            if (event.data && event.data.type === 'updateTextPaths') {
+                const pathData = event.data.pathData;
+
+                console.log('Updating liquid blobs with path data:', pathData);
+
+                // Initialize parameters to get palette colors
+                if (!palette) {
+                    mode = Random.pick(modes);
+                    config = { hueShift: Random.range(-15, 15), sizeVar: 0.3, speedMod: Random.range(0.85, 1.15), gooStr: Random.vary(10, 2) };
+                    palette = { red: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.red, config.hueShift)), orange: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.orange, config.hueShift)), yellow: ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.hueShift)) };
+                }
+
+                // Remove old blobs
+                if (blobs) {
+                    blobs.forEach(blob => blob.remove());
+                }
+
+                // Generate new blobs from path data
+                blobs = generateBlobsFromPaths(pathData);
+
+                // Restart animation
+                if (holdTimeout) clearTimeout(holdTimeout);
+                startTime = null;
+                animationState = 'entrance';
+                requestAnimationFrame(animate);
             }
         });
     </script>

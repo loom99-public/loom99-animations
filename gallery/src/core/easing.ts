@@ -154,3 +154,8 @@ export function easingToKeySplines(easing: EasingFunction | string): string {
   // SMIL keySplines format: x1 y1 x2 y2
   return `${t1} ${p1} ${t2} ${p2}`;
 }
+
+/**
+ * List of all available easing function names
+ */
+export const EASING_NAMES = Object.keys(easings);

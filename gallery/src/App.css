@@ -288,6 +288,235 @@
   font-size: 0.9rem;
 }
 
+/* Track Editor */
+.track-editor {
+  background-color: var(--color-bg-header);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.track-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-bg-card);
+}
+
+.track-editor-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.track-editor-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-small {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: var(--color-border);
+  color: var(--color-text-primary);
+  transition: background-color 0.2s;
+}
+
+.btn-small:hover {
+  background-color: #3a3a4e;
+}
+
+.btn-small.btn-primary {
+  background-color: var(--color-accent-purple);
+}
+
+.btn-small.btn-primary:hover {
+  background-color: #9347ff;
+}
+
+/* Master Timeline */
+.master-timeline {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.timeline-markers {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.timeline-marker {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+}
+
+.timeline-ruler {
+  height: 2px;
+  background: linear-gradient(to right, var(--color-accent-purple), var(--color-accent-cyan));
+  border-radius: 1px;
+}
+
+/* Track List */
+.track-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Track Display */
+.track-display {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.track-display:last-child {
+  border-bottom: none;
+}
+
+.track-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.track-header:hover {
+  background-color: rgba(123, 47, 247, 0.1);
+}
+
+.track-name {
+  font-weight: 500;
+  min-width: 100px;
+}
+
+.track-values {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: var(--color-accent-cyan);
+  min-width: 100px;
+}
+
+.track-timing {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  min-width: 100px;
+}
+
+.track-expand-icon {
+  margin-left: auto;
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+}
+
+/* Track Timeline Bar */
+.track-timeline {
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  margin: 0 1rem 0.5rem 1rem;
+  border-radius: 2px;
+  position: relative;
+}
+
+.track-bar {
+  position: absolute;
+  height: 100%;
+  background: linear-gradient(to right, var(--color-accent-purple), var(--color-accent-cyan));
+  border-radius: 2px;
+  min-width: 4px;
+}
+
+/* Track Details */
+.track-details {
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid var(--color-border);
+}
+
+.track-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.track-row:last-child {
+  margin-bottom: 0;
+}
+
+.track-row label {
+  min-width: 80px;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.track-row input[type="number"] {
+  width: 80px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+}
+
+.track-row input[type="number"]:focus {
+  outline: none;
+  border-color: var(--color-accent-purple);
+}
+
+.track-row .unit {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.track-row.easing-row {
+  align-items: flex-start;
+}
+
+.easing-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.easing-selector select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.easing-selector select:focus {
+  outline: none;
+  border-color: var(--color-accent-purple);
+}
+
+.easing-curve-preview {
+  border-radius: 4px;
+}
+
+.track-editor-footer {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-bg-card);
+  text-align: right;
+}
+
+.total-duration {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .animation-grid {
@@ -304,5 +533,15 @@
 
   .content-inner {
     padding: 1rem;
+  }
+
+  .track-header {
+    flex-wrap: wrap;
+  }
+
+  .track-values,
+  .track-timing {
+    min-width: auto;
+    font-size: 0.8rem;
   }
 }

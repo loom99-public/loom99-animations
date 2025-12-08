@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Do It Now - Typewriter Animation</title>
+    <title>Do More Now - Typewriter Animation</title>
     <style>
         * {
             margin: 0;
@@ -123,7 +123,7 @@
 
         const words = [
             { text: 'DO', element: document.getElementById('word1'), delay: 0 },
-            { text: 'IT', element: document.getElementById('word2'), delay: 400 },
+            { text: 'MORE', element: document.getElementById('word2'), delay: 400 },
             { text: 'NOW', element: document.getElementById('word3'), delay: 700 }
         ];
 
@@ -232,6 +232,7 @@
             }
 
             function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 animationState = 'exit';
 
                 exitWordIndex = words.length - 1;
@@ -248,6 +249,7 @@
             }
 
             function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 currentWordIndex = 0;
                 currentCharIndex = 0;
                 animationState = 'entrance';

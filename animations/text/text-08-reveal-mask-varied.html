@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do It Now - Reveal Mask Animation (Varied)</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do More Now - Reveal Mask Animation (Varied)</title>
     <style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; } .container { width: 100%; max-width: 1000px; padding: 20px; } svg { width: 100%; height: auto; } @media (prefers-reduced-motion: reduce) { svg text { opacity: 1 !important; } svg rect, svg circle { display: none !important; } }</style>
 </head>
 <body>
@@ -10,7 +10,7 @@
             <defs><mask id="revealMask"><rect id="maskShape" x="0" y="0" width="0" height="280" fill="white"/></mask></defs>
             <g mask="url(#revealMask)">
                 <text x="50" y="80" font-size="80" font-weight="900" fill="#ff2d2d" filter="drop-shadow(0 0 10px #ff2d2d)">DO</text>
-                <text x="50" y="170" font-size="60" font-weight="900" fill="#ff6b00" filter="drop-shadow(0 0 10px #ff6b00)">IT</text>
+                <text x="50" y="170" font-size="60" font-weight="900" fill="#ff6b00" filter="drop-shadow(0 0 10px #ff6b00)">MORE</text>
                 <text x="50" y="260" font-size="80" font-weight="900" fill="#ffdd00" filter="drop-shadow(0 0 10px #ffdd00)">NOW</text>
             </g>
         </svg>
@@ -48,6 +48,8 @@
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let startTime = null;
         let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
         const EXIT_DURATION = 250;
 
         function easeInCubic(t) { return t * t * t; }
@@ -62,6 +64,7 @@
                 mode.update(maskShape, eased);
                 if (progress >= 1) {
                     animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                 } else {
                     requestAnimationFrame(animate);
                 }
@@ -82,12 +85,14 @@
         }
 
         function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;

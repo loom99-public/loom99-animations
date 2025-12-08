@@ -158,6 +158,7 @@
             }
 
             function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 if (animationState !== 'hold') return;
 
                 animationState = 'exit';
@@ -170,6 +171,7 @@
             }
 
             function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 currentIndex = 0;
                 exitIndex = 0;
                 animationState = 'entrance';

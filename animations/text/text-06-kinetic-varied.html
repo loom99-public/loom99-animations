@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do It Now - Kinetic Animation (Varied)</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do More Now - Kinetic Animation (Varied)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
@@ -54,7 +54,7 @@
 
         function initializeParameters() {
             // Clear existing letters from DOM
-            const words = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW', element: document.getElementById('word3') } ];
+            const words = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'MORE', element: document.getElementById('word2') }, { text: 'NOW', element: document.getElementById('word3') } ];
             words.forEach(word => { while (word.element.firstChild) { word.element.removeChild(word.element.firstChild); } });
 
             // Select random mode and config
@@ -89,6 +89,8 @@
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let startTime = null;
         let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
         const totalDuration = 2000;
         const EXIT_DURATION = 250;
 
@@ -102,6 +104,7 @@
                 letters.forEach(letter => letter.update(elapsed));
                 if (elapsed >= totalDuration) {
                     animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                 } else {
                     requestAnimationFrame(animate);
                 }
@@ -133,12 +136,14 @@
         }
 
         function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;

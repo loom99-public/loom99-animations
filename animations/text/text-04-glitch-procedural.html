@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Do It Now - Glitch Animation (Procedural)</title>
+    <title>Do More Now - Glitch Animation (Procedural)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
@@ -25,10 +25,10 @@
 <body>
     <div class="container">
         <div class="text-container">
-            <div class="text"><span class="line line1">DO</span><span class="line line2">IT</span><span class="line line3">NOW</span></div>
-            <div class="glitch-layer glitch-r"><div class="text"><span class="line line1">DO</span><span class="line line2">IT</span><span class="line line3">NOW</span></div></div>
-            <div class="glitch-layer glitch-g"><div class="text"><span class="line line1">DO</span><span class="line line2">IT</span><span class="line line3">NOW</span></div></div>
-            <div class="glitch-layer glitch-b"><div class="text"><span class="line line1">DO</span><span class="line line2">IT</span><span class="line line3">NOW</span></div></div>
+            <div class="text"><span class="line line1">DO</span><span class="line line2">MORE</span><span class="line line3">NOW</span></div>
+            <div class="glitch-layer glitch-r"><div class="text"><span class="line line1">DO</span><span class="line line2">MORE</span><span class="line line3">NOW</span></div></div>
+            <div class="glitch-layer glitch-g"><div class="text"><span class="line line1">DO</span><span class="line line2">MORE</span><span class="line line3">NOW</span></div></div>
+            <div class="glitch-layer glitch-b"><div class="text"><span class="line line1">DO</span><span class="line line2">MORE</span><span class="line line3">NOW</span></div></div>
             <div class="scanline"></div>
         </div>
     </div>
@@ -67,6 +67,8 @@
 
             let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
             let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
             const EXIT_DURATION = 250;
 
             let startTime = null;
@@ -108,6 +110,7 @@
                         glitchLayers.forEach(layer => { layer.style.opacity = 0; });
                         scanline.style.opacity = 0; text.style.transform = 'none';
                         animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                     }
                 } else if (animationState === 'exit') {
                     const exitElapsed = timestamp - exitStartTime;
@@ -137,12 +140,14 @@
             }
 
             function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 animationState = 'exit';
                 exitStartTime = performance.now();
                 requestAnimationFrame(animate);
             }
 
             function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 animationState = 'entrance';
                 initializeParameters();  // Regenerate all random parameters
                 startTime = null;

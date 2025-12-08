@@ -174,6 +174,8 @@
             let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
             let startTime = null;
             let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
             const ENTRANCE_GLITCH_DURATION = 1200;
             const ENTRANCE_TOTAL_DURATION = 2000;
             const EXIT_DURATION = 250;
@@ -261,6 +263,7 @@
                             bar.style.opacity = 0;
                         });
                         animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                     }
                 } else if (animationState === 'exit') {
                     const exitElapsed = timestamp - exitStartTime;
@@ -302,12 +305,14 @@
             }
 
             function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 animationState = 'exit';
                 exitStartTime = performance.now();
                 requestAnimationFrame(animate);
             }
 
             function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 startTime = null;
                 animationState = 'entrance';
                 logo.style.transform = 'none';

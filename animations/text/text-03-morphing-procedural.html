@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Do It Now - Morphing Animation (Procedural)</title>
+    <title>Do More Now - Morphing Animation (Procedural)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
@@ -116,9 +116,23 @@
             shapes.push(new MorphingShape(getRandomStart(), 'M 100 20 L 100 100', palette.red, 0));
             shapes.push(new MorphingShape(getRandomStart(), 'M 100 20 L 160 20 L 160 60 L 160 100 L 100 100', palette.red, Random.range(50, 150)));
             shapes.push(new MorphingShape(getRandomStart(), 'M 200 60 L 200 20 L 280 20 L 280 60 L 280 100 L 200 100 L 200 60', palette.red, Random.range(100, 250)));
-            shapes.push(new MorphingShape(getRandomStart(), 'M 100 140 L 100 200', palette.orange, Random.range(200, 350)));
-            shapes.push(new MorphingShape(getRandomStart(), 'M 170 140 L 170 200', palette.orange, Random.range(250, 400)));
-            shapes.push(new MorphingShape(getRandomStart(), 'M 140 140 L 200 140', palette.orange, Random.range(300, 450)));
+            // MORE - M
+            shapes.push(new MorphingShape(getRandomStart(), 'M 80 200 L 80 140', palette.orange, Random.range(200, 350)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 80 140 L 110 180', palette.orange, Random.range(220, 370)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 110 180 L 140 140', palette.orange, Random.range(240, 390)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 140 140 L 140 200', palette.orange, Random.range(260, 410)));
+            // MORE - O
+            shapes.push(new MorphingShape(getRandomStart(), 'M 175 170 L 175 140 L 200 140 L 225 140 L 225 170', palette.orange, Random.range(280, 430)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 225 170 L 225 200 L 200 200 L 175 200 L 175 170', palette.orange, Random.range(300, 450)));
+            // MORE - R
+            shapes.push(new MorphingShape(getRandomStart(), 'M 260 140 L 260 200', palette.orange, Random.range(320, 470)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 260 140 L 295 140 L 295 155 L 295 170 L 260 170', palette.orange, Random.range(340, 490)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 270 170 L 295 200', palette.orange, Random.range(360, 510)));
+            // MORE - E
+            shapes.push(new MorphingShape(getRandomStart(), 'M 330 140 L 330 200', palette.orange, Random.range(380, 530)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 330 140 L 365 140', palette.orange, Random.range(400, 550)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 330 170 L 355 170', palette.orange, Random.range(420, 570)));
+            shapes.push(new MorphingShape(getRandomStart(), 'M 330 200 L 365 200', palette.orange, Random.range(440, 590)));
             shapes.push(new MorphingShape(getRandomStart(), 'M 80 220 L 80 280', palette.yellow, Random.range(350, 500)));
             shapes.push(new MorphingShape(getRandomStart(), 'M 80 220 L 140 280', palette.yellow, Random.range(400, 550)));
             shapes.push(new MorphingShape(getRandomStart(), 'M 140 220 L 140 280', palette.yellow, Random.range(450, 600)));
@@ -129,6 +143,8 @@
 
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
         const EXIT_DURATION = 250;
 
         let startTime = null;
@@ -147,6 +163,7 @@
                     requestAnimationFrame(animate);
                 } else {
                     animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                 }
             } else if (animationState === 'exit') {
                 const exitElapsed = timestamp - exitStartTime;
@@ -171,12 +188,14 @@
         }
 
         function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;

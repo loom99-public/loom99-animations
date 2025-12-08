@@ -122,6 +122,8 @@
             let startTime;
             let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
             let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
             const EXIT_DURATION = 250;
 
             const totalDuration = 2500;
@@ -210,6 +212,7 @@
                         });
                         logo.style.transform = 'none';
                         animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                     }
                 } else if (animationState === 'exit') {
                     if (!exitStartTime) exitStartTime = timestamp;
@@ -247,12 +250,14 @@
             }
 
             function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 animationState = 'exit';
                 exitStartTime = null;
                 requestAnimationFrame(animate);
             }
 
             function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 initializeParameters();  // Regenerate all random parameters
                 startTime = null;
                 animationState = 'entrance';

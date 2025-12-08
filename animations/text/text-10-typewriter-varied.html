@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do It Now - Typewriter Animation (Varied)</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do More Now - Typewriter Animation (Varied)</title>
     <style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; font-family: 'Courier New', monospace; } .container { width: 100%; max-width: 1000px; padding: 20px; } .text-container { text-align: left; padding: 40px; } .word { display: block; font-size: 80px; font-weight: 900; line-height: 1.3; font-family: 'Courier New', monospace; } .letter { opacity: 0; } .cursor { display: inline-block; width: 4px; height: 80px; background: currentColor; margin-left: 2px; animation: blink 0.7s infinite; vertical-align: text-bottom; } @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } } .word1 { color: #ff2d2d; text-shadow: 0 0 10px rgba(255, 45, 45, 0.5); } .word2 { color: #ff6b00; text-shadow: 0 0 10px rgba(255, 107, 0, 0.5); } .word3 { color: #ffdd00; text-shadow: 0 0 10px rgba(255, 221, 0, 0.5); } @media (prefers-reduced-motion: reduce) { .letter { opacity: 1 !important; } .cursor { display: none !important; } }</style>
 </head>
 <body>
@@ -79,7 +79,7 @@
             document.querySelector('.word3').style.color = ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.hueShift));
 
             // Setup words
-            words = [ { text: 'DO', element: document.getElementById('word1'), delay: 0 }, { text: 'IT', element: document.getElementById('word2'), delay: config.pauseDelay }, { text: 'NOW', element: document.getElementById('word3'), delay: config.pauseDelay } ];
+            words = [ { text: 'DO', element: document.getElementById('word1'), delay: 0 }, { text: 'MORE', element: document.getElementById('word2'), delay: config.pauseDelay }, { text: 'NOW', element: document.getElementById('word3'), delay: config.pauseDelay } ];
 
             // Reset state
             currentWordIndex = 0;
@@ -90,6 +90,7 @@
         }
 
         function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             if (deleteTimeout) clearTimeout(deleteTimeout);
             words.forEach(word => { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; });
             animationState = 'exit';
@@ -97,6 +98,7 @@
         }
 
         function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             if (deleteTimeout) clearTimeout(deleteTimeout);
             animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
@@ -114,7 +116,7 @@
                 }
             });
         } else {
-            const staticWords = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW', element: document.getElementById('word3') } ];
+            const staticWords = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'MORE', element: document.getElementById('word2') }, { text: 'NOW', element: document.getElementById('word3') } ];
             staticWords.forEach(word => {
                 const chars = word.text.split(''), cursor = word.element.querySelector('.cursor');
                 chars.forEach(char => { const span = document.createElement('span'); span.className = 'letter'; span.textContent = char; span.style.opacity = '1'; word.element.insertBefore(span, cursor); });

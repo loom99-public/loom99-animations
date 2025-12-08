@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Do It Now - Reveal Mask Animation</title>
+    <title>Do More Now - Reveal Mask Animation</title>
     <style>
         * {
             margin: 0;
@@ -70,7 +70,7 @@
 
             <g mask="url(#circleMask)">
                 <text x="50" y="80" font-size="80" font-weight="900" fill="#ff2d2d" filter="drop-shadow(0 0 12px #ff2d2d)">DO</text>
-                <text x="50" y="170" font-size="60" font-weight="900" fill="#ff6b00" filter="drop-shadow(0 0 12px #ff6b00)">IT</text>
+                <text x="50" y="170" font-size="60" font-weight="900" fill="#ff6b00" filter="drop-shadow(0 0 12px #ff6b00)">MORE</text>
                 <text x="50" y="260" font-size="80" font-weight="900" fill="#ffdd00" filter="drop-shadow(0 0 12px #ffdd00)">NOW</text>
             </g>
 
@@ -85,6 +85,8 @@
         if (!prefersReducedMotion) {
             let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
             let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
             const EXIT_DURATION = 250;
 
             const maskCircle = document.getElementById('maskCircle');
@@ -128,6 +130,7 @@
                     } else {
                         glowCircle.setAttribute('opacity', 0);
                         animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                     }
                 } else if (animationState === 'exit') {
                     const exitElapsed = timestamp - exitStartTime;
@@ -153,12 +156,14 @@
             }
 
             function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 animationState = 'exit';
                 exitStartTime = performance.now();
                 requestAnimationFrame(animate);
             }
 
             function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 startTime = null;
                 animationState = 'entrance';
                 maskCircle.setAttribute('r', 0);

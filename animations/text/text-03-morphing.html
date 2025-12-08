@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Do It Now - Morphing Animation</title>
+    <title>Do More Now - Morphing Animation</title>
     <style>
         * {
             margin: 0;
@@ -200,23 +200,75 @@
             '#ff2d2d', 200
         ));
 
-        // IT - morphs from lines
+        // MORE - morphs from lines
+        // M
         shapes.push(new MorphingShape(
-            'M 100 170 L 100 170',
-            'M 100 140 L 100 200', // I
+            'M 80 170 L 80 170',
+            'M 80 200 L 80 140', // M left vertical
             '#ff6b00', 300
         ));
-
         shapes.push(new MorphingShape(
-            'M 170 170 L 170 170 L 170 170',
-            'M 170 140 L 170 200', // T vertical
-            '#ff6b00', 350
+            'M 80 140 L 80 140',
+            'M 80 140 L 110 180', // M left diagonal
+            '#ff6b00', 320
         ));
-
         shapes.push(new MorphingShape(
-            'M 170 140 L 170 140',
-            'M 140 140 L 200 140', // T horizontal
+            'M 110 180 L 110 180',
+            'M 110 180 L 140 140', // M right diagonal
+            '#ff6b00', 340
+        ));
+        shapes.push(new MorphingShape(
+            'M 140 170 L 140 170',
+            'M 140 140 L 140 200', // M right vertical
+            '#ff6b00', 360
+        ));
+        // O
+        shapes.push(new MorphingShape(
+            'M 175 170 L 175 170 L 175 170 L 175 170 L 175 170',
+            'M 175 170 L 175 140 L 200 140 L 225 140 L 225 170', // O top
+            '#ff6b00', 380
+        ));
+        shapes.push(new MorphingShape(
+            'M 225 170 L 225 170 L 225 170 L 225 170 L 225 170',
+            'M 225 170 L 225 200 L 200 200 L 175 200 L 175 170', // O bottom
             '#ff6b00', 400
+        ));
+        // R
+        shapes.push(new MorphingShape(
+            'M 260 170 L 260 170',
+            'M 260 140 L 260 200', // R vertical
+            '#ff6b00', 420
+        ));
+        shapes.push(new MorphingShape(
+            'M 260 140 L 260 140 L 260 140 L 260 140 L 260 140',
+            'M 260 140 L 295 140 L 295 155 L 295 170 L 260 170', // R bump
+            '#ff6b00', 440
+        ));
+        shapes.push(new MorphingShape(
+            'M 270 170 L 270 170',
+            'M 270 170 L 295 200', // R leg
+            '#ff6b00', 460
+        ));
+        // E
+        shapes.push(new MorphingShape(
+            'M 330 170 L 330 170',
+            'M 330 140 L 330 200', // E vertical
+            '#ff6b00', 480
+        ));
+        shapes.push(new MorphingShape(
+            'M 330 140 L 330 140',
+            'M 330 140 L 365 140', // E top
+            '#ff6b00', 500
+        ));
+        shapes.push(new MorphingShape(
+            'M 330 170 L 330 170',
+            'M 330 170 L 355 170', // E middle
+            '#ff6b00', 520
+        ));
+        shapes.push(new MorphingShape(
+            'M 330 200 L 330 200',
+            'M 330 200 L 365 200', // E bottom
+            '#ff6b00', 540
         ));
 
         // NOW - morphs from triangles
@@ -259,6 +311,8 @@
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let startTime = null;
         let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
         const EXIT_DURATION = 250;
 
         function animate(timestamp) {
@@ -271,6 +325,7 @@
                 const maxTime = 2000;
                 if (elapsed >= maxTime) {
                     animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                 } else {
                     requestAnimationFrame(animate);
                 }
@@ -289,12 +344,14 @@
         }
 
         function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             startTime = null;
             animationState = 'entrance';
             shapes.forEach(shape => {

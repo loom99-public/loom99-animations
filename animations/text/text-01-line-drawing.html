@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Do It Now - Line Drawing Animation</title>
+    <title>Do More Now - Line Drawing Animation</title>
     <style>
         * {
             margin: 0;
@@ -269,31 +269,94 @@
             {type: 'Q', cx: 200, cy: 100, x: 200, y: 60}
         ], RED, doStart + 50, doDur);
 
-        // ===== IT =====
-        const itStart = doStart + doDur + PAUSE;
-        const itDur = SYLLABLE;
-        const itY = 140;
+        // ===== MORE =====
+        const moreStart = doStart + doDur + PAUSE;
+        const moreDur = SYLLABLE;
+        const moreY = 140;
 
-        // I - vertical
-        addLine(-150, itY + 20, [
-            {x: 100, y: itY},
-            {x: 100, y: itY + 60}
-        ], ORANGE, itStart, itDur);
+        // M - left vertical
+        addLine(-150, moreY + 30, [
+            {x: 80, y: moreY + 60},
+            {x: 80, y: moreY}
+        ], ORANGE, moreStart, moreDur);
 
-        // T - vertical
-        addLine(-100, itY + 20, [
-            {x: 170, y: itY},
-            {x: 170, y: itY + 60}
-        ], ORANGE, itStart + 30, itDur);
+        // M - left diagonal
+        addLine(-120, moreY, [
+            {x: 80, y: moreY},
+            {x: 110, y: moreY + 40}
+        ], ORANGE, moreStart + 10, moreDur);
 
-        // T - horizontal
-        addLine(350, itY, [
-            {x: 140, y: itY},
-            {x: 200, y: itY}
-        ], ORANGE, itStart + 40, itDur);
+        // M - right diagonal
+        addLine(400, moreY, [
+            {x: 110, y: moreY + 40},
+            {x: 140, y: moreY}
+        ], ORANGE, moreStart + 20, moreDur);
+
+        // M - right vertical
+        addLine(400, moreY + 30, [
+            {x: 140, y: moreY},
+            {x: 140, y: moreY + 60}
+        ], ORANGE, moreStart + 30, moreDur);
+
+        // O - left arc
+        addLine(-100, moreY + 30, [
+            {x: 175, y: moreY + 30},
+            {type: 'Q', cx: 175, cy: moreY, x: 200, y: moreY},
+            {type: 'Q', cx: 225, cy: moreY, x: 225, y: moreY + 30}
+        ], ORANGE, moreStart + 40, moreDur);
+
+        // O - right arc
+        addLine(400, moreY + 30, [
+            {x: 225, y: moreY + 30},
+            {type: 'Q', cx: 225, cy: moreY + 60, x: 200, y: moreY + 60},
+            {type: 'Q', cx: 175, cy: moreY + 60, x: 175, y: moreY + 30}
+        ], ORANGE, moreStart + 50, moreDur);
+
+        // R - vertical
+        addLine(-150, moreY + 30, [
+            {x: 260, y: moreY},
+            {x: 260, y: moreY + 60}
+        ], ORANGE, moreStart + 60, moreDur);
+
+        // R - top curve
+        addLine(400, moreY + 15, [
+            {x: 260, y: moreY},
+            {type: 'Q', cx: 300, cy: moreY, x: 300, y: moreY + 20},
+            {type: 'Q', cx: 300, cy: moreY + 35, x: 260, y: moreY + 35}
+        ], ORANGE, moreStart + 70, moreDur);
+
+        // R - leg
+        addLine(400, moreY + 50, [
+            {x: 270, y: moreY + 35},
+            {x: 300, y: moreY + 60}
+        ], ORANGE, moreStart + 80, moreDur);
+
+        // E - vertical
+        addLine(-150, moreY + 30, [
+            {x: 330, y: moreY},
+            {x: 330, y: moreY + 60}
+        ], ORANGE, moreStart + 90, moreDur);
+
+        // E - top horizontal
+        addLine(500, moreY, [
+            {x: 330, y: moreY},
+            {x: 370, y: moreY}
+        ], ORANGE, moreStart + 100, moreDur);
+
+        // E - middle horizontal
+        addLine(500, moreY + 30, [
+            {x: 330, y: moreY + 30},
+            {x: 360, y: moreY + 30}
+        ], ORANGE, moreStart + 110, moreDur);
+
+        // E - bottom horizontal
+        addLine(500, moreY + 60, [
+            {x: 330, y: moreY + 60},
+            {x: 370, y: moreY + 60}
+        ], ORANGE, moreStart + 120, moreDur);
 
         // ===== NOW =====
-        const nowStart = itStart + itDur + PAUSE;
+        const nowStart = moreStart + moreDur + PAUSE;
         const nowDur = SYLLABLE;
         const nowY = 220;
 
@@ -368,6 +431,8 @@
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let startTime = null;
         let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
         const EXIT_DURATION = 250;
 
         function animate(timestamp) {
@@ -380,6 +445,7 @@
                 const allDone = lines.every(l => l.foldComplete);
                 if (allDone) {
                     animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                 } else {
                     requestAnimationFrame(animate);
                 }
@@ -398,12 +464,14 @@
         }
 
         function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             startTime = null;
             animationState = 'entrance';
             lines.forEach(line => {

@@ -289,6 +289,8 @@
         const totalDuration = 3000;
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
         const EXIT_DURATION = 250;
 
         function animate(timestamp) {
@@ -302,6 +304,7 @@
                     requestAnimationFrame(animate);
                 } else {
                     animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                 }
             } else if (animationState === 'exit') {
                 const exitElapsed = timestamp - exitStartTime;
@@ -324,12 +327,14 @@
         }
 
         function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             initializeParameters();
             createBlobs();
             startTime = null;

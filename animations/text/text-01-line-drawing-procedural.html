@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Do It Now - Line Drawing Animation (Procedural)</title>
+    <title>Do More Now - Line Drawing Animation (Procedural)</title>
     <style>
         * {
             margin: 0;
@@ -335,39 +335,132 @@
                 {type: 'Q', cx: 200, cy: 100, x: 200, y: 60}
             ], RED, delay3, dur3);
 
-            // ===== IT =====
-            const itStart = SYLLABLE + PAUSE;
-            const itY = 140;
+            // ===== MORE =====
+            const moreStart = SYLLABLE + PAUSE;
+            const moreY = 140;
 
-            // I - vertical
+            // M - left vertical
             const dur4 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
-            const delay4 = itStart + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
-            const start4 = config.motion.randomStart ? getRandomStart() : { x: -150, y: itY + 20 };
+            const delay4 = moreStart + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start4 = config.motion.randomStart ? getRandomStart() : { x: -150, y: moreY + 30 };
             addLine(start4.x, start4.y, [
-                {x: 100, y: itY},
-                {x: 100, y: itY + 60}
+                {x: 80, y: moreY + 60},
+                {x: 80, y: moreY}
             ], ORANGE, delay4, dur4);
 
-            // T - vertical
+            // M - left diagonal
             const dur5 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
             const delay5 = delay4 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
-            const start5 = config.motion.randomStart ? getRandomStart() : { x: -100, y: itY + 20 };
+            const start5 = config.motion.randomStart ? getRandomStart() : { x: -120, y: moreY };
             addLine(start5.x, start5.y, [
-                {x: 170, y: itY},
-                {x: 170, y: itY + 60}
+                {x: 80, y: moreY},
+                {x: 110, y: moreY + 40}
             ], ORANGE, delay5, dur5);
 
-            // T - horizontal
+            // M - right diagonal
             const dur6 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
             const delay6 = delay5 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
-            const start6 = config.motion.randomStart ? getRandomStart() : { x: 350, y: itY };
+            const start6 = config.motion.randomStart ? getRandomStart() : { x: 400, y: moreY };
             addLine(start6.x, start6.y, [
-                {x: 140, y: itY},
-                {x: 200, y: itY}
+                {x: 110, y: moreY + 40},
+                {x: 140, y: moreY}
             ], ORANGE, delay6, dur6);
 
+            // M - right vertical
+            const dur7 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const delay7 = delay6 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start7 = config.motion.randomStart ? getRandomStart() : { x: 400, y: moreY + 30 };
+            addLine(start7.x, start7.y, [
+                {x: 140, y: moreY},
+                {x: 140, y: moreY + 60}
+            ], ORANGE, delay7, dur7);
+
+            // O - left arc
+            const dur8 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const delay8 = delay7 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start8 = config.motion.randomStart ? getRandomStart() : { x: -100, y: moreY + 30 };
+            addLine(start8.x, start8.y, [
+                {x: 175, y: moreY + 30},
+                {type: 'Q', cx: 175, cy: moreY, x: 200, y: moreY},
+                {type: 'Q', cx: 225, cy: moreY, x: 225, y: moreY + 30}
+            ], ORANGE, delay8, dur8);
+
+            // O - right arc
+            const dur9 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const delay9 = delay8 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start9 = config.motion.randomStart ? getRandomStart() : { x: 400, y: moreY + 30 };
+            addLine(start9.x, start9.y, [
+                {x: 225, y: moreY + 30},
+                {type: 'Q', cx: 225, cy: moreY + 60, x: 200, y: moreY + 60},
+                {type: 'Q', cx: 175, cy: moreY + 60, x: 175, y: moreY + 30}
+            ], ORANGE, delay9, dur9);
+
+            // R - vertical
+            const dur10 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const delay10 = delay9 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start10 = config.motion.randomStart ? getRandomStart() : { x: -150, y: moreY + 30 };
+            addLine(start10.x, start10.y, [
+                {x: 260, y: moreY},
+                {x: 260, y: moreY + 60}
+            ], ORANGE, delay10, dur10);
+
+            // R - top curve
+            const dur11 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const delay11 = delay10 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start11 = config.motion.randomStart ? getRandomStart() : { x: 400, y: moreY + 15 };
+            addLine(start11.x, start11.y, [
+                {x: 260, y: moreY},
+                {type: 'Q', cx: 300, cy: moreY, x: 300, y: moreY + 20},
+                {type: 'Q', cx: 300, cy: moreY + 35, x: 260, y: moreY + 35}
+            ], ORANGE, delay11, dur11);
+
+            // R - leg
+            const dur12 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const delay12 = delay11 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start12 = config.motion.randomStart ? getRandomStart() : { x: 400, y: moreY + 50 };
+            addLine(start12.x, start12.y, [
+                {x: 270, y: moreY + 35},
+                {x: 300, y: moreY + 60}
+            ], ORANGE, delay12, dur12);
+
+            // E - vertical
+            const dur13 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const delay13 = delay12 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start13 = config.motion.randomStart ? getRandomStart() : { x: -150, y: moreY + 30 };
+            addLine(start13.x, start13.y, [
+                {x: 330, y: moreY},
+                {x: 330, y: moreY + 60}
+            ], ORANGE, delay13, dur13);
+
+            // E - top horizontal
+            const dur14 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const delay14 = delay13 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start14 = config.motion.randomStart ? getRandomStart() : { x: 500, y: moreY };
+            addLine(start14.x, start14.y, [
+                {x: 330, y: moreY},
+                {x: 370, y: moreY}
+            ], ORANGE, delay14, dur14);
+
+            // E - middle horizontal
+            const dur15 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const delay15 = delay14 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start15 = config.motion.randomStart ? getRandomStart() : { x: 500, y: moreY + 30 };
+            addLine(start15.x, start15.y, [
+                {x: 330, y: moreY + 30},
+                {x: 360, y: moreY + 30}
+            ], ORANGE, delay15, dur15);
+
+            // E - bottom horizontal
+            const dur16 = Random.varyPercent(BASE_DURATION, config.timing.durationVariance);
+            const delay16 = delay15 + Random.varyPercent(BASE_STAGGER, config.timing.staggerVariance);
+            const start16 = config.motion.randomStart ? getRandomStart() : { x: 500, y: moreY + 60 };
+            addLine(start16.x, start16.y, [
+                {x: 330, y: moreY + 60},
+                {x: 370, y: moreY + 60}
+            ], ORANGE, delay16, dur16);
+
             // ===== NOW =====
-            const nowStart = itStart + SYLLABLE + PAUSE;
+            const nowStart = moreStart + SYLLABLE + PAUSE;
             const nowY = 220;
 
             // N - left vertical
@@ -456,6 +549,8 @@
 
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
         const EXIT_DURATION = 250;
 
         let startTime = null;
@@ -476,6 +571,7 @@
                     requestAnimationFrame(animate);
                 } else {
                     animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                 }
             } else if (animationState === 'exit') {
                 const exitElapsed = timestamp - exitStartTime;
@@ -518,12 +614,14 @@
         }
 
         function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;

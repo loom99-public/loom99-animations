@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Do It Now - 3D Transform Animation</title>
+    <title>Do More Now - 3D Transform Animation</title>
     <style>
         * {
             margin: 0;
@@ -72,7 +72,7 @@
     <div class="container">
         <div class="text-container">
             <div class="word word1">DO</div>
-            <div class="word word2">IT</div>
+            <div class="word word2">MORE</div>
             <div class="word word3">NOW</div>
         </div>
     </div>
@@ -83,6 +83,8 @@
         if (!prefersReducedMotion) {
             let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
             let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
             const EXIT_DURATION = 300;
 
             const words = document.querySelectorAll('.word');
@@ -198,6 +200,7 @@
                         requestAnimationFrame(animate);
                     } else {
                         animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                     }
                 } else if (animationState === 'exit') {
                     const exitElapsed = timestamp - exitStartTime;
@@ -213,12 +216,14 @@
             }
 
             function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 animationState = 'exit';
                 exitStartTime = performance.now();
                 requestAnimationFrame(animate);
             }
 
             function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 startTime = null;
                 animationState = 'entrance';
                 wordAnimations.forEach(word => {

@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do It Now - 3D Transform Animation (Procedural)</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do More Now - 3D Transform Animation (Procedural)</title>
     <style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; } .container { width: 100%; max-width: 1000px; padding: 20px; } .text-container { text-align: center; transform-style: preserve-3d; } .word { display: block; font-size: 80px; font-weight: 900; line-height: 1.2; transform-style: preserve-3d; opacity: 0; } @media (prefers-reduced-motion: reduce) { body { perspective: none; } .text-container, .word { transform: none !important; opacity: 1 !important; transform-style: flat !important; } }</style>
 </head>
 <body>
-    <div class="container"><div class="text-container"><div class="word word1">DO</div><div class="word word2">IT</div><div class="word word3">NOW</div></div></div>
+    <div class="container"><div class="text-container"><div class="word word1">DO</div><div class="word word2">MORE</div><div class="word word3">NOW</div></div></div>
     <script>
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const Random = { range: (min, max) => min + Math.random() * (max - min), int: (min, max) => Math.floor(Random.range(min, max + 1)), pick: (arr) => arr[Random.int(0, arr.length - 1)] };
@@ -56,6 +56,8 @@
 
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
         const EXIT_DURATION = 250;
 
         let startTime = null;
@@ -75,6 +77,7 @@
                     requestAnimationFrame(animate);
                 } else {
                     animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                 }
             } else if (animationState === 'exit') {
                 const exitElapsed = timestamp - exitStartTime;
@@ -101,12 +104,14 @@
         }
 
         function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;

@@ -326,6 +326,8 @@
         let startTime = null;
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
         const EXIT_DURATION = 250;
 
         function easeInCubic(t) {
@@ -342,6 +344,7 @@
                 const maxTime = 4000;
                 if (elapsed >= maxTime) {
                     animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                 } else {
                     requestAnimationFrame(animate);
                 }
@@ -369,12 +372,14 @@
         }
 
         function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = null;
             requestAnimationFrame(animate);
         }
 
         function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             initializeParameters();  // Regenerate all random parameters
             startTime = null;
             animationState = 'entrance';

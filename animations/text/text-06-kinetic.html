@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Do It Now - Kinetic Animation</title>
+    <title>Do More Now - Kinetic Animation</title>
     <style>
         * {
             margin: 0;
@@ -89,6 +89,8 @@
         if (!prefersReducedMotion) {
             let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
             let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
             const EXIT_DURATION = 250;
 
             class Letter {
@@ -159,7 +161,7 @@
 
             const words = [
                 { text: 'DO', element: document.getElementById('word1') },
-                { text: 'IT', element: document.getElementById('word2') },
+                { text: 'MORE', element: document.getElementById('word2') },
                 { text: 'NOW', element: document.getElementById('word3') }
             ];
 
@@ -206,6 +208,7 @@
                         requestAnimationFrame(animate);
                     } else {
                         animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                     }
                 } else if (animationState === 'exit') {
                     const exitElapsed = timestamp - exitStartTime;
@@ -221,12 +224,14 @@
             }
 
             function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 animationState = 'exit';
                 exitStartTime = performance.now();
                 requestAnimationFrame(animate);
             }
 
             function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 startTime = null;
                 animationState = 'entrance';
                 letters.forEach(letter => {
@@ -247,7 +252,7 @@
         } else {
             const words = [
                 { text: 'DO', element: document.getElementById('word1') },
-                { text: 'IT', element: document.getElementById('word2') },
+                { text: 'MORE', element: document.getElementById('word2') },
                 { text: 'NOW', element: document.getElementById('word3') }
             ];
 

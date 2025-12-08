@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Do It Now - Particle Animation (Varied)</title>
+    <title>Do More Now - Particle Animation (Varied)</title>
     <style>
         * {
             margin: 0;
@@ -60,7 +60,7 @@
 <body>
     <div class="container">
         <canvas id="canvas"></canvas>
-        <div class="reduced-motion-text">DO IT NOW</div>
+        <div class="reduced-motion-text">DO MORE NOW</div>
     </div>
 
     <script>
@@ -252,9 +252,9 @@
                     particles.push(new Particle(point.x, point.y, palette.red));
                 });
 
-                // Create particles for "IT"
-                const itPoints = getTextPoints('IT', 100, 170, 60, config.particles.spacing);
-                itPoints.forEach(point => {
+                // Create particles for "MORE"
+                const morePoints = getTextPoints('MORE', 100, 170, 60, config.particles.spacing);
+                morePoints.forEach(point => {
                     particles.push(new Particle(point.x, point.y, palette.orange));
                 });
 
@@ -273,6 +273,8 @@
             let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
             let startTime = null;
             let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
             const EXIT_DURATION = 250;
 
             function easeInCubic(t) {
@@ -298,6 +300,7 @@
 
                     if (progress >= 1) {
                         animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                     } else {
                         requestAnimationFrame(animate);
                     }
@@ -332,12 +335,14 @@
             }
 
             function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 animationState = 'exit';
                 exitStartTime = performance.now();
                 requestAnimationFrame(animate);
             }
 
             function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 animationState = 'entrance';
                 initializeParameters();  // Regenerate all random parameters
                 startTime = null;

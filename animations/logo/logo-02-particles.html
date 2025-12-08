@@ -74,6 +74,8 @@
         } else {
             let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
             let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
             const EXIT_DURATION = 250;
 
             // Set canvas size
@@ -232,6 +234,7 @@
                         requestAnimationFrame(animate);
                     } else {
                         animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                         requestAnimationFrame(animate);
                     }
                 } else if (animationState === 'hold') {
@@ -259,11 +262,13 @@
             }
 
             function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 animationState = 'exit';
                 exitStartTime = performance.now();
             }
 
             function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
                 startTime = null;
                 animationState = 'entrance';
                 particles.forEach(particle => {

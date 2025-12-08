@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Do It Now - Line Drawing Animation (Varied)</title>
+    <title>Do More Now - Line Drawing Animation (Varied)</title>
     <style>
         * {
             margin: 0;
@@ -336,34 +336,107 @@
                 {type: 'Q', cx: 200, cy: 100, x: 200, y: 60}
             ], RED, doStart + Random.vary(50, 10), doDur);
 
-            // ===== IT =====
-            const itStart = doStart + doDur + PAUSE;
-            const itDur = config.timing.enabled ? Random.varyPercent(SYLLABLE, config.timing.durationVariance) : SYLLABLE;
-            const itY = 140;
+            // ===== MORE =====
+            const moreStart = doStart + doDur + PAUSE;
+            const moreDur = config.timing.enabled ? Random.varyPercent(SYLLABLE, config.timing.durationVariance) : SYLLABLE;
+            const moreY = 140;
 
-            // I - vertical
+            // M - left vertical
             const start4 = getStart(4);
             addLine(start4.x, start4.y, [
-                {x: 100, y: itY},
-                {x: 100, y: itY + 60}
-            ], ORANGE, itStart, itDur);
+                {x: 80, y: moreY + 60},
+                {x: 80, y: moreY}
+            ], ORANGE, moreStart, moreDur);
 
-            // T - vertical
+            // M - left diagonal
             const start5 = getStart(5);
             addLine(start5.x, start5.y, [
-                {x: 170, y: itY},
-                {x: 170, y: itY + 60}
-            ], ORANGE, itStart + Random.vary(30, 6), itDur);
+                {x: 80, y: moreY},
+                {x: 110, y: moreY + 40}
+            ], ORANGE, moreStart + Random.vary(10, 2), moreDur);
 
-            // T - horizontal
+            // M - right diagonal
             const start6 = getStart(6);
             addLine(start6.x, start6.y, [
-                {x: 140, y: itY},
-                {x: 200, y: itY}
-            ], ORANGE, itStart + Random.vary(40, 8), itDur);
+                {x: 110, y: moreY + 40},
+                {x: 140, y: moreY}
+            ], ORANGE, moreStart + Random.vary(20, 4), moreDur);
+
+            // M - right vertical
+            const start7 = getStart(7);
+            addLine(start7.x, start7.y, [
+                {x: 140, y: moreY},
+                {x: 140, y: moreY + 60}
+            ], ORANGE, moreStart + Random.vary(30, 6), moreDur);
+
+            // O - left arc
+            const start8 = getStart(8);
+            addLine(start8.x, start8.y, [
+                {x: 175, y: moreY + 30},
+                {type: 'Q', cx: 175, cy: moreY, x: 200, y: moreY},
+                {type: 'Q', cx: 225, cy: moreY, x: 225, y: moreY + 30}
+            ], ORANGE, moreStart + Random.vary(40, 8), moreDur);
+
+            // O - right arc
+            const start9 = getStart(9);
+            addLine(start9.x, start9.y, [
+                {x: 225, y: moreY + 30},
+                {type: 'Q', cx: 225, cy: moreY + 60, x: 200, y: moreY + 60},
+                {type: 'Q', cx: 175, cy: moreY + 60, x: 175, y: moreY + 30}
+            ], ORANGE, moreStart + Random.vary(50, 10), moreDur);
+
+            // R - vertical
+            const start10 = getStart(10);
+            addLine(start10.x, start10.y, [
+                {x: 260, y: moreY},
+                {x: 260, y: moreY + 60}
+            ], ORANGE, moreStart + Random.vary(60, 12), moreDur);
+
+            // R - top curve
+            const start11 = getStart(11);
+            addLine(start11.x, start11.y, [
+                {x: 260, y: moreY},
+                {type: 'Q', cx: 300, cy: moreY, x: 300, y: moreY + 20},
+                {type: 'Q', cx: 300, cy: moreY + 35, x: 260, y: moreY + 35}
+            ], ORANGE, moreStart + Random.vary(70, 14), moreDur);
+
+            // R - leg
+            const start12 = getStart(12);
+            addLine(start12.x, start12.y, [
+                {x: 270, y: moreY + 35},
+                {x: 300, y: moreY + 60}
+            ], ORANGE, moreStart + Random.vary(80, 16), moreDur);
+
+            // E - vertical
+            const start13 = getStart(13);
+            addLine(start13.x, start13.y, [
+                {x: 330, y: moreY},
+                {x: 330, y: moreY + 60}
+            ], ORANGE, moreStart + Random.vary(90, 18), moreDur);
+
+            // E - top horizontal
+            const start14 = getStart(14);
+            addLine(start14.x, start14.y, [
+                {x: 330, y: moreY},
+                {x: 370, y: moreY}
+            ], ORANGE, moreStart + Random.vary(100, 20), moreDur);
+
+            // E - middle horizontal
+            const start15 = getStart(15);
+            addLine(start15.x, start15.y, [
+                {x: 330, y: moreY + 30},
+                {x: 360, y: moreY + 30}
+            ], ORANGE, moreStart + Random.vary(110, 22), moreDur);
+
+            // E - bottom horizontal
+            const start16 = getStart(16);
+            addLine(start16.x, start16.y, [
+                {x: 330, y: moreY + 60},
+                {x: 370, y: moreY + 60}
+            ], ORANGE, moreStart + Random.vary(120, 24), moreDur);
 
             // ===== NOW =====
-            const nowStart = itStart + itDur + PAUSE;
+            const nowStart = moreStart + moreDur + PAUSE;
             const nowDur = config.timing.enabled ? Random.varyPercent(SYLLABLE, config.timing.durationVariance) : SYLLABLE;
             const nowY = 220;
 
@@ -436,6 +509,8 @@
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let startTime = null;
         let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
         const EXIT_DURATION = 250;
 
         function easeInCubic(t) {
@@ -452,6 +527,7 @@
                 const allDone = lines.every(l => l.foldComplete);
                 if (allDone) {
                     animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                 } else {
                     requestAnimationFrame(animate);
                 }
@@ -497,12 +573,14 @@
         }
 
         function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;

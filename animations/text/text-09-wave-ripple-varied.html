@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do It Now - Wave Ripple Animation (Varied)</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Do More Now - Wave Ripple Animation (Varied)</title>
     <style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; } .container { width: 100%; max-width: 1000px; padding: 20px; } .text-container { text-align: center; } .word { display: block; font-size: 80px; font-weight: 900; line-height: 1.2; } .letter { display: inline-block; } .word1 .letter { color: #ff2d2d; text-shadow: 0 0 20px rgba(255, 45, 45, 0.8); } .word2 .letter { color: #ff6b00; text-shadow: 0 0 20px rgba(255, 107, 0, 0.8); } .word3 .letter { color: #ffdd00; text-shadow: 0 0 20px rgba(255, 221, 0, 0.8); } @media (prefers-reduced-motion: reduce) { .letter { transform: none !important; } }</style>
 </head>
 <body>
@@ -20,7 +20,7 @@
 
         function initializeParameters() {
             // Clear existing letters from DOM
-            const words = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW', element: document.getElementById('word3') } ];
+            const words = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'MORE', element: document.getElementById('word2') }, { text: 'NOW', element: document.getElementById('word3') } ];
             words.forEach(word => { while (word.element.firstChild) { word.element.removeChild(word.element.firstChild); } });
 
             // Select mode and config
@@ -46,6 +46,8 @@
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let startTime = null;
         let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
         const EXIT_DURATION = 250;
 
         function easeInCubic(t) { return t * t * t; }
@@ -90,12 +92,14 @@
         }
 
         function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Do It Now - Liquid Animation</title>
+    <title>Do More Now - Liquid Animation</title>
     <style>
         * {
             margin: 0;
@@ -89,6 +89,8 @@
 
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
         const EXIT_DURATION = 250;
 
         class Blob {
@@ -211,15 +213,28 @@
             blobs.push(new Blob(x, y, r, 'url(#redGrad)'));
         });
 
-        // Create blobs for "IT"
-        const itY = 150;
-        const itBlobs = [
-            [95, itY, 22], [95, itY + 35, 22],
-            [165, itY - 12, 22], [165, itY + 25, 22], [165, itY + 48, 22],
-            [140, itY - 12, 18], [190, itY - 12, 18],
-            [140, itY + 48, 18], [190, itY + 48, 18]
+        // Create blobs for "MORE"
+        const moreY = 150;
+        const moreBlobs = [
+            // M
+            [80, moreY, 18], [80, moreY + 20, 18], [80, moreY + 40, 18],
+            [95, moreY + 10, 14], [110, moreY + 25, 16],
+            [125, moreY + 10, 14], [140, moreY, 18], [140, moreY + 20, 18], [140, moreY + 40, 18],
+            // O
+            [185, moreY, 20], [210, moreY, 16], [235, moreY, 20],
+            [185, moreY + 40, 20], [210, moreY + 40, 16], [235, moreY + 40, 20],
+            [175, moreY + 20, 14], [245, moreY + 20, 14],
+            // R
+            [280, moreY, 18], [280, moreY + 20, 18], [280, moreY + 40, 18],
+            [300, moreY, 16], [315, moreY + 10, 14], [300, moreY + 20, 14],
+            [305, moreY + 35, 14], [320, moreY + 45, 12],
+            // E
+            [355, moreY, 18], [355, moreY + 20, 18], [355, moreY + 40, 18],
+            [375, moreY, 14], [390, moreY, 12],
+            [370, moreY + 20, 12],
+            [375, moreY + 40, 14], [390, moreY + 40, 12]
         ];
-        itBlobs.forEach(([x, y, r]) => {
+        moreBlobs.forEach(([x, y, r]) => {
             blobs.push(new Blob(x, y, r, 'url(#orangeGrad)'));
         });
 
@@ -256,6 +271,7 @@
                     requestAnimationFrame(animate);
                 } else {
                     animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                 }
             } else if (animationState === 'exit') {
                 const exitElapsed = timestamp - exitStartTime;
@@ -271,12 +287,14 @@
         }
 
         function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             startTime = null;
             animationState = 'entrance';
             blobs.forEach(blob => {

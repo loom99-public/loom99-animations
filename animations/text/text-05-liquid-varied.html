@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Do It Now - Liquid Animation (Varied)</title>
+    <title>Do More Now - Liquid Animation (Varied)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
@@ -95,8 +95,13 @@
             blobs = [];
             const doY = 60; const doBlobs = [[115, doY, 25], [115, doY + 40, 25], [160, doY, 20], [160, doY + 40, 20], [220, doY + 20, 25], [260, doY + 20, 25]];
             doBlobs.forEach(([x, y, r]) => { blobs.push(new Blob(x, y, r, palette.red)); });
-            const itY = 150; const itBlobs = [[100, itY, 20], [100, itY + 30, 20], [160, itY - 10, 20], [160, itY + 20, 20], [160, itY + 40, 20], [140, itY - 10, 15], [180, itY - 10, 15]];
-            itBlobs.forEach(([x, y, r]) => { blobs.push(new Blob(x, y, r, palette.orange)); });
+            const moreY = 150; const moreBlobs = [
+                [80, moreY, 16], [80, moreY + 18, 16], [80, moreY + 36, 16], [95, moreY + 8, 12], [110, moreY + 22, 14], [125, moreY + 8, 12], [140, moreY, 16], [140, moreY + 18, 16], [140, moreY + 36, 16],
+                [185, moreY, 18], [210, moreY, 14], [235, moreY, 18], [185, moreY + 36, 18], [210, moreY + 36, 14], [235, moreY + 36, 18], [175, moreY + 18, 12], [245, moreY + 18, 12],
+                [280, moreY, 16], [280, moreY + 18, 16], [280, moreY + 36, 16], [300, moreY, 14], [315, moreY + 8, 12], [300, moreY + 18, 12], [305, moreY + 32, 12], [320, moreY + 40, 10],
+                [355, moreY, 16], [355, moreY + 18, 16], [355, moreY + 36, 16], [375, moreY, 12], [390, moreY, 10], [370, moreY + 18, 10], [375, moreY + 36, 12], [390, moreY + 36, 10]
+            ];
+            moreBlobs.forEach(([x, y, r]) => { blobs.push(new Blob(x, y, r, palette.orange)); });
             const nowY = 240; const nowBlobs = [[90, nowY, 22], [90, nowY + 30, 22], [110, nowY + 15, 18], [140, nowY, 22], [140, nowY + 30, 22], [215, nowY + 15, 25], [290, nowY, 18], [310, nowY + 30, 18], [320, nowY + 15, 16], [340, nowY + 30, 18], [360, nowY, 18], [380, nowY + 15, 16], [400, nowY, 15], [400, nowY + 22, 15], [400, nowY + 32, 8]];
             nowBlobs.forEach(([x, y, r]) => { blobs.push(new Blob(x, y, r, palette.yellow)); });
         }
@@ -104,6 +109,8 @@
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let startTime = null;
         let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
         const totalDuration = 3000;
         const EXIT_DURATION = 250;
 
@@ -116,6 +123,7 @@
                 blobs.forEach(blob => blob.update(elapsed));
                 if (elapsed >= totalDuration) {
                     animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                 } else {
                     requestAnimationFrame(animate);
                 }
@@ -141,12 +149,14 @@
         }
 
         function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;

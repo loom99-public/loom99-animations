@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Do It Now - Morphing Animation (Varied)</title>
+    <title>Do More Now - Morphing Animation (Varied)</title>
     <style>
         * {
             margin: 0;
@@ -255,23 +255,74 @@
                 palette.red, 200
             ));
 
-            // IT
+            // MORE - M
             shapes.push(new MorphingShape(
-                selectedMode.getStartShape('M 100 140 L 100 200'),
-                'M 100 140 L 100 200',
+                selectedMode.getStartShape('M 80 200 L 80 140'),
+                'M 80 200 L 80 140',
                 palette.orange, 300
             ));
-
             shapes.push(new MorphingShape(
-                selectedMode.getStartShape('M 170 140 L 170 200'),
-                'M 170 140 L 170 200',
-                palette.orange, 350
+                selectedMode.getStartShape('M 80 140 L 110 180'),
+                'M 80 140 L 110 180',
+                palette.orange, 320
             ));
-
             shapes.push(new MorphingShape(
-                selectedMode.getStartShape('M 140 140 L 200 140'),
-                'M 140 140 L 200 140',
+                selectedMode.getStartShape('M 110 180 L 140 140'),
+                'M 110 180 L 140 140',
+                palette.orange, 340
+            ));
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 140 140 L 140 200'),
+                'M 140 140 L 140 200',
+                palette.orange, 360
+            ));
+            // MORE - O
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 175 170 L 175 140 L 200 140 L 225 140 L 225 170'),
+                'M 175 170 L 175 140 L 200 140 L 225 140 L 225 170',
+                palette.orange, 380
+            ));
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 225 170 L 225 200 L 200 200 L 175 200 L 175 170'),
+                'M 225 170 L 225 200 L 200 200 L 175 200 L 175 170',
                 palette.orange, 400
+            ));
+            // MORE - R
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 260 140 L 260 200'),
+                'M 260 140 L 260 200',
+                palette.orange, 420
+            ));
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 260 140 L 295 140 L 295 155 L 295 170 L 260 170'),
+                'M 260 140 L 295 140 L 295 155 L 295 170 L 260 170',
+                palette.orange, 440
+            ));
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 270 170 L 295 200'),
+                'M 270 170 L 295 200',
+                palette.orange, 460
+            ));
+            // MORE - E
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 330 140 L 330 200'),
+                'M 330 140 L 330 200',
+                palette.orange, 480
+            ));
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 330 140 L 365 140'),
+                'M 330 140 L 365 140',
+                palette.orange, 500
+            ));
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 330 170 L 355 170'),
+                'M 330 170 L 355 170',
+                palette.orange, 520
+            ));
+            shapes.push(new MorphingShape(
+                selectedMode.getStartShape('M 330 200 L 365 200'),
+                'M 330 200 L 365 200',
+                palette.orange, 540
             ));
 
             // NOW
@@ -315,6 +366,8 @@
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let startTime = null;
         let exitStartTime = null;
+            let holdTimeout = null;
+            const HOLD_DURATION = 2000;
         const EXIT_DURATION = 250;
 
         function easeInCubic(t) {
@@ -331,6 +384,7 @@
                 const maxTime = 2000;
                 if (elapsed >= maxTime) {
                     animationState = 'hold';
+                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
                 } else {
                     requestAnimationFrame(animate);
                 }
@@ -359,12 +413,14 @@
         }
 
         function startExit() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
+                if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;

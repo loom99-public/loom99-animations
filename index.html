@@ -1926,6 +1926,18 @@
             return pathData;
         }
 
+        // Font file to font-family name mapping for canvas rendering
+        const fontFamilyMap = {
+            'Anton-Regular': 'Anton',
+            'Roboto-Bold': 'Roboto',
+            'Oswald-Bold': 'Oswald',
+            'Bangers-Regular': 'Bangers',
+            'Bungee-Regular': 'Bungee',
+            'BlackOpsOne-Regular': 'Black Ops One',
+            'PermanentMarker-Regular': 'Permanent Marker',
+            'PressStart2P-Regular': 'Press Start 2P'
+        };
+
         async function applyTextToAnimation(button) {
             const card = button.closest('.animation-card');
             const panel = card.querySelector('.editor-panel');
@@ -1941,25 +1953,46 @@
             button.textContent = '⏳ Generating...';
 
             try {
-                const font = await loadFont(fontFile);
-                if (!font) {
-                    throw new Error('Font not loaded');
+                // Detect if this is a particle animation
+                const isParticleAnimation = iframe.src && iframe.src.includes('particles');
+
+                if (isParticleAnimation) {
+                    // Particle animations use canvas fillText with font-family names
+                    const fontFamily = fontFamilyMap[fontFile] || 'Anton';
+
+                    iframe.contentWindow.postMessage({
+                        type: 'updateText',
+                        text: text,
+                        fontFamily: fontFamily
+                    }, window.location.origin);
+
+                    button.textContent = '✓ Applied!';
+                    setTimeout(() => {
+                        button.classList.remove('generating');
+                        button.textContent = '✨ Generate';
+                    }, 1500);
+                } else {
+                    // Path-based animations use SVG path data
+                    const font = await loadFont(fontFile);
+                    if (!font) {
+                        throw new Error('Font not loaded');
+                    }
+
+                    const pathData = generateTextPathData(font, text, 'stacked');
+
+                    // Send path data to iframe via postMessage
+                    iframe.contentWindow.postMessage({
+                        type: 'updateTextPaths',
+                        pathData: pathData,
+                        params: getParamsFromEditor(card)
+                    }, window.location.origin);
+
+                    button.textContent = '✓ Applied!';
+                    setTimeout(() => {
+                        button.classList.remove('generating');
+                        button.textContent = '✨ Generate';
+                    }, 1500);
                 }
-
-                const pathData = generateTextPathData(font, text, 'stacked');
-
-                // Send path data to iframe via postMessage
-                iframe.contentWindow.postMessage({
-                    type: 'updateTextPaths',
-                    pathData: pathData,
-                    params: getParamsFromEditor(card)
-                }, window.location.origin);
-
-                button.textContent = '✓ Applied!';
-                setTimeout(() => {
-                    button.classList.remove('generating');
-                    button.textContent = '✨ Generate';
-                }, 1500);
 
             } catch (err) {
                 console.error('Text generation failed:', err);

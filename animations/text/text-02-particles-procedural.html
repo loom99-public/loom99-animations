@@ -55,6 +55,63 @@
                 display: block;
             }
         }
+
+        /* Load fonts for canvas rendering */
+        @font-face {
+            font-family: 'Anton';
+            src: url('../../fonts/Anton-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Roboto';
+            src: url('../../fonts/Roboto-Bold.ttf') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Oswald';
+            src: url('../../fonts/Oswald-Bold.ttf') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Bangers';
+            src: url('../../fonts/Bangers-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Bungee';
+            src: url('../../fonts/Bungee-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Black Ops One';
+            src: url('../../fonts/BlackOpsOne-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Permanent Marker';
+            src: url('../../fonts/PermanentMarker-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Press Start 2P';
+            src: url('../../fonts/PressStart2P-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
     </style>
 </head>
 <body>
@@ -123,6 +180,8 @@
             let particles;
             let baseDuration;
             let duration;
+            let currentText = 'DO MORE NOW';
+            let currentFontFamily = 'Anton, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
             class Particle {
                 constructor(targetX, targetY, color) {
@@ -181,13 +240,13 @@
             }
 
             // Function to sample points from text
-            function getTextPoints(text, x, y, fontSize, spacing = 6) {
+            function getTextPoints(text, x, y, fontSize, fontFamily, spacing = 6) {
                 const tempCanvas = document.createElement('canvas');
                 const tempCtx = tempCanvas.getContext('2d');
                 tempCanvas.width = canvas.width;
                 tempCanvas.height = canvas.height;
 
-                tempCtx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+                tempCtx.font = `bold ${fontSize}px ${fontFamily}`;
                 tempCtx.fillStyle = '#ffffff';
                 tempCtx.fillText(text, x, y);
 
@@ -262,22 +321,20 @@
                 // Create particles array
                 particles = [];
 
-                // Create particles for "DO"
-                const doPoints = getTextPoints('DO', 50, 90, 80, config.particles.spacing);
-                doPoints.forEach(point => {
-                    particles.push(new Particle(point.x, point.y, palette.red));
-                });
+                // Parse text into words
+                const words = currentText.split(' ').filter(w => w.trim().length > 0);
+                const colors = [palette.red, palette.orange, palette.yellow];
 
-                // Create particles for "MORE"
-                const morePoints = getTextPoints('MORE', 100, 170, 60, config.particles.spacing);
-                morePoints.forEach(point => {
-                    particles.push(new Particle(point.x, point.y, palette.orange));
-                });
+                words.forEach((word, index) => {
+                    const color = colors[index % colors.length];
+                    const y = 90 + index * 80;
+                    const fontSize = index === 1 ? 60 : 80; // Middle word smaller
+                    const x = index === 1 ? 100 : 50;
 
-                // Create particles for "NOW"
-                const nowPoints = getTextPoints('NOW', 50, 250, 80, config.particles.spacing);
-                nowPoints.forEach(point => {
-                    particles.push(new Particle(point.x, point.y, palette.yellow));
+                    const points = getTextPoints(word, x, y, fontSize, currentFontFamily, config.particles.spacing);
+                    points.forEach(point => {
+                        particles.push(new Particle(point.x, point.y, color));
+                    });
                 });
 
                 // Calculate duration
@@ -368,6 +425,36 @@
                 exitStartTime = null;
                 requestAnimationFrame(animate);
             }
+
+            // Listen for messages from parent (gallery editor)
+            window.addEventListener('message', function(event) {
+                // Validate origin - allow same origin and localhost dev servers
+                const allowedOrigins = [
+                    window.location.origin,
+                    "http://localhost:8888",
+                    "http://127.0.0.1:8888",
+                    "null"  // file:// protocol for local development
+                ];
+
+                if (!allowedOrigins.includes(event.origin)) {
+                    console.warn("Rejected postMessage from unauthorized origin:", event.origin);
+                    return;
+                }
+
+                if (event.data && event.data.type === 'updateText') {
+                    const text = event.data.text || 'DO MORE NOW';
+                    const fontFamily = event.data.fontFamily || 'Anton';
+
+                    console.log('Updating particles with text:', text, 'font:', fontFamily);
+
+                    // Update current text and font
+                    currentText = text;
+                    currentFontFamily = `${fontFamily}, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+
+                    // Restart animation with new text
+                    restart();
+                }
+            });
 
             // Initial setup
             initializeParameters();

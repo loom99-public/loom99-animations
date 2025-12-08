@@ -77,6 +77,19 @@
 
         // Listen for messages from parent (gallery editor)
         window.addEventListener('message', function(event) {
+            // Validate origin - allow same origin and localhost dev servers
+            const allowedOrigins = [
+                window.location.origin,
+                "http://localhost:8888",
+                "http://127.0.0.1:8888",
+                "null"  // file:// protocol for local development
+            ];
+
+            if (!allowedOrigins.includes(event.origin)) {
+                console.warn("Rejected postMessage from unauthorized origin:", event.origin);
+                return;
+            }
+
             if (event.data && event.data.type === 'updateTextPaths') {
                 updateTextFromPaths(event.data.pathData);
             }

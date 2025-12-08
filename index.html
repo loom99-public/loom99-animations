@@ -73,34 +73,98 @@
         }
 
         .technique-section {
-            margin-bottom: 60px;
+            margin-bottom: 16px;
+            background: #1a1a2e;
+            border-radius: 12px;
+            border: 2px solid #2a2a3e;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .technique-section.expanded {
+            border-color: #7b2ff7;
+        }
+
+        .technique-header {
+            padding: 20px 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            user-select: none;
+            transition: background 0.2s ease;
+        }
+
+        .technique-header:hover {
+            background: #20203e;
+        }
+
+        .technique-title-wrapper {
+            flex: 1;
         }
 
         .technique-title {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 700;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid #7b2ff7;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
         }
 
         .technique-number {
             color: #7b2ff7;
-            font-size: 22px;
+            font-size: 20px;
             margin-right: 12px;
+            min-width: 40px;
+        }
+
+        .technique-description {
+            font-size: 14px;
+            color: #888;
+            line-height: 1.5;
+        }
+
+        .expand-icon {
+            font-size: 24px;
+            color: #7b2ff7;
+            transition: transform 0.3s ease;
+            margin-left: 16px;
+        }
+
+        .technique-section.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .technique-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        .technique-section.expanded .technique-content {
+            max-height: 5000px;
+        }
+
+        .content-inner {
+            padding: 0 24px 24px 24px;
         }
 
         .animation-row {
             margin-bottom: 24px;
         }
 
+        .animation-row:last-child {
+            margin-bottom: 0;
+        }
+
         .row-label {
             font-size: 14px;
-            color: #666;
+            color: #7b2ff7;
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 12px;
             padding-left: 4px;
+            font-weight: 600;
         }
 
         .animation-grid {
@@ -115,33 +179,14 @@
             padding: 16px;
             border: 2px solid #2a2a3e;
             transition: all 0.3s ease;
-            text-decoration: none;
-            color: #fff;
-            display: block;
-        }
-
-        .animation-card:hover {
-            border-color: #7b2ff7;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(123, 47, 247, 0.25);
         }
 
         .animation-card.varied {
             border-color: #3a3a5e;
         }
 
-        .animation-card.varied:hover {
-            border-color: #00d4ff;
-            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.25);
-        }
-
         .animation-card.procedural {
             border-color: #3a3a5e;
-        }
-
-        .animation-card.procedural:hover {
-            border-color: #ff2d75;
-            box-shadow: 0 6px 20px rgba(255, 45, 117, 0.25);
         }
 
         .card-header {
@@ -149,6 +194,12 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
+        }
+
+        .card-title-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .card-title {
@@ -178,6 +229,7 @@
             color: #888;
             font-size: 13px;
             line-height: 1.5;
+            margin-bottom: 12px;
         }
 
         .variant-tag {
@@ -187,7 +239,6 @@
             font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
-            margin-left: 8px;
         }
 
         .variant-tag.varied {
@@ -200,6 +251,69 @@
             color: #1a1a2e;
         }
 
+        .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-preview {
+            background: #2a2a3e;
+            color: #00d4ff;
+        }
+
+        .btn-preview:hover {
+            background: #3a3a5e;
+            transform: translateY(-1px);
+        }
+
+        .btn-preview.active {
+            background: #00d4ff;
+            color: #1a1a2e;
+        }
+
+        .btn-open {
+            background: #2a2a3e;
+            color: #7b2ff7;
+        }
+
+        .btn-open:hover {
+            background: #3a3a5e;
+            transform: translateY(-1px);
+        }
+
+        .preview-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            margin-top: 0;
+        }
+
+        .preview-container.visible {
+            max-height: 600px;
+            margin-top: 12px;
+        }
+
+        .preview-frame {
+            width: 100%;
+            height: 400px;
+            border: 2px solid #3a3a5e;
+            border-radius: 6px;
+            background: #1a1a2e;
+        }
+
         .footer {
             max-width: 1400px;
             margin: 40px auto 0;
@@ -208,6 +322,20 @@
             font-size: 14px;
             padding-top: 40px;
             border-top: 1px solid #2a2a3e;
+        }
+
+        .favorites-notice {
+            background: linear-gradient(135deg, rgba(123, 47, 247, 0.1), rgba(0, 212, 255, 0.1));
+            border: 1px solid rgba(123, 47, 247, 0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        .favorites-notice strong {
+            color: #00d4ff;
         }
 
         @media (max-width: 768px) {
@@ -220,12 +348,16 @@
             }
 
             .technique-title {
-                font-size: 22px;
+                font-size: 20px;
             }
 
             .legend {
                 flex-direction: column;
                 align-items: center;
+            }
+
+            .card-actions {
+                flex-direction: column;
             }
         }
     </style>
@@ -248,613 +380,1354 @@
                 <span>Procedural (heavy random)</span>
             </div>
         </div>
+        <div class="favorites-notice">
+            <strong>User Favorites:</strong> Line Drawing, Particles, Morphing, Kinetic
+        </div>
     </div>
 
     <div class="gallery">
         <!-- 01: Line Drawing -->
-        <div class="technique-section">
-            <h2 class="technique-title">
-                <span class="technique-number">01</span>
-                Line Drawing / Path Animation
-            </h2>
-            <div class="animation-row">
-                <div class="row-label">loom99 Logo</div>
-                <div class="animation-grid">
-                    <a href="animations/logo/logo-01-line-drawing.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Lines shoot in and curve into shape</div>
-                    </a>
-                    <a href="animations/logo/logo-01-line-drawing-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Multiple direction modes + subtle timing variance</div>
-                    </a>
-                    <a href="animations/logo/logo-01-line-drawing-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Chaotic directions, speeds, and colors each time</div>
-                    </a>
+        <div class="technique-section" data-technique="01">
+            <div class="technique-header" onclick="toggleSection(this)">
+                <div class="technique-title-wrapper">
+                    <h2 class="technique-title">
+                        <span class="technique-number">01</span>
+                        Line Drawing / Path Animation
+                    </h2>
+                    <p class="technique-description">Paths animate from a point, unfolding into the final shape. Lines shoot in and curve, creating an elegant drawing effect.</p>
                 </div>
+                <div class="expand-icon">▼</div>
             </div>
-            <div class="animation-row">
-                <div class="row-label">Do It Now</div>
-                <div class="animation-grid">
-                    <a href="animations/text/text-01-line-drawing.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-text">Text</div>
+            <div class="technique-content">
+                <div class="content-inner">
+                    <div class="animation-row">
+                        <div class="row-label">loom99 Logo</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Lines shoot in and curve into shape</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-01-line-drawing.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-01-line-drawing.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Multiple direction modes + subtle timing variance</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-01-line-drawing-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-01-line-drawing-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Chaotic directions, speeds, and colors each time</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-01-line-drawing-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-01-line-drawing-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Strokes form text with staggered timing</div>
-                    </a>
-                    <a href="animations/text/text-01-line-drawing-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-text">Text</div>
+                    </div>
+                    <div class="animation-row">
+                        <div class="row-label">Do It Now</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Strokes form text with staggered timing</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-01-line-drawing.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-01-line-drawing.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Direction modes with subtle variations</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-01-line-drawing-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-01-line-drawing-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Unique every load with wild variance</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-01-line-drawing-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-01-line-drawing-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Direction modes with subtle variations</div>
-                    </a>
-                    <a href="animations/text/text-01-line-drawing-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-text">Text</div>
-                        </div>
-                        <div class="card-description">Unique every load with wild variance</div>
-                    </a>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 02: Particles -->
-        <div class="technique-section">
-            <h2 class="technique-title">
-                <span class="technique-number">02</span>
-                Particle Effects
-            </h2>
-            <div class="animation-row">
-                <div class="row-label">loom99 Logo</div>
-                <div class="animation-grid">
-                    <a href="animations/logo/logo-02-particles.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Particles coalesce from explosion</div>
-                    </a>
-                    <a href="animations/logo/logo-02-particles-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Formation patterns with count variance</div>
-                    </a>
-                    <a href="animations/logo/logo-02-particles-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Wild particle behaviors and sizes</div>
-                    </a>
+        <div class="technique-section" data-technique="02">
+            <div class="technique-header" onclick="toggleSection(this)">
+                <div class="technique-title-wrapper">
+                    <h2 class="technique-title">
+                        <span class="technique-number">02</span>
+                        Particle Effects
+                    </h2>
+                    <p class="technique-description">Points form the shape from scattered/moving particles. Particles coalesce from explosion or drift into formation.</p>
                 </div>
+                <div class="expand-icon">▼</div>
             </div>
-            <div class="animation-row">
-                <div class="row-label">Do It Now</div>
-                <div class="animation-grid">
-                    <a href="animations/text/text-02-particles.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-text">Text</div>
+            <div class="technique-content">
+                <div class="content-inner">
+                    <div class="animation-row">
+                        <div class="row-label">loom99 Logo</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Particles coalesce from explosion</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-02-particles.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-02-particles.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Formation patterns with count variance</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-02-particles-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-02-particles-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Wild particle behaviors and sizes</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-02-particles-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-02-particles-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Scattered particles form text</div>
-                    </a>
-                    <a href="animations/text/text-02-particles-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-text">Text</div>
+                    </div>
+                    <div class="animation-row">
+                        <div class="row-label">Do It Now</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Scattered particles form text</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-02-particles.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-02-particles.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Multiple formation modes</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-02-particles-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-02-particles-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Chaotic particle dynamics</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-02-particles-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-02-particles-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Multiple formation modes</div>
-                    </a>
-                    <a href="animations/text/text-02-particles-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-text">Text</div>
-                        </div>
-                        <div class="card-description">Chaotic particle dynamics</div>
-                    </a>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 03: Morphing -->
-        <div class="technique-section">
-            <h2 class="technique-title">
-                <span class="technique-number">03</span>
-                Morphing / Shape Transitions
-            </h2>
-            <div class="animation-row">
-                <div class="row-label">loom99 Logo</div>
-                <div class="animation-grid">
-                    <a href="animations/logo/logo-03-morphing.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Shapes morph into logo</div>
-                    </a>
-                    <a href="animations/logo/logo-03-morphing-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Different start shapes and easings</div>
-                    </a>
-                    <a href="animations/logo/logo-03-morphing-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Random procedural shapes</div>
-                    </a>
+        <div class="technique-section" data-technique="03">
+            <div class="technique-header" onclick="toggleSection(this)">
+                <div class="technique-title-wrapper">
+                    <h2 class="technique-title">
+                        <span class="technique-number">03</span>
+                        Morphing / Shape Transitions
+                    </h2>
+                    <p class="technique-description">Shapes transform from one form to another. Smooth interpolation creates organic transitions between geometric forms and final content.</p>
                 </div>
+                <div class="expand-icon">▼</div>
             </div>
-            <div class="animation-row">
-                <div class="row-label">Do It Now</div>
-                <div class="animation-grid">
-                    <a href="animations/text/text-03-morphing.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-text">Text</div>
+            <div class="technique-content">
+                <div class="content-inner">
+                    <div class="animation-row">
+                        <div class="row-label">loom99 Logo</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Shapes morph into logo</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-03-morphing.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-03-morphing.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Different start shapes and easings</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-03-morphing-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-03-morphing-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Random procedural shapes</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-03-morphing-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-03-morphing-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Shapes transform into letters</div>
-                    </a>
-                    <a href="animations/text/text-03-morphing-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-text">Text</div>
+                    </div>
+                    <div class="animation-row">
+                        <div class="row-label">Do It Now</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Shapes transform into letters</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-03-morphing.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-03-morphing.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Shape type modes with variance</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-03-morphing-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-03-morphing-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Wild morph timings and shapes</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-03-morphing-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-03-morphing-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Shape type modes with variance</div>
-                    </a>
-                    <a href="animations/text/text-03-morphing-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-text">Text</div>
-                        </div>
-                        <div class="card-description">Wild morph timings and shapes</div>
-                    </a>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 04: Glitch -->
-        <div class="technique-section">
-            <h2 class="technique-title">
-                <span class="technique-number">04</span>
-                Glitch Effects
-            </h2>
-            <div class="animation-row">
-                <div class="row-label">loom99 Logo</div>
-                <div class="animation-grid">
-                    <a href="animations/logo/logo-04-glitch.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">RGB split and distortion</div>
-                    </a>
-                    <a href="animations/logo/logo-04-glitch-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Intensity modes with variance</div>
-                    </a>
-                    <a href="animations/logo/logo-04-glitch-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Extreme glitch chaos</div>
-                    </a>
+        <div class="technique-section" data-technique="04">
+            <div class="technique-header" onclick="toggleSection(this)">
+                <div class="technique-title-wrapper">
+                    <h2 class="technique-title">
+                        <span class="technique-number">04</span>
+                        Glitch Effects
+                    </h2>
+                    <p class="technique-description">Digital distortion with RGB separation effects. Chromatic aberration, scanlines, and data corruption create a cyberpunk aesthetic.</p>
                 </div>
+                <div class="expand-icon">▼</div>
             </div>
-            <div class="animation-row">
-                <div class="row-label">Do It Now</div>
-                <div class="animation-grid">
-                    <a href="animations/text/text-04-glitch.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-text">Text</div>
+            <div class="technique-content">
+                <div class="content-inner">
+                    <div class="animation-row">
+                        <div class="row-label">loom99 Logo</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">RGB split and distortion</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-04-glitch.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-04-glitch.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Intensity modes with variance</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-04-glitch-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-04-glitch-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Extreme glitch chaos</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-04-glitch-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-04-glitch-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Chromatic aberration and jitter</div>
-                    </a>
-                    <a href="animations/text/text-04-glitch-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-text">Text</div>
+                    </div>
+                    <div class="animation-row">
+                        <div class="row-label">Do It Now</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Chromatic aberration and jitter</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-04-glitch.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-04-glitch.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Glitch style modes</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-04-glitch-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-04-glitch-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Maximum digital distortion</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-04-glitch-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-04-glitch-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Glitch style modes</div>
-                    </a>
-                    <a href="animations/text/text-04-glitch-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-text">Text</div>
-                        </div>
-                        <div class="card-description">Maximum digital distortion</div>
-                    </a>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 05: Liquid -->
-        <div class="technique-section">
-            <h2 class="technique-title">
-                <span class="technique-number">05</span>
-                Liquid / Fluid Motion
-            </h2>
-            <div class="animation-row">
-                <div class="row-label">loom99 Logo</div>
-                <div class="animation-grid">
-                    <a href="animations/logo/logo-05-liquid.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Metaball droplets merge</div>
-                    </a>
-                    <a href="animations/logo/logo-05-liquid-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Flow pattern modes</div>
-                    </a>
-                    <a href="animations/logo/logo-05-liquid-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Chaotic blob dynamics</div>
-                    </a>
+        <div class="technique-section" data-technique="05">
+            <div class="technique-header" onclick="toggleSection(this)">
+                <div class="technique-title-wrapper">
+                    <h2 class="technique-title">
+                        <span class="technique-number">05</span>
+                        Liquid / Fluid Motion
+                    </h2>
+                    <p class="technique-description">Blob/goo effect with organic fluid motion. Metaball physics creates natural-looking liquid merging and flowing effects.</p>
                 </div>
+                <div class="expand-icon">▼</div>
             </div>
-            <div class="animation-row">
-                <div class="row-label">Do It Now</div>
-                <div class="animation-grid">
-                    <a href="animations/text/text-05-liquid.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-text">Text</div>
+            <div class="technique-content">
+                <div class="content-inner">
+                    <div class="animation-row">
+                        <div class="row-label">loom99 Logo</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Metaball droplets merge</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-05-liquid.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-05-liquid.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Flow pattern modes</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-05-liquid-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-05-liquid-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Chaotic blob dynamics</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-05-liquid-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-05-liquid-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Fluid blobs with goo filter</div>
-                    </a>
-                    <a href="animations/text/text-05-liquid-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-text">Text</div>
+                    </div>
+                    <div class="animation-row">
+                        <div class="row-label">Do It Now</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Fluid blobs with goo filter</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-05-liquid.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-05-liquid.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Drop pattern variations</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-05-liquid-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-05-liquid-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Wild fluid simulation</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-05-liquid-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-05-liquid-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Drop pattern variations</div>
-                    </a>
-                    <a href="animations/text/text-05-liquid-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-text">Text</div>
-                        </div>
-                        <div class="card-description">Wild fluid simulation</div>
-                    </a>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 06: Kinetic -->
-        <div class="technique-section">
-            <h2 class="technique-title">
-                <span class="technique-number">06</span>
-                Kinetic Typography / Motion
-            </h2>
-            <div class="animation-row">
-                <div class="row-label">loom99 Logo</div>
-                <div class="animation-grid">
-                    <a href="animations/logo/logo-06-kinetic.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Spring physics fly-in</div>
-                    </a>
-                    <a href="animations/logo/logo-06-kinetic-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Entry pattern modes</div>
-                    </a>
-                    <a href="animations/logo/logo-06-kinetic-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Chaotic multi-directional</div>
-                    </a>
+        <div class="technique-section" data-technique="06">
+            <div class="technique-header" onclick="toggleSection(this)">
+                <div class="technique-title-wrapper">
+                    <h2 class="technique-title">
+                        <span class="technique-number">06</span>
+                        Kinetic Typography / Motion
+                    </h2>
+                    <p class="technique-description">Dynamic motion with physics-like movement. Spring dynamics, inertia, and bouncing create energetic, responsive animations.</p>
                 </div>
+                <div class="expand-icon">▼</div>
             </div>
-            <div class="animation-row">
-                <div class="row-label">Do It Now</div>
-                <div class="animation-grid">
-                    <a href="animations/text/text-06-kinetic.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-text">Text</div>
+            <div class="technique-content">
+                <div class="content-inner">
+                    <div class="animation-row">
+                        <div class="row-label">loom99 Logo</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Spring physics fly-in</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-06-kinetic.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-06-kinetic.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Entry pattern modes</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-06-kinetic-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-06-kinetic-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Chaotic multi-directional</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-06-kinetic-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-06-kinetic-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Letters spiral with bounce</div>
-                    </a>
-                    <a href="animations/text/text-06-kinetic-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-text">Text</div>
+                    </div>
+                    <div class="animation-row">
+                        <div class="row-label">Do It Now</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Letters spiral with bounce</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-06-kinetic.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-06-kinetic.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Motion style modes</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-06-kinetic-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-06-kinetic-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Unpredictable physics</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-06-kinetic-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-06-kinetic-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Motion style modes</div>
-                    </a>
-                    <a href="animations/text/text-06-kinetic-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-text">Text</div>
-                        </div>
-                        <div class="card-description">Unpredictable physics</div>
-                    </a>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 07: 3D Transforms -->
-        <div class="technique-section">
-            <h2 class="technique-title">
-                <span class="technique-number">07</span>
-                3D Transforms
-            </h2>
-            <div class="animation-row">
-                <div class="row-label">loom99 Logo</div>
-                <div class="animation-grid">
-                    <a href="animations/logo/logo-07-3d-transforms.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Perspective rotation flip</div>
-                    </a>
-                    <a href="animations/logo/logo-07-3d-transforms-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Rotation axis modes</div>
-                    </a>
-                    <a href="animations/logo/logo-07-3d-transforms-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Multi-axis tumbling</div>
-                    </a>
+        <div class="technique-section" data-technique="07">
+            <div class="technique-header" onclick="toggleSection(this)">
+                <div class="technique-title-wrapper">
+                    <h2 class="technique-title">
+                        <span class="technique-number">07</span>
+                        3D Transforms
+                    </h2>
+                    <p class="technique-description">Perspective rotations and 3D flips. CSS 3D transforms create depth and spatial movement with realistic perspective effects.</p>
                 </div>
+                <div class="expand-icon">▼</div>
             </div>
-            <div class="animation-row">
-                <div class="row-label">Do It Now</div>
-                <div class="animation-grid">
-                    <a href="animations/text/text-07-3d-transforms.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-text">Text</div>
+            <div class="technique-content">
+                <div class="content-inner">
+                    <div class="animation-row">
+                        <div class="row-label">loom99 Logo</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Perspective rotation flip</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-07-3d-transforms.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-07-3d-transforms.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Rotation axis modes</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-07-3d-transforms-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-07-3d-transforms-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Multi-axis tumbling</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-07-3d-transforms-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-07-3d-transforms-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Words rotate in 3D</div>
-                    </a>
-                    <a href="animations/text/text-07-3d-transforms-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-text">Text</div>
+                    </div>
+                    <div class="animation-row">
+                        <div class="row-label">Do It Now</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Words rotate in 3D</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-07-3d-transforms.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-07-3d-transforms.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Perspective variations</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-07-3d-transforms-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-07-3d-transforms-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Extreme 3D chaos</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-07-3d-transforms-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-07-3d-transforms-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Perspective variations</div>
-                    </a>
-                    <a href="animations/text/text-07-3d-transforms-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-text">Text</div>
-                        </div>
-                        <div class="card-description">Extreme 3D chaos</div>
-                    </a>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 08: Reveal/Mask -->
-        <div class="technique-section">
-            <h2 class="technique-title">
-                <span class="technique-number">08</span>
-                Reveal / Mask Animations
-            </h2>
-            <div class="animation-row">
-                <div class="row-label">loom99 Logo</div>
-                <div class="animation-grid">
-                    <a href="animations/logo/logo-08-reveal-mask.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Left-to-right wipe</div>
-                    </a>
-                    <a href="animations/logo/logo-08-reveal-mask-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Directional wipe modes</div>
-                    </a>
-                    <a href="animations/logo/logo-08-reveal-mask-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Random reveal types</div>
-                    </a>
+        <div class="technique-section" data-technique="08">
+            <div class="technique-header" onclick="toggleSection(this)">
+                <div class="technique-title-wrapper">
+                    <h2 class="technique-title">
+                        <span class="technique-number">08</span>
+                        Reveal / Mask Animations
+                    </h2>
+                    <p class="technique-description">Wipe/mask reveals the content. Directional wipes, iris transitions, and geometric masks progressively disclose the design.</p>
                 </div>
+                <div class="expand-icon">▼</div>
             </div>
-            <div class="animation-row">
-                <div class="row-label">Do It Now</div>
-                <div class="animation-grid">
-                    <a href="animations/text/text-08-reveal-mask.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-text">Text</div>
+            <div class="technique-content">
+                <div class="content-inner">
+                    <div class="animation-row">
+                        <div class="row-label">loom99 Logo</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Left-to-right wipe</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-08-reveal-mask.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-08-reveal-mask.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Directional wipe modes</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-08-reveal-mask-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-08-reveal-mask-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Random reveal types</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-08-reveal-mask-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-08-reveal-mask-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Circular expanding reveal</div>
-                    </a>
-                    <a href="animations/text/text-08-reveal-mask-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-text">Text</div>
+                    </div>
+                    <div class="animation-row">
+                        <div class="row-label">Do It Now</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Circular expanding reveal</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-08-reveal-mask.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-08-reveal-mask.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Mask shape modes</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-08-reveal-mask-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-08-reveal-mask-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Unpredictable reveals</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-08-reveal-mask-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-08-reveal-mask-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Mask shape modes</div>
-                    </a>
-                    <a href="animations/text/text-08-reveal-mask-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-text">Text</div>
-                        </div>
-                        <div class="card-description">Unpredictable reveals</div>
-                    </a>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 09: Wave/Ripple -->
-        <div class="technique-section">
-            <h2 class="technique-title">
-                <span class="technique-number">09</span>
-                Wave / Ripple Effects
-            </h2>
-            <div class="animation-row">
-                <div class="row-label">loom99 Logo</div>
-                <div class="animation-grid">
-                    <a href="animations/logo/logo-09-wave-ripple.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Sine wave oscillation</div>
-                    </a>
-                    <a href="animations/logo/logo-09-wave-ripple-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Wave intensity modes</div>
-                    </a>
-                    <a href="animations/logo/logo-09-wave-ripple-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Multi-dimensional waves</div>
-                    </a>
+        <div class="technique-section" data-technique="09">
+            <div class="technique-header" onclick="toggleSection(this)">
+                <div class="technique-title-wrapper">
+                    <h2 class="technique-title">
+                        <span class="technique-number">09</span>
+                        Wave / Ripple Effects
+                    </h2>
+                    <p class="technique-description">Oscillating wave motion through elements. Sine waves propagate through the design, creating rhythmic, flowing movement.</p>
                 </div>
+                <div class="expand-icon">▼</div>
             </div>
-            <div class="animation-row">
-                <div class="row-label">Do It Now</div>
-                <div class="animation-grid">
-                    <a href="animations/text/text-09-wave-ripple.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-text">Text</div>
+            <div class="technique-content">
+                <div class="content-inner">
+                    <div class="animation-row">
+                        <div class="row-label">loom99 Logo</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Sine wave oscillation</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-09-wave-ripple.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-09-wave-ripple.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Wave intensity modes</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-09-wave-ripple-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-09-wave-ripple-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Multi-dimensional waves</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-09-wave-ripple-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-09-wave-ripple-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Multi-frequency letter motion</div>
-                    </a>
-                    <a href="animations/text/text-09-wave-ripple-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-text">Text</div>
+                    </div>
+                    <div class="animation-row">
+                        <div class="row-label">Do It Now</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Multi-frequency letter motion</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-09-wave-ripple.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-09-wave-ripple.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Wave function modes</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-09-wave-ripple-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-09-wave-ripple-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Chaotic wave patterns</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-09-wave-ripple-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-09-wave-ripple-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Wave function modes</div>
-                    </a>
-                    <a href="animations/text/text-09-wave-ripple-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-text">Text</div>
-                        </div>
-                        <div class="card-description">Chaotic wave patterns</div>
-                    </a>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 10: Typewriter -->
-        <div class="technique-section">
-            <h2 class="technique-title">
-                <span class="technique-number">10</span>
-                Typewriter / Sequential Reveal
-            </h2>
-            <div class="animation-row">
-                <div class="row-label">loom99 Logo</div>
-                <div class="animation-grid">
-                    <a href="animations/logo/logo-10-typewriter.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Monospace typewriter effect</div>
-                    </a>
-                    <a href="animations/logo/logo-10-typewriter-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Typing speed modes</div>
-                    </a>
-                    <a href="animations/logo/logo-10-typewriter-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-logo">Logo</div>
-                        </div>
-                        <div class="card-description">Random pauses and typos</div>
-                    </a>
+        <div class="technique-section" data-technique="10">
+            <div class="technique-header" onclick="toggleSection(this)">
+                <div class="technique-title-wrapper">
+                    <h2 class="technique-title">
+                        <span class="technique-number">10</span>
+                        Typewriter / Sequential Reveal
+                    </h2>
+                    <p class="technique-description">Character-by-character typing effect. Letters appear sequentially with timing variance, mimicking natural typing rhythms.</p>
                 </div>
+                <div class="expand-icon">▼</div>
             </div>
-            <div class="animation-row">
-                <div class="row-label">Do It Now</div>
-                <div class="animation-grid">
-                    <a href="animations/text/text-10-typewriter.html" class="animation-card">
-                        <div class="card-header">
-                            <div class="card-title">Original</div>
-                            <div class="badge badge-text">Text</div>
+            <div class="technique-content">
+                <div class="content-inner">
+                    <div class="animation-row">
+                        <div class="row-label">loom99 Logo</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Monospace typewriter effect</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-10-typewriter.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-10-typewriter.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Typing speed modes</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-10-typewriter-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-10-typewriter-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-logo">Logo</div>
+                                </div>
+                                <div class="card-description">Random pauses and typos</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/logo/logo-10-typewriter-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/logo/logo-10-typewriter-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Classic typewriter with cursor</div>
-                    </a>
-                    <a href="animations/text/text-10-typewriter-varied.html" class="animation-card varied">
-                        <div class="card-header">
-                            <div class="card-title">Varied<span class="variant-tag varied">Random</span></div>
-                            <div class="badge badge-text">Text</div>
+                    </div>
+                    <div class="animation-row">
+                        <div class="row-label">Do It Now</div>
+                        <div class="animation-grid">
+                            <div class="animation-card">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Original</div>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Classic typewriter with cursor</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-10-typewriter.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-10-typewriter.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card varied">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Varied</div>
+                                        <span class="variant-tag varied">Random</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Speed and style modes</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-10-typewriter-varied.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-10-typewriter-varied.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                            <div class="animation-card procedural">
+                                <div class="card-header">
+                                    <div class="card-title-row">
+                                        <div class="card-title">Procedural</div>
+                                        <span class="variant-tag procedural">Wild</span>
+                                    </div>
+                                    <div class="badge badge-text">Text</div>
+                                </div>
+                                <div class="card-description">Hunt-and-peck chaos</div>
+                                <div class="card-actions">
+                                    <button class="btn btn-preview" onclick="togglePreview(this, 'animations/text/text-10-typewriter-procedural.html')">Preview</button>
+                                    <button class="btn btn-open" onclick="window.open('animations/text/text-10-typewriter-procedural.html', '_blank')">Open</button>
+                                </div>
+                                <div class="preview-container">
+                                    <iframe class="preview-frame" src="" loading="lazy"></iframe>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-description">Speed and style modes</div>
-                    </a>
-                    <a href="animations/text/text-10-typewriter-procedural.html" class="animation-card procedural">
-                        <div class="card-header">
-                            <div class="card-title">Procedural<span class="variant-tag procedural">Wild</span></div>
-                            <div class="badge badge-text">Text</div>
-                        </div>
-                        <div class="card-description">Hunt-and-peck chaos</div>
-                    </a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="footer">
-        <p>Click any animation to view. Click again to restart. Refresh randomized versions for new variations.</p>
+        <p>Click "Preview" to view inline or "Open" to view in a new tab. Click preview again to close.</p>
         <p style="margin-top: 8px;">All animations support reduced-motion preferences for accessibility.</p>
     </div>
+
+    <script>
+        function toggleSection(header) {
+            const section = header.parentElement;
+            const wasExpanded = section.classList.contains('expanded');
+
+            // Close all sections
+            document.querySelectorAll('.technique-section').forEach(s => {
+                s.classList.remove('expanded');
+            });
+
+            // Open clicked section if it wasn't already open
+            if (!wasExpanded) {
+                section.classList.add('expanded');
+            }
+        }
+
+        function togglePreview(button, url) {
+            const card = button.closest('.animation-card');
+            const container = card.querySelector('.preview-container');
+            const iframe = card.querySelector('.preview-frame');
+            const isVisible = container.classList.contains('visible');
+
+            // Close all other previews in the same section
+            const section = button.closest('.technique-section');
+            section.querySelectorAll('.preview-container').forEach(c => {
+                if (c !== container) {
+                    c.classList.remove('visible');
+                    c.querySelector('.preview-frame').src = '';
+                }
+            });
+            section.querySelectorAll('.btn-preview').forEach(b => {
+                if (b !== button) {
+                    b.classList.remove('active');
+                }
+            });
+
+            if (isVisible) {
+                // Close this preview
+                container.classList.remove('visible');
+                iframe.src = '';
+                button.classList.remove('active');
+            } else {
+                // Open this preview
+                container.classList.add('visible');
+                iframe.src = url;
+                button.classList.add('active');
+            }
+        }
+
+        // Auto-expand first section (Line Drawing - user favorite)
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstSection = document.querySelector('.technique-section[data-technique="01"]');
+            if (firstSection) {
+                firstSection.classList.add('expanded');
+            }
+        });
+    </script>
 </body>
 </html>

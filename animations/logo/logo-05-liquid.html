@@ -268,14 +268,14 @@
         }
 
         function startExit() {
-                if (holdTimeout) clearTimeout(holdTimeout);
+            if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
-                if (holdTimeout) clearTimeout(holdTimeout);
+            if (holdTimeout) clearTimeout(holdTimeout);
             startTime = null;
             animationState = 'entrance';
             blobs.forEach(blob => blob.reset());

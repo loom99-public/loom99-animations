@@ -198,7 +198,7 @@
             }
 
             function startExit() {
-                if (holdTimeout) clearTimeout(holdTimeout);
+            if (holdTimeout) clearTimeout(holdTimeout);
                 if (animationState !== 'hold') return;
 
                 animationState = 'exit';
@@ -210,7 +210,7 @@
             }
 
             function restart() {
-                if (holdTimeout) clearTimeout(holdTimeout);
+            if (holdTimeout) clearTimeout(holdTimeout);
                 initializeParameters();
                 currentIndex = 0;
                 exitIndex = 0;

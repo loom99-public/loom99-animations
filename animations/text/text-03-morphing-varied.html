@@ -413,14 +413,14 @@
         }
 
         function startExit() {
-                if (holdTimeout) clearTimeout(holdTimeout);
+            if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
-                if (holdTimeout) clearTimeout(holdTimeout);
+            if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;

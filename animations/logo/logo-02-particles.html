@@ -262,13 +262,13 @@
             }
 
             function startExit() {
-                if (holdTimeout) clearTimeout(holdTimeout);
-                animationState = 'exit';
+            if (holdTimeout) clearTimeout(holdTimeout);
+            animationState = 'exit';
                 exitStartTime = performance.now();
             }
 
             function restart() {
-                if (holdTimeout) clearTimeout(holdTimeout);
+            if (holdTimeout) clearTimeout(holdTimeout);
                 startTime = null;
                 animationState = 'entrance';
                 particles.forEach(particle => {

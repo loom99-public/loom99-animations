@@ -109,6 +109,13 @@
 
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+        // Read URL parameters from gallery editor
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramDuration = urlParams.get('duration');
+        const paramHueShift = urlParams.get('hueShift');
+        const paramHoldDuration = urlParams.get('holdDuration');
+
+
         const text = 'loom99';
         const logo = document.getElementById('logo');
         const cursor = logo.querySelector('.cursor');
@@ -120,7 +127,7 @@
             let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
             let exitStartTime = null;
             let holdTimeout = null;
-            const HOLD_DURATION = 2000;
+            const HOLD_DURATION = paramHoldDuration ? parseInt(paramHoldDuration) : 2000;
             const EXIT_DURATION = 250;
 
             function easeInCubic(t) {
@@ -215,8 +222,8 @@
             }
 
             function startExit() {
-                if (holdTimeout) clearTimeout(holdTimeout);
-                animationState = 'exit';
+            if (holdTimeout) clearTimeout(holdTimeout);
+            animationState = 'exit';
                 exitStartTime = null;
                 deleteIndex = text.length - 1;
                 cursor.style.display = 'inline-block';
@@ -224,7 +231,7 @@
             }
 
             function restart() {
-                if (holdTimeout) clearTimeout(holdTimeout);
+            if (holdTimeout) clearTimeout(holdTimeout);
                 initializeParameters();
                 currentIndex = 0;
                 typoMode = false;

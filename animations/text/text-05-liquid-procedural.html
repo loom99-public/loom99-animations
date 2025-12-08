@@ -89,7 +89,7 @@
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let exitStartTime = null;
             let holdTimeout = null;
-            const HOLD_DURATION = 2000;
+            const HOLD_DURATION = paramHoldDuration ? parseInt(paramHoldDuration) : 2000;
         const EXIT_DURATION = 250;
 
         let startTime = null;
@@ -132,14 +132,14 @@
         }
 
         function startExit() {
-                if (holdTimeout) clearTimeout(holdTimeout);
+            if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'exit';
             exitStartTime = performance.now();
             requestAnimationFrame(animate);
         }
 
         function restart() {
-                if (holdTimeout) clearTimeout(holdTimeout);
+            if (holdTimeout) clearTimeout(holdTimeout);
             animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;

@@ -314,14 +314,14 @@
             }
 
             function startExit() {
-                if (holdTimeout) clearTimeout(holdTimeout);
-                animationState = 'exit';
+            if (holdTimeout) clearTimeout(holdTimeout);
+            animationState = 'exit';
                 exitStartTime = performance.now();
                 requestAnimationFrame(animate);
             }
 
             function restart() {
-                if (holdTimeout) clearTimeout(holdTimeout);
+            if (holdTimeout) clearTimeout(holdTimeout);
                 startTime = null;
                 animationState = 'entrance';
                 text.style.transform = 'none';

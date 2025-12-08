@@ -90,7 +90,7 @@
         }
 
         function startExit() {
-                if (holdTimeout) clearTimeout(holdTimeout);
+            if (holdTimeout) clearTimeout(holdTimeout);
             if (deleteTimeout) clearTimeout(deleteTimeout);
             words.forEach(word => { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; });
             animationState = 'exit';
@@ -98,7 +98,7 @@
         }
 
         function restart() {
-                if (holdTimeout) clearTimeout(holdTimeout);
+            if (holdTimeout) clearTimeout(holdTimeout);
             if (deleteTimeout) clearTimeout(deleteTimeout);
             animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters

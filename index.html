@@ -1888,7 +1888,7 @@
                 glow: panel.querySelector('.param-glow')?.value || 8,
                 easeIn: panel.querySelector('.param-ease-in')?.value || 'ease-in-quart',
                 easeOut: panel.querySelector('.param-ease-out')?.value || 'ease-out-quart',
-                text: panel.querySelector('.param-text')?.value || 'DO MORE NOW'
+                holdDuration: panel.querySelector('.param-hold')?.value || 2000
             };
         }
 
@@ -1941,6 +1941,13 @@
             }
             if (easeInSelect) easeInSelect.value = easeIn;
             if (easeOutSelect) easeOutSelect.value = easeOut;
+
+            const holdDuration = Math.floor(500 + Math.random() * 4500);
+            const holdInput = panel.querySelector('.param-hold');
+            if (holdInput) {
+                holdInput.value = holdDuration;
+                holdInput.nextElementSibling.textContent = holdDuration + 'ms';
+            }
 
             // Reload animation
             replayAnimation(button);
@@ -2056,6 +2063,8 @@
                 e.target.nextElementSibling.textContent = e.target.value + 'ms';
             } else if (e.target.classList.contains('param-glow')) {
                 e.target.nextElementSibling.textContent = e.target.value + 'px';
+            } else if (e.target.classList.contains('param-hold')) {
+                e.target.nextElementSibling.textContent = e.target.value + 'ms';
             }
         });
 
@@ -2120,9 +2129,10 @@
                                 <option value="ease-out-quart" selected>Ease Out Quart</option>
                             </select>
                         </div>
-                        <div class="editor-control text-control">
-                            <label>Text (for text animations)</label>
-                            <input type="text" class="param-text" value="DO MORE NOW" placeholder="Animation text...">
+                        <div class="editor-control">
+                            <label>Hold Duration</label>
+                            <input type="range" class="param-hold" min="500" max="5000" value="2000">
+                            <div class="editor-value">2000ms</div>
                         </div>
                     </div>
                     <div class="editor-row">

@@ -232,8 +232,8 @@
             }
 
             function startExit() {
-                if (holdTimeout) clearTimeout(holdTimeout);
-                animationState = 'exit';
+            if (holdTimeout) clearTimeout(holdTimeout);
+            animationState = 'exit';
 
                 exitWordIndex = words.length - 1;
                 const lastWord = words[exitWordIndex];
@@ -249,7 +249,7 @@
             }
 
             function restart() {
-                if (holdTimeout) clearTimeout(holdTimeout);
+            if (holdTimeout) clearTimeout(holdTimeout);
                 currentWordIndex = 0;
                 currentCharIndex = 0;
                 animationState = 'entrance';

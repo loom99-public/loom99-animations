@@ -43,29 +43,77 @@
             });
         }
 
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let startTime = null;
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
+
+        function easeInCubic(t) { return t * t * t; }
+
         function animate(timestamp) {
-            if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
-            letters.forEach((letter, i) => {
-                const time = (elapsed + letter.baseDelay) / 1000;
-                const wavePhase = (i / letters.length) * Math.PI * 2 * config.waveCount;
-                const y = mode.wave(time * config.speed, i, letters.length) * config.amplitude * Math.max(0, 1 - elapsed / config.duration);
-                const scale = 1 + Math.sin(time * 2 + wavePhase) * config.scaleAmp * Math.max(0, 1 - elapsed / config.duration);
-                letter.element.style.transform = `translateY(${y}px) scale(${scale})`;
-            });
-            if (elapsed < config.duration) { requestAnimationFrame(animate); }
-            else { letters.forEach(letter => { letter.element.style.transform = 'none'; }); }
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+
+            if (animationState === 'entrance') {
+                letters.forEach((letter, i) => {
+                    const time = (elapsed + letter.baseDelay) / 1000;
+                    const wavePhase = (i / letters.length) * Math.PI * 2 * config.waveCount;
+                    const y = mode.wave(time * config.speed, i, letters.length) * config.amplitude * Math.max(0, 1 - elapsed / config.duration);
+                    const scale = 1 + Math.sin(time * 2 + wavePhase) * config.scaleAmp * Math.max(0, 1 - elapsed / config.duration);
+                    letter.element.style.transform = `translateY(${y}px) scale(${scale})`;
+                });
+                if (elapsed >= config.duration) {
+                    animationState = 'hold';
+                    letters.forEach(letter => { letter.element.style.transform = 'none'; });
+                } else {
+                    requestAnimationFrame(animate);
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(exitProgress);
+
+                letters.forEach((letter, i) => {
+                    const wavePhase = (i / letters.length) * Math.PI * 2;
+                    const collapseY = Math.sin(wavePhase) * 100 * eased;
+                    const scale = 1 - eased;
+                    letter.element.style.transform = `translateY(${collapseY}px) scale(${scale})`;
+                    letter.element.style.opacity = 1 - eased;
+                });
+
+                if (exitProgress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    restart();
+                }
+            }
         }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
+        }
+
         function restart() {
+            animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;
+            exitStartTime = null;
+            letters.forEach(letter => { letter.element.style.opacity = '1'; });
             requestAnimationFrame(animate);
         }
 
         if (!prefersReducedMotion) {
             initializeParameters();
             requestAnimationFrame(animate);
-            document.body.addEventListener('click', restart);
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         }
     </script>
 </body>

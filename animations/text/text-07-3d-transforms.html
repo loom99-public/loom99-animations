@@ -19,7 +19,7 @@
             align-items: center;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            perspective: 1000px;
+            perspective: 1200px;
         }
 
         .container {
@@ -44,17 +44,17 @@
 
         .word1 {
             color: #ff2d2d;
-            text-shadow: 0 0 20px rgba(255, 45, 45, 0.8), 2px 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 0 0 25px rgba(255, 45, 45, 0.9), 3px 3px 6px rgba(0,0,0,0.6);
         }
 
         .word2 {
             color: #ff6b00;
-            text-shadow: 0 0 20px rgba(255, 107, 0, 0.8), 2px 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 0 0 25px rgba(255, 107, 0, 0.9), 3px 3px 6px rgba(0,0,0,0.6);
         }
 
         .word3 {
             color: #ffdd00;
-            text-shadow: 0 0 20px rgba(255, 221, 0, 0.8), 2px 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 0 0 25px rgba(255, 221, 0, 0.9), 3px 3px 6px rgba(0,0,0,0.6);
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -95,11 +95,15 @@
                 return t * t * t;
             }
 
+            function easeInOutQuart(t) {
+                return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+            }
+
             class Word3D {
                 constructor(element, delay, rotationAxis) {
                     this.element = element;
                     this.delay = delay;
-                    this.duration = 1500;
+                    this.duration = 1800;
                     this.rotationAxis = rotationAxis; // 'X', 'Y', or 'Z'
                 }
 
@@ -110,17 +114,22 @@
 
                     const localTime = elapsed - this.delay;
                     const progress = Math.min(1, localTime / this.duration);
-                    const eased = easeOutCubic(progress);
+                    const eased = easeInOutQuart(progress);
 
                     let rotateX = 0, rotateY = 0, rotateZ = 0;
-                    const translateZ = -200 * (1 - eased);
+                    const translateZ = -400 * (1 - eased);
+                    const scale = 0.3 + 0.7 * eased;
 
+                    // More dramatic rotations based on axis
                     if (this.rotationAxis === 'X') {
-                        rotateX = 90 * (1 - eased);
+                        rotateX = 180 * (1 - eased);
+                        rotateY = 45 * Math.sin(progress * Math.PI);
                     } else if (this.rotationAxis === 'Y') {
-                        rotateY = 180 * (1 - eased);
+                        rotateY = 360 * (1 - eased);
+                        rotateX = 30 * Math.sin(progress * Math.PI);
                     } else if (this.rotationAxis === 'Z') {
-                        rotateZ = 360 * (1 - eased);
+                        rotateZ = 720 * (1 - eased);
+                        rotateY = 45 * Math.sin(progress * Math.PI);
                     }
 
                     this.element.style.transform = `
@@ -128,6 +137,7 @@
                         rotateX(${rotateX}deg)
                         rotateY(${rotateY}deg)
                         rotateZ(${rotateZ}deg)
+                        scale(${scale})
                     `;
                     this.element.style.opacity = eased;
                 }
@@ -137,15 +147,19 @@
                     const eased = easeInCubic(progress);
 
                     let rotateX = 0, rotateY = 0, rotateZ = 0;
-                    const translateZ = -400 * eased;
+                    const translateZ = -600 * eased;
+                    const scale = 1 - 0.7 * eased;
 
-                    // Flip away in opposite direction
+                    // Dramatic exit rotations
                     if (this.rotationAxis === 'X') {
-                        rotateX = -90 * eased;
+                        rotateX = -180 * eased;
+                        rotateZ = 45 * eased;
                     } else if (this.rotationAxis === 'Y') {
-                        rotateY = -180 * eased;
+                        rotateY = -360 * eased;
+                        rotateX = -60 * eased;
                     } else if (this.rotationAxis === 'Z') {
-                        rotateZ = -360 * eased;
+                        rotateZ = -540 * eased;
+                        rotateY = 90 * eased;
                     }
 
                     this.element.style.transform = `
@@ -153,6 +167,7 @@
                         rotateX(${rotateX}deg)
                         rotateY(${rotateY}deg)
                         rotateZ(${rotateZ}deg)
+                        scale(${scale})
                     `;
                     this.element.style.opacity = 1 - eased;
                 }
@@ -170,7 +185,7 @@
             ];
 
             let startTime = null;
-            const totalDuration = 2500;
+            const totalDuration = 2800;
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;

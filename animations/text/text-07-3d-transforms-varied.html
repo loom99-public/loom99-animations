@@ -50,11 +50,59 @@
             wordAnimations = [ new Word3D(words[0], 0, mode.axes[0]), new Word3D(words[1], config.stagger, mode.axes[1]), new Word3D(words[2], config.stagger * 2, mode.axes[2]) ];
         }
 
-        let startTime = null; const totalDuration = 2500;
-        function animate(timestamp) { if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime; wordAnimations.forEach(word => word.update(elapsed)); if (elapsed < totalDuration) { requestAnimationFrame(animate); } }
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let startTime = null;
+        let exitStartTime = null;
+        const totalDuration = 2500;
+        const EXIT_DURATION = 250;
+
+        function easeInCubic(t) { return t * t * t; }
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+
+            if (animationState === 'entrance') {
+                wordAnimations.forEach(word => word.update(elapsed));
+                if (elapsed >= totalDuration) {
+                    animationState = 'hold';
+                } else {
+                    requestAnimationFrame(animate);
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(exitProgress);
+
+                wordAnimations.forEach(word => {
+                    let rotateX = 0, rotateY = 0, rotateZ = 0;
+                    if (word.rotationAxis === 'X') { rotateX = config.rotDegrees * eased; }
+                    else if (word.rotationAxis === 'Y') { rotateY = config.rotDegrees * eased; }
+                    else if (word.rotationAxis === 'Z') { rotateZ = config.rotDegrees * eased; }
+                    const translateZ = -config.translateZ * eased;
+                    word.element.style.transform = `translateZ(${translateZ}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`;
+                    word.element.style.opacity = 1 - eased;
+                });
+
+                if (exitProgress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    restart();
+                }
+            }
+        }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
+        }
+
         function restart() {
+            animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;
+            exitStartTime = null;
             wordAnimations.forEach(word => { word.element.style.opacity = 0; word.element.style.transform = ''; });
             requestAnimationFrame(animate);
         }
@@ -62,7 +110,13 @@
         if (!prefersReducedMotion) {
             initializeParameters();
             requestAnimationFrame(animate);
-            document.body.addEventListener('click', restart);
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         } else {
             document.querySelectorAll('.word').forEach(word => { word.style.opacity = 1; });
         }

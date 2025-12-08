@@ -214,33 +214,85 @@
                     Random.varyPercent(baseDuration, config.timing.durationVariance) : baseDuration;
             }
 
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitStartTime = null;
+            const EXIT_DURATION = 250;
+
+            function easeInCubic(t) {
+                return t * t * t;
+            }
+
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
-                const progress = Math.min(1, elapsed / duration);
 
                 ctx.fillStyle = '#1a1a2e';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                particles.forEach(particle => {
-                    particle.update(progress);
-                    particle.draw();
-                });
+                if (animationState === 'entrance') {
+                    const progress = Math.min(1, elapsed / duration);
 
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
+                    particles.forEach(particle => {
+                        particle.update(progress);
+                        particle.draw();
+                    });
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        animationState = 'hold';
+                        requestAnimationFrame(animate);
+                    }
+                } else if (animationState === 'hold') {
+                    // Keep drawing at final position
+                    particles.forEach(particle => {
+                        particle.draw();
+                    });
+                } else if (animationState === 'exit') {
+                    const exitElapsed = timestamp - exitStartTime;
+                    const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+                    const eased = easeInCubic(progress);
+
+                    particles.forEach(particle => {
+                        // Scatter outward from target position
+                        const angle = Math.random() * Math.PI * 2;
+                        const distance = 300 * eased;
+                        particle.x = particle.targetX + Math.cos(angle) * distance * (1 + Math.random());
+                        particle.y = particle.targetY + Math.sin(angle) * distance * (1 + Math.random());
+                        particle.opacity = 1 - eased;
+                        particle.draw();
+                    });
+
+                    if (exitElapsed < EXIT_DURATION) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        restart();
+                    }
                 }
+            }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = performance.now();
+                requestAnimationFrame(animate);
             }
 
             function restart() {
                 initializeParameters();  // Regenerate all random parameters
                 startTime = null;
+                animationState = 'entrance';
                 requestAnimationFrame(animate);
             }
 
             initializeParameters();
             requestAnimationFrame(animate);
-            canvas.addEventListener('click', restart);
+            canvas.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         }
     </script>
 </body>

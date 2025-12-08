@@ -35,7 +35,7 @@
             svg text {
                 opacity: 1 !important;
             }
-            svg rect {
+            svg rect, svg circle {
                 display: none !important;
             }
         }
@@ -45,16 +45,37 @@
     <div class="container">
         <svg id="svg" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
             <defs>
+                <!-- Radial reveal mask with gradient edge -->
                 <mask id="circleMask">
                     <circle id="maskCircle" cx="350" cy="140" r="0" fill="white"/>
+                    <!-- Gradient ring for soft edge -->
+                    <circle id="maskGradientRing" cx="350" cy="140" r="0" fill="none" stroke="white" stroke-width="40" opacity="0.5"/>
                 </mask>
+
+                <!-- Glow for reveal edge -->
+                <filter id="revealGlow">
+                    <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+
+                <radialGradient id="glowGradient" cx="50%" cy="50%">
+                    <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#00d4ff;stop-opacity:0.6" />
+                    <stop offset="100%" style="stop-color:#ff2d75;stop-opacity:0" />
+                </radialGradient>
             </defs>
 
             <g mask="url(#circleMask)">
-                <text x="50" y="80" font-size="80" font-weight="900" fill="#ff2d2d" filter="drop-shadow(0 0 10px #ff2d2d)">DO</text>
-                <text x="50" y="170" font-size="60" font-weight="900" fill="#ff6b00" filter="drop-shadow(0 0 10px #ff6b00)">IT</text>
-                <text x="50" y="260" font-size="80" font-weight="900" fill="#ffdd00" filter="drop-shadow(0 0 10px #ffdd00)">NOW</text>
+                <text x="50" y="80" font-size="80" font-weight="900" fill="#ff2d2d" filter="drop-shadow(0 0 12px #ff2d2d)">DO</text>
+                <text x="50" y="170" font-size="60" font-weight="900" fill="#ff6b00" filter="drop-shadow(0 0 12px #ff6b00)">IT</text>
+                <text x="50" y="260" font-size="80" font-weight="900" fill="#ffdd00" filter="drop-shadow(0 0 12px #ffdd00)">NOW</text>
             </g>
+
+            <!-- Animated glow circle at reveal edge -->
+            <circle id="glowCircle" cx="350" cy="140" r="0" fill="url(#glowGradient)" opacity="0" filter="url(#revealGlow)"/>
         </svg>
     </div>
 
@@ -67,6 +88,8 @@
             const EXIT_DURATION = 250;
 
             const maskCircle = document.getElementById('maskCircle');
+            const maskGradientRing = document.getElementById('maskGradientRing');
+            const glowCircle = document.getElementById('glowCircle');
 
             function easeOutCubic(t) {
                 return 1 - Math.pow(1 - t, 3);
@@ -76,9 +99,13 @@
                 return t * t * t;
             }
 
+            function easeInOutQuart(t) {
+                return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+            }
+
             let startTime = null;
             const duration = 2000;
-            const maxRadius = 600;
+            const maxRadius = 700;
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
@@ -86,14 +113,20 @@
 
                 if (animationState === 'entrance') {
                     const progress = Math.min(1, elapsed / duration);
-                    const eased = easeOutCubic(progress);
+                    const eased = easeInOutQuart(progress);
 
                     const radius = maxRadius * eased;
                     maskCircle.setAttribute('r', radius);
+                    maskGradientRing.setAttribute('r', radius);
+
+                    // Pulsing glow at reveal edge
+                    glowCircle.setAttribute('r', radius);
+                    glowCircle.setAttribute('opacity', Math.sin(progress * Math.PI) * 0.6);
 
                     if (progress < 1) {
                         requestAnimationFrame(animate);
                     } else {
+                        glowCircle.setAttribute('opacity', 0);
                         animationState = 'hold';
                     }
                 } else if (animationState === 'exit') {
@@ -101,9 +134,14 @@
                     const progress = Math.min(1, exitElapsed / EXIT_DURATION);
                     const eased = easeInCubic(progress);
 
-                    // Reverse wipe - collapse to center
+                    // Reverse reveal - collapse to center
                     const radius = maxRadius * (1 - eased);
                     maskCircle.setAttribute('r', radius);
+                    maskGradientRing.setAttribute('r', radius);
+
+                    // Glow during collapse
+                    glowCircle.setAttribute('r', radius);
+                    glowCircle.setAttribute('opacity', (1 - progress) * 0.6);
 
                     if (exitElapsed < EXIT_DURATION) {
                         requestAnimationFrame(animate);
@@ -124,6 +162,8 @@
                 startTime = null;
                 animationState = 'entrance';
                 maskCircle.setAttribute('r', 0);
+                maskGradientRing.setAttribute('r', 0);
+                glowCircle.setAttribute('opacity', 0);
                 requestAnimationFrame(animate);
             }
 
@@ -138,7 +178,9 @@
             });
         } else {
             const maskCircle = document.getElementById('maskCircle');
-            maskCircle.setAttribute('r', 600);
+            const maskGradientRing = document.getElementById('maskGradientRing');
+            maskCircle.setAttribute('r', 700);
+            maskGradientRing.setAttribute('r', 700);
         }
     </script>
 </body>

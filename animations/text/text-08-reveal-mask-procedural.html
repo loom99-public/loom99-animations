@@ -49,26 +49,74 @@
             maskShape.setAttribute('x', dir.x); maskShape.setAttribute('y', dir.y); maskShape.setAttribute('width', '0'); maskShape.setAttribute('height', '0');
         }
 
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
+
         let startTime = null;
-        function animate(timestamp) {
-            if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
-            const progress = Math.min(1, elapsed / config.duration), eased = selectedEasing(progress);
-            const dims = dir.grow(eased);
-            const maskShape = document.getElementById('maskShape');
-            maskShape.setAttribute('x', dims.x); maskShape.setAttribute('y', dims.y);
-            maskShape.setAttribute('width', dims.w); maskShape.setAttribute('height', dims.h);
-            if (progress < 1) { requestAnimationFrame(animate); }
+
+        function easeInCubic(t) {
+            return t * t * t;
         }
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+            const maskShape = document.getElementById('maskShape');
+
+            if (animationState === 'entrance') {
+                const progress = Math.min(1, elapsed / config.duration), eased = selectedEasing(progress);
+                const dims = dir.grow(eased);
+                maskShape.setAttribute('x', dims.x); maskShape.setAttribute('y', dims.y);
+                maskShape.setAttribute('width', dims.w); maskShape.setAttribute('height', dims.h);
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    animationState = 'hold';
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(exitProgress);
+
+                // Reverse wipe
+                const reverseProgress = 1 - eased;
+                const dims = dir.grow(reverseProgress);
+                maskShape.setAttribute('x', dims.x); maskShape.setAttribute('y', dims.y);
+                maskShape.setAttribute('width', dims.w); maskShape.setAttribute('height', dims.h);
+
+                if (exitProgress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    restart();
+                }
+            }
+        }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
+        }
+
         function restart() {
+            animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;
+            exitStartTime = null;
             requestAnimationFrame(animate);
         }
 
         if (!prefersReducedMotion) {
             initializeParameters();
             requestAnimationFrame(animate);
-            document.body.addEventListener('click', restart);
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         } else {
             const maskShape = document.getElementById('maskShape');
             maskShape.setAttribute('x', '0'); maskShape.setAttribute('y', '0'); maskShape.setAttribute('width', '700'); maskShape.setAttribute('height', '280');

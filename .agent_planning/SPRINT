@@ -1,127 +1,66 @@
-# Sprint Status - P0 Implementation
+# Sprint Status - Exit Animations Implementation
 
-## P0-1: Text Consistency "NOW!" → "NOW" ✓ COMPLETE
+## Current Task: Add Exit Animations to All Loom99 Animations
 
-**Status**: Complete
-**Commit**: 8637b17
+**Status**: Starting
+**Started**: 2025-12-07
 
-### Work Completed:
-- Updated 22 text animation files
-- Replaced all instances of "NOW!" with "NOW"
-- Verified with grep - zero occurrences remaining
+### Objective
+Add exit animations to create complete animation loops: entrance → hold → exit → entrance
 
-### Files Modified:
-- All text-02-particles variants (base, varied, procedural)
-- All text-04-glitch variants
-- text-05-liquid.html
-- All text-06-kinetic variants
-- All text-07-3d-transforms variants
-- All text-08-reveal-mask variants
-- All text-09-wave-ripple variants
-- All text-10-typewriter variants
+### Exit Animation Characteristics
+- Duration: 200-300ms (quick)
+- Easing: ease-in (vs ease-out for entrance)
+- All elements animate simultaneously (no stagger)
+- Auto-restart entrance after exit completes
+- Click triggers exit when in 'hold' state
+
+### Implementation Plan
+
+#### Phase 1: Text Animations (10 files)
+- [ ] text-10-typewriter.html - rapid backspace deletion
+- [ ] text-01-line-drawing.html - lines shoot out to edges
+- [ ] text-02-particles.html - particles scatter/explode
+- [ ] text-03-morphing.html - morph to dots and fade
+- [ ] text-04-glitch.html - intense glitch then fade
+- [ ] text-05-liquid.html - blobs drip off screen
+- [ ] text-06-kinetic.html - elements fly away
+- [ ] text-07-3d-transforms.html - flip away and fade
+- [ ] text-08-reveal-mask.html - reverse wipe
+- [ ] text-09-wave-ripple.html - collapse inward
+
+#### Phase 2: Logo Animations (10 files)
+- [ ] logo-01-line-drawing.html
+- [ ] logo-02-particles.html
+- [ ] logo-03-morphing.html
+- [ ] logo-04-glitch.html
+- [ ] logo-05-liquid.html
+- [ ] logo-06-kinetic.html
+- [ ] logo-07-3d-transforms.html
+- [ ] logo-08-reveal-mask.html
+- [ ] logo-09-wave-ripple.html
+- [ ] logo-10-typewriter.html
+
+#### Phase 3: Varied Versions (40 files)
+Apply patterns to all -varied.html files
+
+#### Phase 4: Procedural Versions (40 files)
+Apply patterns to all -procedural.html files
+
+### Progress
+- Planning complete
+- Starting with text animations (simpler than logos)
+- Will commit after batches of ~5 files
 
 ---
 
-## P0-2: Parameter Regeneration on Click ⚠️ IN PROGRESS
+## Previous Sprint: P0 Implementation ✓ COMPLETE
 
-**Status**: 11/40 files complete (27.5%)
-**Commits**: 07fd31f (initial), d04603a (text animations complete)
+### P0-1: Text Consistency "NOW!" → "NOW" ✓
+- All 22 files updated
+- Commit: 8637b17
 
-### Work Completed:
-
-#### Text Animations (11/18 files - 61%):
-- ✓ text-02-particles-varied.html - refactored
-- ✓ text-02-particles-procedural.html - refactored
-- ✓ text-06-kinetic-procedural.html - refactored
-- ✓ text-06-kinetic-varied.html - refactored (was pre-done)
-- ✓ text-07-3d-transforms-varied.html - refactored
-- ✓ text-07-3d-transforms-procedural.html - refactored
-- ✓ text-08-reveal-mask-varied.html - refactored
-- ✓ text-08-reveal-mask-procedural.html - refactored
-- ✓ text-09-wave-ripple-varied.html - refactored
-- ✓ text-09-wave-ripple-procedural.html - refactored
-- ✓ text-10-typewriter-varied.html - refactored
-- ✓ text-10-typewriter-procedural.html - refactored
-
-#### Logo Animations (1/20 files - 5%):
-- ✓ logo-01-line-drawing-varied.html - refactored
-
-### Pattern Established:
-```javascript
-// 1. Declare variables as let instead of const
-let selectedMode, config, palette, lines, etc;
-
-// 2. Create initializeParameters() function
-function initializeParameters() {
-    // Clear existing DOM elements
-    // Regenerate all random config
-    // Rebuild animations/objects
-}
-
-// 3. Update restart() function
-function restart() {
-    initializeParameters();  // NEW: regenerate params
-    startTime = null;
-    requestAnimationFrame(animate);
-}
-
-// 4. Initial call
-initializeParameters();
-requestAnimationFrame(animate);
-```
-
-### Remaining Work (29 files):
-
-#### Text Animations (7 files):
-- text-01-line-drawing-varied.html
-- text-01-line-drawing-procedural.html
-- text-03-morphing-varied.html
-- text-03-morphing-procedural.html
-- text-04-glitch-varied.html
-- text-04-glitch-procedural.html
-- text-05-liquid-varied.html
-- text-05-liquid-procedural.html
-
-#### Logo Animations (19 files):
-- logo-01-line-drawing-procedural.html
-- logo-02-particles-varied.html
-- logo-02-particles-procedural.html
-- logo-03-morphing-varied.html
-- logo-03-morphing-procedural.html
-- logo-04-glitch-varied.html
-- logo-04-glitch-procedural.html
-- logo-05-liquid-varied.html
-- logo-05-liquid-procedural.html
-- logo-06-kinetic-varied.html
-- logo-06-kinetic-procedural.html
-- logo-07-3d-transforms-varied.html
-- logo-07-3d-transforms-procedural.html
-- logo-08-reveal-mask-varied.html
-- logo-08-reveal-mask-procedural.html
-- logo-09-wave-ripple-varied.html
-- logo-09-wave-ripple-procedural.html
-- logo-10-typewriter-varied.html
-- logo-10-typewriter-procedural.html
-
-### Implementation Notes:
-- Logo files are more complex (400+ lines, SVG path manipulation)
-- Each file requires careful refactoring to ensure proper DOM cleanup
-- Pattern is consistent but implementation details vary per animation type
-- Files already completed work perfectly with parameter regeneration
-
-### Testing Completed:
-- ✓ P0-1: Spot-checked 3 files visually, grep verified all files
-- ✓ P0-2: Manually tested text-02-particles-varied in browser
-  - Verified different modes on each click
-  - Verified colors change
-  - Verified particle count/spacing varies
-  - Console logging confirms parameter regeneration
-- ✓ Verified text-06 through text-10 refactored files load correctly
-
-## Next Steps:
-1. Continue P0-2 implementation for remaining 29 files
-2. Process logo files systematically (complex SVG manipulation)
-3. Process remaining text files (text-01, text-03, text-04, text-05)
-4. Commit after completing logo files
-5. Full regression test on 5-10 random files
-6. Document completion and submit for review
+### P0-2: Parameter Regeneration on Click ⚠️ PARTIAL
+- 11/40 files complete (27.5%)
+- Commits: 07fd31f, d04603a
+- 29 files remaining (logo-heavy)

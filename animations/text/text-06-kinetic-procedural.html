@@ -71,11 +71,65 @@
             });
         }
 
-        let startTime = null; const totalDuration = 3000;
-        function animate(timestamp) { if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime; letters.forEach(letter => letter.update(elapsed)); if (elapsed < totalDuration) { requestAnimationFrame(animate); } }
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
+
+        let startTime = null;
+        const totalDuration = 3000;
+
+        function easeInCubic(t) {
+            return t * t * t;
+        }
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+
+            if (animationState === 'entrance') {
+                letters.forEach(letter => letter.update(elapsed));
+                if (elapsed < totalDuration) {
+                    requestAnimationFrame(animate);
+                } else {
+                    animationState = 'hold';
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(exitProgress);
+
+                // Fly away in opposite directions
+                letters.forEach(letter => {
+                    const angle = Math.atan2(letter.startY, letter.startX);
+                    const flyDist = 1000 * eased;
+                    const x = Math.cos(angle) * flyDist;
+                    const y = Math.sin(angle) * flyDist;
+                    const rotation = letter.targetRotation + (360 * eased);
+                    const scale = 1 - eased;
+
+                    letter.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`;
+                    letter.element.style.opacity = 1 - eased;
+                });
+
+                if (exitProgress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    restart();
+                }
+            }
+        }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
+        }
+
         function restart() {
+            animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;
+            exitStartTime = null;
             requestAnimationFrame(animate);
         }
         if (prefersReducedMotion) {
@@ -85,7 +139,13 @@
             initializeParameters();
             requestAnimationFrame(animate);
         }
-        document.body.addEventListener('click', restart);
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance') {
+                restart();
+            }
+        });
     </script>
 </body>
 </html>

@@ -1,0 +1,87 @@
+# Exit Animations Implementation Plan
+
+## Objective
+Add exit animations to all loom99 animations that create a complete loop: entrance → hold → exit → entrance
+
+## State Machine
+```javascript
+let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+let exitStartTime = null;
+const EXIT_DURATION = 250; // ms (quick exit)
+
+function animate(timestamp) {
+    if (animationState === 'entrance') {
+        // existing entrance animation
+        if (entranceComplete) {
+            animationState = 'hold';
+        }
+    } else if (animationState === 'exit') {
+        // quick exit animation (all elements simultaneously)
+        if (exitComplete) {
+            animationState = 'entrance';
+            restart();
+        }
+    }
+}
+
+function handleClick() {
+    if (animationState === 'hold') {
+        animationState = 'exit';
+        exitStartTime = performance.now();
+        requestAnimationFrame(animate);
+    }
+}
+```
+
+## Exit Animation Effects by Type
+
+1. **Line drawing**: Lines retract to center/edges (reverse direction)
+2. **Particles**: Particles scatter/explode outward or fade
+3. **Morphing**: Elements morph to dots and fade
+4. **Glitch**: Intense glitch then fade to black
+5. **Liquid**: Blobs drip off screen / dissolve
+6. **Kinetic**: Elements fly away in opposite directions
+7. **3D Transforms**: Flip away and fade
+8. **Reveal/Mask**: Reverse wipe or iris close
+9. **Wave/Ripple**: Collapse inward with wave
+10. **Typewriter**: Rapid backspace deletion
+
+## Implementation Order
+
+### Phase 1: Text Animations (Original)
+- text-10-typewriter.html
+- text-01-line-drawing.html
+- text-02-particles.html
+- text-03-morphing.html
+- text-04-glitch.html
+- text-05-liquid.html
+- text-06-kinetic.html
+- text-07-3d-transforms.html
+- text-08-reveal-mask.html
+- text-09-wave-ripple.html
+
+### Phase 2: Logo Animations (Original)
+- logo-01-line-drawing.html
+- logo-02-particles.html
+- logo-03-morphing.html
+- logo-04-glitch.html
+- logo-05-liquid.html
+- logo-06-kinetic.html
+- logo-07-3d-transforms.html
+- logo-08-reveal-mask.html
+- logo-09-wave-ripple.html
+- logo-10-typewriter.html
+
+### Phase 3: Varied Versions
+Apply same patterns to all -varied.html files
+
+### Phase 4: Procedural Versions
+Apply same patterns to all -procedural.html files
+
+## Technical Notes
+
+- Exit duration: 200-300ms (quick)
+- Easing: ease-in (vs ease-out for entrance)
+- All elements animate simultaneously (no stagger)
+- After exit completes, automatically restart entrance
+- Click during entrance can optionally restart or skip to exit

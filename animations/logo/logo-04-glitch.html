@@ -56,8 +56,48 @@
             filter: url(#glitch-b);
         }
 
+        .scanlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 100, 0.05) 2px,
+                rgba(0, 255, 100, 0.05) 4px
+            );
+            pointer-events: none;
+            opacity: 0;
+            z-index: 10;
+        }
+
+        .corruption-bars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 5;
+        }
+
+        .corruption-bar {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 0, 100, 0.7);
+            mix-blend-mode: screen;
+        }
+
         @media (prefers-reduced-motion: reduce) {
-            .logo-layer {
+            .logo-layer,
+            .scanlines,
+            .corruption-bars {
                 display: none !important;
             }
         }
@@ -76,17 +116,17 @@
 
                     <filter id="glitch-r">
                         <feColorMatrix type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"/>
-                        <feOffset dx="3" dy="-2"/>
+                        <feOffset dx="6" dy="-4"/>
                     </filter>
 
                     <filter id="glitch-g">
                         <feColorMatrix type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"/>
-                        <feOffset dx="-2" dy="2"/>
+                        <feOffset dx="-5" dy="3"/>
                     </filter>
 
                     <filter id="glitch-b">
                         <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"/>
-                        <feOffset dx="2" dy="3"/>
+                        <feOffset dx="4" dy="5"/>
                     </filter>
                 </defs>
 
@@ -113,6 +153,12 @@
             <svg class="logo-layer layer-b" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
                 <use href="#logo-main" filter="url(#glitch-b)"/>
             </svg>
+
+            <!-- Scanlines overlay -->
+            <div class="scanlines"></div>
+
+            <!-- Corruption bars -->
+            <div class="corruption-bars"></div>
         </div>
     </div>
 
@@ -122,6 +168,8 @@
         if (!prefersReducedMotion) {
             const logo = document.getElementById('logo');
             const glitchLayers = document.querySelectorAll('.logo-layer');
+            const scanlines = document.querySelector('.scanlines');
+            const corruptionBars = document.querySelector('.corruption-bars');
 
             let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
             let startTime = null;
@@ -129,6 +177,15 @@
             const ENTRANCE_GLITCH_DURATION = 1200;
             const ENTRANCE_TOTAL_DURATION = 2000;
             const EXIT_DURATION = 250;
+
+            // Create corruption bars
+            for (let i = 0; i < 5; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'corruption-bar';
+                corruptionBars.appendChild(bar);
+            }
+
+            const bars = corruptionBars.querySelectorAll('.corruption-bar');
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
@@ -140,19 +197,33 @@
                         const intensity = 1 - (elapsed / ENTRANCE_GLITCH_DURATION);
 
                         glitchLayers.forEach((layer, i) => {
-                            layer.style.opacity = intensity * 0.8;
+                            layer.style.opacity = intensity * 0.9;
 
-                            // Random transform on each layer
-                            const tx = (Math.random() - 0.5) * 20 * intensity;
-                            const ty = (Math.random() - 0.5) * 20 * intensity;
-                            const skew = (Math.random() - 0.5) * 10 * intensity;
+                            // More dramatic RGB separation
+                            const tx = (Math.random() - 0.5) * 30 * intensity;
+                            const ty = (Math.random() - 0.5) * 30 * intensity;
+                            const skew = (Math.random() - 0.5) * 15 * intensity;
                             layer.style.transform = `translate(${tx}px, ${ty}px) skewX(${skew}deg)`;
                         });
 
                         // Main logo jitter
-                        const jitterX = (Math.random() - 0.5) * 8 * intensity;
-                        const jitterY = (Math.random() - 0.5) * 8 * intensity;
+                        const jitterX = (Math.random() - 0.5) * 12 * intensity;
+                        const jitterY = (Math.random() - 0.5) * 12 * intensity;
                         logo.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
+
+                        // Scanlines
+                        scanlines.style.opacity = intensity * 0.8;
+
+                        // Corruption bars - random positions and visibility
+                        bars.forEach(bar => {
+                            if (Math.random() > 0.7) {
+                                bar.style.top = `${Math.random() * 100}%`;
+                                bar.style.height = `${2 + Math.random() * 6}px`;
+                                bar.style.opacity = intensity * 0.9;
+                            } else {
+                                bar.style.opacity = 0;
+                            }
+                        });
 
                         requestAnimationFrame(animate);
                     } else if (elapsed < ENTRANCE_TOTAL_DURATION) {
@@ -160,16 +231,22 @@
                         const stabilize = (elapsed - ENTRANCE_GLITCH_DURATION) / (ENTRANCE_TOTAL_DURATION - ENTRANCE_GLITCH_DURATION);
 
                         glitchLayers.forEach((layer, i) => {
-                            layer.style.opacity = (1 - stabilize) * 0.4;
+                            layer.style.opacity = (1 - stabilize) * 0.5;
 
-                            const tx = (Math.random() - 0.5) * 5 * (1 - stabilize);
-                            const ty = (Math.random() - 0.5) * 5 * (1 - stabilize);
+                            const tx = (Math.random() - 0.5) * 8 * (1 - stabilize);
+                            const ty = (Math.random() - 0.5) * 8 * (1 - stabilize);
                             layer.style.transform = `translate(${tx}px, ${ty}px)`;
                         });
 
-                        const jitterX = (Math.random() - 0.5) * 2 * (1 - stabilize);
-                        const jitterY = (Math.random() - 0.5) * 2 * (1 - stabilize);
+                        const jitterX = (Math.random() - 0.5) * 3 * (1 - stabilize);
+                        const jitterY = (Math.random() - 0.5) * 3 * (1 - stabilize);
                         logo.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
+
+                        scanlines.style.opacity = (1 - stabilize) * 0.4;
+
+                        bars.forEach(bar => {
+                            bar.style.opacity = (1 - stabilize) * 0.5;
+                        });
 
                         requestAnimationFrame(animate);
                     } else {
@@ -179,6 +256,10 @@
                             layer.style.transform = 'none';
                         });
                         logo.style.transform = 'none';
+                        scanlines.style.opacity = 0;
+                        bars.forEach(bar => {
+                            bar.style.opacity = 0;
+                        });
                         animationState = 'hold';
                     }
                 } else if (animationState === 'exit') {
@@ -189,18 +270,27 @@
                     const intensity = 1 - progress;
 
                     glitchLayers.forEach((layer, i) => {
-                        layer.style.opacity = intensity * 1.5;
+                        layer.style.opacity = intensity * 1.8;
 
-                        const tx = (Math.random() - 0.5) * 40 * intensity;
-                        const ty = (Math.random() - 0.5) * 40 * intensity;
-                        const skew = (Math.random() - 0.5) * 20 * intensity;
+                        const tx = (Math.random() - 0.5) * 60 * intensity;
+                        const ty = (Math.random() - 0.5) * 60 * intensity;
+                        const skew = (Math.random() - 0.5) * 30 * intensity;
                         layer.style.transform = `translate(${tx}px, ${ty}px) skewX(${skew}deg)`;
                     });
 
-                    const jitterX = (Math.random() - 0.5) * 15 * intensity;
-                    const jitterY = (Math.random() - 0.5) * 15 * intensity;
+                    const jitterX = (Math.random() - 0.5) * 25 * intensity;
+                    const jitterY = (Math.random() - 0.5) * 25 * intensity;
                     logo.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
                     logo.style.opacity = intensity;
+
+                    scanlines.style.opacity = intensity;
+
+                    // Intense corruption
+                    bars.forEach(bar => {
+                        bar.style.top = `${Math.random() * 100}%`;
+                        bar.style.height = `${3 + Math.random() * 10}px`;
+                        bar.style.opacity = intensity;
+                    });
 
                     if (exitElapsed < EXIT_DURATION) {
                         requestAnimationFrame(animate);
@@ -225,6 +315,10 @@
                 glitchLayers.forEach(layer => {
                     layer.style.opacity = 0;
                     layer.style.transform = 'none';
+                });
+                scanlines.style.opacity = 0;
+                bars.forEach(bar => {
+                    bar.style.opacity = 0;
                 });
                 requestAnimationFrame(animate);
             }

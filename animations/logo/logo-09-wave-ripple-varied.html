@@ -141,49 +141,110 @@
             const parts = document.querySelectorAll('.logo-part');
 
             let startTime = null;
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitStartTime = null;
+            const EXIT_DURATION = 250;
+
+            function easeInCubic(t) {
+                return t * t * t;
+            }
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
 
-                parts.forEach((part, index) => {
-                    const time = elapsed / 1000;
-                    const wavePhase = (index / parts.length) * Math.PI * 2 * selectedMode.waveCount +
-                                    config.motion.phaseOffset;
+                if (animationState === 'entrance') {
+                    parts.forEach((part, index) => {
+                        const time = elapsed / 1000;
+                        const wavePhase = (index / parts.length) * Math.PI * 2 * selectedMode.waveCount +
+                                        config.motion.phaseOffset;
 
-                    const dampingFactor = Math.max(0, 1 - elapsed / duration);
+                        const dampingFactor = Math.max(0, 1 - elapsed / duration);
 
-                    const y = Math.sin(time * selectedMode.frequency + wavePhase) *
-                            amplitude * dampingFactor * selectedMode.damping;
-                    const scale = 1 + Math.sin(time * 2 + wavePhase) *
-                                selectedMode.scaleAmount * dampingFactor;
+                        const y = Math.sin(time * selectedMode.frequency + wavePhase) *
+                                amplitude * dampingFactor * selectedMode.damping;
+                        const scale = 1 + Math.sin(time * 2 + wavePhase) *
+                                    selectedMode.scaleAmount * dampingFactor;
 
-                    const bbox = part.getBBox();
-                    const centerX = bbox.x + bbox.width / 2;
-                    const centerY = bbox.y + bbox.height / 2;
+                        const bbox = part.getBBox();
+                        const centerX = bbox.x + bbox.width / 2;
+                        const centerY = bbox.y + bbox.height / 2;
 
-                    part.style.transformOrigin = `${centerX}px ${centerY}px`;
-                    part.style.transform = `translateY(${y}px) scale(${scale})`;
-                });
-
-                if (elapsed < duration) {
-                    requestAnimationFrame(animate);
-                } else {
-                    parts.forEach(part => {
-                        part.style.transform = 'none';
+                        part.style.transformOrigin = `${centerX}px ${centerY}px`;
+                        part.style.transform = `translateY(${y}px) scale(${scale})`;
                     });
+
+                    if (elapsed < duration) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        parts.forEach(part => {
+                            part.style.transform = 'none';
+                        });
+                        animationState = 'hold';
+                    }
+                } else if (animationState === 'exit') {
+                    const exitElapsed = timestamp - exitStartTime;
+                    const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+                    const eased = easeInCubic(progress);
+
+                    parts.forEach((part, index) => {
+                        // Collapse inward with wave effect
+                        const wavePhase = (index / parts.length) * Math.PI * 2;
+                        const waveOffset = Math.sin(wavePhase + progress * Math.PI * 4) * 20 * (1 - progress);
+
+                        const bbox = part.getBBox();
+                        const centerX = bbox.x + bbox.width / 2;
+                        const centerY = bbox.y + bbox.height / 2;
+
+                        // Calculate direction to center
+                        const svgCenterX = 300;
+                        const svgCenterY = 100;
+                        const dx = svgCenterX - centerX;
+                        const dy = svgCenterY - centerY;
+
+                        const scale = 1 - eased;
+                        const translateX = dx * eased + waveOffset;
+                        const translateY = dy * eased;
+
+                        part.style.transformOrigin = `${centerX}px ${centerY}px`;
+                        part.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                        part.style.opacity = 1 - eased;
+                    });
+
+                    if (exitElapsed < EXIT_DURATION) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        restart();
+                    }
                 }
+            }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = performance.now();
+                requestAnimationFrame(animate);
             }
 
             function restart() {
                 initializeParameters();
                 startTime = null;
+                animationState = 'entrance';
+                parts.forEach(part => {
+                    part.style.transform = 'none';
+                    part.style.opacity = '1';
+                });
                 requestAnimationFrame(animate);
             }
 
             initializeParameters();
             requestAnimationFrame(animate);
-            document.body.addEventListener('click', restart);
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         }
     </script>
 </body>

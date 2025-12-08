@@ -45,24 +45,66 @@
             mode.init(maskShape);
         }
 
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let startTime = null;
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
+
+        function easeInCubic(t) { return t * t * t; }
+
         function animate(timestamp) {
-            if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
-            const progress = Math.min(1, elapsed / config.duration), eased = easeOutCubic(progress);
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
             const maskShape = document.getElementById('maskShape');
-            mode.update(maskShape, eased);
-            if (progress < 1) { requestAnimationFrame(animate); }
+
+            if (animationState === 'entrance') {
+                const progress = Math.min(1, elapsed / config.duration), eased = easeOutCubic(progress);
+                mode.update(maskShape, eased);
+                if (progress >= 1) {
+                    animationState = 'hold';
+                } else {
+                    requestAnimationFrame(animate);
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(exitProgress);
+
+                // Reverse wipe - opposite of entrance
+                mode.update(maskShape, 1 - eased);
+
+                if (exitProgress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    restart();
+                }
+            }
         }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
+        }
+
         function restart() {
+            animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;
+            exitStartTime = null;
             requestAnimationFrame(animate);
         }
 
         if (!prefersReducedMotion) {
             initializeParameters();
             requestAnimationFrame(animate);
-            document.body.addEventListener('click', restart);
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         } else {
             const maskShape = document.getElementById('maskShape');
             maskShape.setAttribute('x', '0'); maskShape.setAttribute('width', '700');

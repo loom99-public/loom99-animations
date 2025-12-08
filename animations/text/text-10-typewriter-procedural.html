@@ -19,8 +19,21 @@
 
         const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftColor: (hsl, hueShift, satShift, lightShift) => ({ h: (hsl.h + hueShift + 360) % 360, s: Math.max(0, Math.min(100, hsl.s + satShift)), l: Math.max(0, Math.min(100, hsl.l + lightShift)) }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
 
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
+
+        function easeInCubic(t) {
+            return t * t * t;
+        }
+
         function typeCharacter() {
-            if (currentWordIndex >= words.length) { words.forEach(word => { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; }); return; }
+            if (animationState !== 'entrance') return;
+            if (currentWordIndex >= words.length) {
+                words.forEach(word => { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; });
+                animationState = 'hold';
+                return;
+            }
             const word = words[currentWordIndex], chars = word.text.split('');
             if (currentCharIndex === 0) { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'inline-block'; }
             if (currentCharIndex < chars.length) {
@@ -33,6 +46,41 @@
                 const nextWord = words[currentWordIndex];
                 if (nextWord) { setTimeout(typeCharacter, nextWord.delay); }
             }
+        }
+
+        function deleteCharacter() {
+            // Collect all letters across all words
+            const allLetters = [];
+            words.forEach(word => {
+                const letters = Array.from(word.element.querySelectorAll('.letter'));
+                allLetters.push(...letters);
+            });
+
+            if (allLetters.length === 0) {
+                restart();
+                return;
+            }
+
+            // Delete from end
+            const lastLetter = allLetters[allLetters.length - 1];
+            lastLetter.remove();
+
+            const exitElapsed = performance.now() - exitStartTime;
+            const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+
+            if (exitProgress < 1) {
+                const delay = config.charDelay * 0.5;
+                setTimeout(deleteCharacter, delay);
+            } else {
+                restart();
+            }
+        }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            words.forEach(word => { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; });
+            deleteCharacter();
         }
 
         function initializeParameters() {
@@ -63,14 +111,22 @@
         }
 
         function restart() {
+            animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
+            exitStartTime = null;
             setTimeout(typeCharacter, words[0].delay);
         }
 
         if (!prefersReducedMotion) {
             initializeParameters();
             setTimeout(typeCharacter, words[0].delay);
-            document.body.addEventListener('click', restart);
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         } else {
             const staticWords = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW', element: document.getElementById('word3') } ];
             staticWords.forEach(word => {

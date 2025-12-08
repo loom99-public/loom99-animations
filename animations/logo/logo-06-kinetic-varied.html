@@ -187,22 +187,63 @@
 
         let startTime = null;
         const totalDuration = 2500;
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
+
+        function easeInCubic(t) {
+            return t * t * t;
+        }
 
         function animate(timestamp) {
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
 
-            parts.forEach(part => part.update(elapsed));
+            if (animationState === 'entrance') {
+                parts.forEach(part => part.update(elapsed));
 
-            if (elapsed < totalDuration) {
-                requestAnimationFrame(animate);
+                if (elapsed < totalDuration) {
+                    requestAnimationFrame(animate);
+                } else {
+                    animationState = 'hold';
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(progress);
+
+                parts.forEach((part, index) => {
+                    // Fly away in opposite direction
+                    const angle = selectedMode.getAngle(index, parts.length) + Math.PI;
+                    const distance = 500 * eased;
+                    const x = Math.cos(angle) * distance;
+                    const y = Math.sin(angle) * distance;
+                    const rotation = (Math.random() - 0.5) * 360 * eased;
+
+                    part.element.style.transformOrigin = `${part.centerX}px ${part.centerY}px`;
+                    part.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg)`;
+                    part.element.style.opacity = 1 - eased;
+                });
+
+                if (exitElapsed < EXIT_DURATION) {
+                    requestAnimationFrame(animate);
+                } else {
+                    restart();
+                }
             }
+        }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
         }
 
         function restart() {
             initializeParameters();
             createParts();
             startTime = null;
+            animationState = 'entrance';
             parts.forEach(part => {
                 part.element.style.opacity = 0;
                 part.element.style.transform = 'none';
@@ -221,7 +262,13 @@
             requestAnimationFrame(animate);
         }
 
-        document.body.addEventListener('click', restart);
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance') {
+                restart();
+            }
+        });
     </script>
 </body>
 </html>

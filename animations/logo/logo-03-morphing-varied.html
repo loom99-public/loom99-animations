@@ -313,22 +313,61 @@
         }
 
         let startTime = null;
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
+
+        function easeInCubic(t) {
+            return t * t * t;
+        }
 
         function animate(timestamp) {
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
 
-            paths.forEach(path => path.update(elapsed));
+            if (animationState === 'entrance') {
+                paths.forEach(path => path.update(elapsed));
 
-            const maxTime = 2500;
-            if (elapsed < maxTime) {
-                requestAnimationFrame(animate);
+                const maxTime = 2500;
+                if (elapsed < maxTime) {
+                    requestAnimationFrame(animate);
+                } else {
+                    animationState = 'hold';
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(progress);
+
+                paths.forEach((path, index) => {
+                    // Morph back to small dots and fade
+                    const scale = 1 - eased * 0.9;
+                    path.path.style.transform = `scale(${scale})`;
+                    path.path.style.transformOrigin = 'center';
+                    path.path.style.opacity = 1 - eased;
+                });
+
+                if (exitElapsed < EXIT_DURATION) {
+                    requestAnimationFrame(animate);
+                } else {
+                    restart();
+                }
             }
+        }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
         }
 
         function restart() {
             initializeParameters();  // Regenerate all random parameters
             startTime = null;
+            animationState = 'entrance';
+            paths.forEach(path => {
+                path.path.style.transform = 'none';
+            });
             requestAnimationFrame(animate);
         }
 
@@ -343,7 +382,13 @@
             requestAnimationFrame(animate);
         }
 
-        document.body.addEventListener('click', restart);
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance') {
+                restart();
+            }
+        });
     </script>
 </body>
 </html>

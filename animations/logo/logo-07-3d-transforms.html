@@ -18,7 +18,7 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            perspective: 1200px;
+            perspective: 1500px;
         }
 
         .container {
@@ -32,6 +32,7 @@
             width: 100%;
             height: auto;
             transform-style: preserve-3d;
+            filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.5));
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -55,12 +56,12 @@
                 </linearGradient>
             </defs>
 
-            <path d="M 40 40 L 40 160 L 100 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #00d4ff)"/>
-            <circle cx="150" cy="100" r="40" stroke="url(#logoGradient)" stroke-width="12" fill="none" filter="drop-shadow(0 0 8px #7b2ff7)"/>
-            <circle cx="240" cy="100" r="40" stroke="url(#logoGradient)" stroke-width="12" fill="none" filter="drop-shadow(0 0 8px #7b2ff7)"/>
-            <path d="M 300 160 L 300 40 L 350 100 L 400 40 L 400 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #ff2d75)"/>
-            <path d="M 460 70 C 460 45, 500 45, 500 70 C 500 95, 460 95, 460 70 M 500 70 C 500 95, 495 130, 475 155 C 460 175, 440 170, 435 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #00d4ff)"/>
-            <path d="M 540 70 C 540 45, 580 45, 580 70 C 580 95, 540 95, 540 70 M 580 70 C 580 95, 575 130, 555 155 C 540 175, 520 170, 515 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #00d4ff)"/>
+            <path d="M 40 40 L 40 160 L 100 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 10px #00d4ff)"/>
+            <circle cx="150" cy="100" r="40" stroke="url(#logoGradient)" stroke-width="12" fill="none" filter="drop-shadow(0 0 10px #7b2ff7)"/>
+            <circle cx="240" cy="100" r="40" stroke="url(#logoGradient)" stroke-width="12" fill="none" filter="drop-shadow(0 0 10px #7b2ff7)"/>
+            <path d="M 300 160 L 300 40 L 350 100 L 400 40 L 400 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 10px #ff2d75)"/>
+            <path d="M 460 70 C 460 45, 500 45, 500 70 C 500 95, 460 95, 460 70 M 500 70 C 500 95, 495 130, 475 155 C 460 175, 440 170, 435 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 10px #00d4ff)"/>
+            <path d="M 540 70 C 540 45, 580 45, 580 70 C 580 95, 540 95, 540 70 M 580 70 C 580 95, 575 130, 555 155 C 540 175, 520 170, 515 160" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 10px #00d4ff)"/>
         </svg>
     </div>
 
@@ -82,6 +83,10 @@
                 return t * t * t;
             }
 
+            function easeInOutQuart(t) {
+                return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+            }
+
             let startTime = null;
             const ENTRANCE_DURATION = 2500;
 
@@ -91,17 +96,23 @@
 
                 if (animationState === 'entrance') {
                     const progress = Math.min(1, elapsed / ENTRANCE_DURATION);
-                    const eased = easeOutCubic(progress);
+                    const eased = easeInOutQuart(progress);
 
-                    // Rotate from flipped to normal
-                    const rotateY = 180 * (1 - eased);
-                    const rotateX = 20 * Math.sin(progress * Math.PI);
-                    const rotateZ = 10 * Math.sin(progress * Math.PI * 2);
+                    // More dramatic rotation - start from fully flipped
+                    const rotateY = 360 * (1 - eased);
+                    const rotateX = 45 * Math.sin(progress * Math.PI);
+                    const rotateZ = 20 * Math.sin(progress * Math.PI * 2);
+
+                    // Add depth with translateZ
+                    const translateZ = -200 * (1 - eased);
+                    const scale = 0.5 + 0.5 * eased;
 
                     svg.style.transform = `
+                        translateZ(${translateZ}px)
                         rotateY(${rotateY}deg)
                         rotateX(${rotateX}deg)
                         rotateZ(${rotateZ}deg)
+                        scale(${scale})
                     `;
                     svg.style.opacity = eased;
 
@@ -115,13 +126,19 @@
                     const progress = Math.min(1, exitElapsed / EXIT_DURATION);
                     const eased = easeInCubic(progress);
 
-                    // Flip away and fade
-                    const rotateY = 180 * eased;
-                    const rotateX = -30 * eased;
+                    // Dramatic flip away and recede
+                    const rotateY = 360 * eased;
+                    const rotateX = -60 * eased;
+                    const rotateZ = 30 * eased;
+                    const translateZ = -300 * eased;
+                    const scale = 1 - 0.5 * eased;
 
                     svg.style.transform = `
+                        translateZ(${translateZ}px)
                         rotateY(${rotateY}deg)
                         rotateX(${rotateX}deg)
+                        rotateZ(${rotateZ}deg)
+                        scale(${scale})
                     `;
                     svg.style.opacity = 1 - eased;
 

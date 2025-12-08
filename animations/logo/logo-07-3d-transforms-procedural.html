@@ -102,43 +102,92 @@
             const svg = document.getElementById('svg');
 
             let startTime = null;
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitStartTime = null;
+            const EXIT_DURATION = 250;
+
+            function easeInCubic(t) {
+                return t * t * t;
+            }
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
-                const progress = Math.min(1, elapsed / config.duration);
-                const eased = easing(progress);
 
-                // Wild multi-axis rotation
-                const rotateX = config.maxRotateX * (1 - eased) +
-                               Random.range(-5, 5) * Math.sin(progress * Math.PI * config.wobbleFreq);
-                const rotateY = config.maxRotateY * (1 - eased) +
-                               Random.range(-5, 5) * Math.cos(progress * Math.PI * config.wobbleFreq);
-                const rotateZ = config.maxRotateZ * (1 - eased) +
-                               Random.range(-3, 3) * Math.sin(progress * Math.PI * config.wobbleFreq * 2);
+                if (animationState === 'entrance') {
+                    const progress = Math.min(1, elapsed / config.duration);
+                    const eased = easing(progress);
 
-                svg.style.transform = `
-                    rotateX(${rotateX}deg)
-                    rotateY(${rotateY}deg)
-                    rotateZ(${rotateZ}deg)
-                `;
-                svg.style.opacity = eased;
+                    // Wild multi-axis rotation
+                    const rotateX = config.maxRotateX * (1 - eased) +
+                                   Random.range(-5, 5) * Math.sin(progress * Math.PI * config.wobbleFreq);
+                    const rotateY = config.maxRotateY * (1 - eased) +
+                                   Random.range(-5, 5) * Math.cos(progress * Math.PI * config.wobbleFreq);
+                    const rotateZ = config.maxRotateZ * (1 - eased) +
+                                   Random.range(-3, 3) * Math.sin(progress * Math.PI * config.wobbleFreq * 2);
 
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
+                    svg.style.transform = `
+                        rotateX(${rotateX}deg)
+                        rotateY(${rotateY}deg)
+                        rotateZ(${rotateZ}deg)
+                    `;
+                    svg.style.opacity = eased;
+
+                    if (progress >= 1) {
+                        animationState = 'hold';
+                    } else {
+                        requestAnimationFrame(animate);
+                    }
+                } else if (animationState === 'exit') {
+                    if (!exitStartTime) exitStartTime = timestamp;
+                    const exitElapsed = timestamp - exitStartTime;
+                    const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                    const eased = easeInCubic(exitProgress);
+
+                    // Flip away and fade
+                    const rotateX = 180 * eased;
+                    const rotateY = 180 * eased;
+                    const scale = 1 - eased;
+
+                    svg.style.transform = `
+                        rotateX(${rotateX}deg)
+                        rotateY(${rotateY}deg)
+                        scale(${scale})
+                    `;
+                    svg.style.opacity = 1 - eased;
+
+                    if (exitProgress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        restart();
+                    }
                 }
+            }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = null;
+                requestAnimationFrame(animate);
             }
 
             function restart() {
                 initializeParameters();
                 startTime = null;
+                animationState = 'entrance';
+                exitStartTime = null;
                 svg.style.opacity = 0;
                 requestAnimationFrame(animate);
             }
 
             initializeParameters();
             requestAnimationFrame(animate);
-            document.body.addEventListener('click', restart);
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         }
     </script>
 </body>

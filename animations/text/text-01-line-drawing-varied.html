@@ -433,23 +433,80 @@
             ], YELLOW, nowStart + Random.vary(80, 16), nowDur);
         }
 
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let startTime = null;
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
+
+        function easeInCubic(t) {
+            return t * t * t;
+        }
 
         function animate(timestamp) {
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
 
-            lines.forEach(line => line.update(elapsed));
+            if (animationState === 'entrance') {
+                lines.forEach(line => line.update(elapsed));
 
-            const allDone = lines.every(l => l.foldComplete);
-            if (!allDone) {
-                requestAnimationFrame(animate);
+                const allDone = lines.every(l => l.foldComplete);
+                if (allDone) {
+                    animationState = 'hold';
+                } else {
+                    requestAnimationFrame(animate);
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(exitProgress);
+
+                lines.forEach(line => {
+                    const firstPoint = line.getFirstPoint();
+                    const centerX = firstPoint.x;
+                    const centerY = firstPoint.y;
+
+                    // Determine edge direction for each line
+                    const angle = Math.atan2(centerY - 140, centerX - 350);
+                    const distance = 1000 * eased;
+                    const targetX = centerX + Math.cos(angle) * distance;
+                    const targetY = centerY + Math.sin(angle) * distance;
+
+                    let d = `M ${targetX} ${targetY}`;
+                    for (let i = 1; i < line.points.length; i++) {
+                        const point = line.points[i];
+                        const offsetX = point.x - firstPoint.x;
+                        const offsetY = point.y - firstPoint.y;
+                        if (point.type === 'Q') {
+                            const ctrlOffsetX = point.cx - firstPoint.x;
+                            const ctrlOffsetY = point.cy - firstPoint.y;
+                            d += ` Q ${targetX + ctrlOffsetX} ${targetY + ctrlOffsetY} ${targetX + offsetX} ${targetY + offsetY}`;
+                        } else {
+                            d += ` L ${targetX + offsetX} ${targetY + offsetY}`;
+                        }
+                    }
+                    line.path.setAttribute('d', d);
+                    line.path.style.opacity = 1 - eased;
+                });
+
+                if (exitProgress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    restart();
+                }
             }
         }
 
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
+        }
+
         function restart() {
+            animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;
+            exitStartTime = null;
             requestAnimationFrame(animate);
         }
 
@@ -474,7 +531,13 @@
             requestAnimationFrame(animate);
         }
 
-        document.body.addEventListener('click', restart);
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance') {
+                restart();
+            }
+        });
     </script>
 </body>
 </html>

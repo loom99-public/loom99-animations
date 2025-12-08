@@ -101,15 +101,56 @@
             nowBlobs.forEach(([x, y, r]) => { blobs.push(new Blob(x, y, r, palette.yellow)); });
         }
 
-        let startTime = null; const totalDuration = 3000;
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let startTime = null;
+        let exitStartTime = null;
+        const totalDuration = 3000;
+        const EXIT_DURATION = 250;
+
+        function easeInCubic(t) { return t * t * t; }
+
         function animate(timestamp) {
             if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
-            blobs.forEach(blob => blob.update(elapsed));
-            if (elapsed < totalDuration) { requestAnimationFrame(animate); }
+
+            if (animationState === 'entrance') {
+                blobs.forEach(blob => blob.update(elapsed));
+                if (elapsed >= totalDuration) {
+                    animationState = 'hold';
+                } else {
+                    requestAnimationFrame(animate);
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(exitProgress);
+
+                blobs.forEach(blob => {
+                    const dripDistance = 500 * eased;
+                    blob.circle.setAttribute('cx', blob.targetX);
+                    blob.circle.setAttribute('cy', blob.targetY + dripDistance);
+                    blob.circle.setAttribute('r', blob.targetR * (1 - eased * 0.5));
+                    blob.circle.setAttribute('opacity', 1 - eased);
+                });
+
+                if (exitProgress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    restart();
+                }
+            }
         }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
+        }
+
         function restart() {
+            animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;
+            exitStartTime = null;
             requestAnimationFrame(animate);
         }
         if (prefersReducedMotion) {
@@ -119,7 +160,13 @@
             initializeParameters();
             requestAnimationFrame(animate);
         }
-        document.body.addEventListener('click', restart);
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance') {
+                restart();
+            }
+        });
     </script>
 </body>
 </html>

@@ -109,53 +109,106 @@
             const maskCircle = document.getElementById('maskCircle');
 
             let startTime = null;
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitStartTime = null;
+            const EXIT_DURATION = 250;
+
+            function easeInCubic(t) {
+                return t * t * t;
+            }
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
-                const progress = Math.min(1, elapsed / config.duration);
-                const eased = easing(progress);
 
-                if (config.type === 'radial' || config.type === 'iris') {
-                    // Radial reveal
-                    const maxRadius = 500;
-                    maskCircle.setAttribute('r', maxRadius * eased);
-                    maskRect.setAttribute('width', 0);
-                } else if (config.type === 'diagonal') {
-                    // Diagonal wipe
-                    const x = config.startX + (0 - config.startX) * eased;
-                    const y = config.startY + (0 - config.startY) * eased;
-                    maskRect.setAttribute('x', x);
-                    maskRect.setAttribute('y', y);
-                    maskRect.setAttribute('width', 600);
-                    maskRect.setAttribute('height', 200);
-                    maskRect.setAttribute('transform', `rotate(${config.angle} 300 100)`);
-                } else if (config.type === 'horizontal') {
-                    const x = Random.range(-600, 600) * (1 - eased);
-                    maskRect.setAttribute('x', x);
-                    maskRect.setAttribute('width', 600);
-                    maskRect.setAttribute('height', 200);
-                } else if (config.type === 'vertical') {
-                    const y = Random.range(-200, 200) * (1 - eased);
-                    maskRect.setAttribute('y', y);
-                    maskRect.setAttribute('width', 600);
-                    maskRect.setAttribute('height', 200);
-                } else {
-                    // Default random
-                    const x = config.startX * (1 - eased);
-                    const y = config.startY * (1 - eased);
-                    maskRect.setAttribute('x', x);
-                    maskRect.setAttribute('y', y);
-                }
+                if (animationState === 'entrance') {
+                    const progress = Math.min(1, elapsed / config.duration);
+                    const eased = easing(progress);
 
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
+                    if (config.type === 'radial' || config.type === 'iris') {
+                        // Radial reveal
+                        const maxRadius = 500;
+                        maskCircle.setAttribute('r', maxRadius * eased);
+                        maskRect.setAttribute('width', 0);
+                    } else if (config.type === 'diagonal') {
+                        // Diagonal wipe
+                        const x = config.startX + (0 - config.startX) * eased;
+                        const y = config.startY + (0 - config.startY) * eased;
+                        maskRect.setAttribute('x', x);
+                        maskRect.setAttribute('y', y);
+                        maskRect.setAttribute('width', 600);
+                        maskRect.setAttribute('height', 200);
+                        maskRect.setAttribute('transform', `rotate(${config.angle} 300 100)`);
+                    } else if (config.type === 'horizontal') {
+                        const x = Random.range(-600, 600) * (1 - eased);
+                        maskRect.setAttribute('x', x);
+                        maskRect.setAttribute('width', 600);
+                        maskRect.setAttribute('height', 200);
+                    } else if (config.type === 'vertical') {
+                        const y = Random.range(-200, 200) * (1 - eased);
+                        maskRect.setAttribute('y', y);
+                        maskRect.setAttribute('width', 600);
+                        maskRect.setAttribute('height', 200);
+                    } else {
+                        // Default random
+                        const x = config.startX * (1 - eased);
+                        const y = config.startY * (1 - eased);
+                        maskRect.setAttribute('x', x);
+                        maskRect.setAttribute('y', y);
+                    }
+
+                    if (progress >= 1) {
+                        animationState = 'hold';
+                    } else {
+                        requestAnimationFrame(animate);
+                    }
+                } else if (animationState === 'exit') {
+                    if (!exitStartTime) exitStartTime = timestamp;
+                    const exitElapsed = timestamp - exitStartTime;
+                    const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                    const eased = easeInCubic(exitProgress);
+
+                    // Reverse wipe
+                    if (config.type === 'radial' || config.type === 'iris') {
+                        const maxRadius = 500;
+                        maskCircle.setAttribute('r', maxRadius * (1 - eased));
+                    } else if (config.type === 'diagonal') {
+                        const x = 0 + (config.startX - 0) * eased;
+                        const y = 0 + (config.startY - 0) * eased;
+                        maskRect.setAttribute('x', x);
+                        maskRect.setAttribute('y', y);
+                    } else if (config.type === 'horizontal') {
+                        const x = 600 * eased;
+                        maskRect.setAttribute('x', x);
+                    } else if (config.type === 'vertical') {
+                        const y = 200 * eased;
+                        maskRect.setAttribute('y', y);
+                    } else {
+                        const x = config.startX * eased;
+                        const y = config.startY * eased;
+                        maskRect.setAttribute('x', x);
+                        maskRect.setAttribute('y', y);
+                    }
+
+                    if (exitProgress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        restart();
+                    }
                 }
+            }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = null;
+                requestAnimationFrame(animate);
             }
 
             function restart() {
                 initializeParameters();
                 startTime = null;
+                animationState = 'entrance';
+                exitStartTime = null;
                 maskRect.setAttribute('x', config.startX);
                 maskRect.setAttribute('y', config.startY);
                 maskRect.setAttribute('width', 600);
@@ -166,7 +219,13 @@
 
             initializeParameters();
             requestAnimationFrame(animate);
-            document.body.addEventListener('click', restart);
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         } else {
             const maskRect = document.getElementById('maskRect');
             maskRect.setAttribute('x', 0);

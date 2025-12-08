@@ -454,23 +454,80 @@
             ], YELLOW, delay15, dur15);
         }
 
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
+
         let startTime = null;
+
+        function easeInCubic(t) {
+            return t * t * t;
+        }
 
         function animate(timestamp) {
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
 
-            lines.forEach(line => line.update(elapsed));
+            if (animationState === 'entrance') {
+                lines.forEach(line => line.update(elapsed));
 
-            const allDone = lines.every(l => l.foldComplete);
-            if (!allDone) {
-                requestAnimationFrame(animate);
+                const allDone = lines.every(l => l.foldComplete);
+                if (!allDone) {
+                    requestAnimationFrame(animate);
+                } else {
+                    animationState = 'hold';
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(exitProgress);
+
+                // Lines shoot out to edges
+                lines.forEach(line => {
+                    const finalPoint = line.points[line.points.length - 1];
+                    const centerX = 350;
+                    const centerY = 140;
+
+                    const dx = finalPoint.x - centerX;
+                    const dy = finalPoint.y - centerY;
+                    const angle = Math.atan2(dy, dx);
+
+                    const shootDist = 1000 * eased;
+                    const offsetX = Math.cos(angle) * shootDist;
+                    const offsetY = Math.sin(angle) * shootDist;
+
+                    let d = `M ${line.points[0].x + offsetX} ${line.points[0].y + offsetY}`;
+                    for (let i = 1; i < line.points.length; i++) {
+                        const point = line.points[i];
+                        if (point.type === 'Q') {
+                            d += ` Q ${point.cx + offsetX} ${point.cy + offsetY} ${point.x + offsetX} ${point.y + offsetY}`;
+                        } else {
+                            d += ` L ${point.x + offsetX} ${point.y + offsetY}`;
+                        }
+                    }
+                    line.path.setAttribute('d', d);
+                    line.path.style.opacity = 1 - eased;
+                });
+
+                if (exitProgress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    restart();
+                }
             }
         }
 
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
+        }
+
         function restart() {
+            animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;
+            exitStartTime = null;
             requestAnimationFrame(animate);
         }
 
@@ -495,7 +552,13 @@
             requestAnimationFrame(animate);
         }
 
-        document.body.addEventListener('click', restart);
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance') {
+                restart();
+            }
+        });
     </script>
 </body>
 </html>

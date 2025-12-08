@@ -42,9 +42,9 @@
             display: inline-block;
         }
 
-        .word1 .letter { color: #ff2d2d; text-shadow: 0 0 20px rgba(255, 45, 45, 0.8); }
-        .word2 .letter { color: #ff6b00; text-shadow: 0 0 20px rgba(255, 107, 0, 0.8); }
-        .word3 .letter { color: #ffdd00; text-shadow: 0 0 20px rgba(255, 221, 0, 0.8); }
+        .word1 .letter { color: #ff2d2d; text-shadow: 0 0 25px rgba(255, 45, 45, 0.9); }
+        .word2 .letter { color: #ff6b00; text-shadow: 0 0 25px rgba(255, 107, 0, 0.9); }
+        .word3 .letter { color: #ffdd00; text-shadow: 0 0 25px rgba(255, 221, 0, 0.9); }
 
         @media (prefers-reduced-motion: reduce) {
             .letter {
@@ -96,7 +96,7 @@
 
             let startTime = null;
             const duration = 3000;
-            const waveCount = 3;
+            const waveCount = 4;
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
@@ -107,11 +107,12 @@
                         const time = (elapsed + letter.baseDelay) / 1000;
                         const wavePhase = (i / letters.length) * Math.PI * 2 * waveCount;
 
-                        // Multiple sine waves for complex motion
-                        const y = Math.sin(time * 3 + wavePhase) * 30 * Math.max(0, 1 - elapsed / duration);
-                        const scale = 1 + Math.sin(time * 2 + wavePhase) * 0.2 * Math.max(0, 1 - elapsed / duration);
+                        // More dramatic wave effects
+                        const y = Math.sin(time * 4 + wavePhase) * 45 * Math.max(0, 1 - elapsed / duration);
+                        const scale = 1 + Math.sin(time * 3 + wavePhase) * 0.35 * Math.max(0, 1 - elapsed / duration);
+                        const rotate = Math.sin(time * 2.5 + wavePhase) * 20 * Math.max(0, 1 - elapsed / duration);
 
-                        letter.element.style.transform = `translateY(${y}px) scale(${scale})`;
+                        letter.element.style.transform = `translateY(${y}px) scale(${scale}) rotate(${rotate}deg)`;
                     });
 
                     if (elapsed < duration) {
@@ -129,12 +130,13 @@
                     letters.forEach((letter, i) => {
                         const wavePhase = (i / letters.length) * Math.PI * 2;
 
-                        // Collapse inward with wave effect
-                        const y = Math.sin(wavePhase) * -100 * progress;
+                        // Intense wave collapse
+                        const y = Math.sin(wavePhase + progress * Math.PI * 8) * -150 * progress;
                         const scale = 1 - progress;
+                        const rotate = Math.sin(wavePhase) * 360 * progress;
                         const opacity = 1 - progress;
 
-                        letter.element.style.transform = `translateY(${y}px) scale(${scale})`;
+                        letter.element.style.transform = `translateY(${y}px) scale(${scale}) rotate(${rotate}deg)`;
                         letter.element.style.opacity = opacity;
                     });
 

@@ -127,15 +127,60 @@
             shapes.push(new MorphingShape(getRandomStart(), 'M 390 220 L 390 265 M 390 275 L 390 280', palette.yellow, Random.range(600, 750)));
         }
 
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
+
         let startTime = null;
+
+        function easeInCubic(t) {
+            return t * t * t;
+        }
+
         function animate(timestamp) {
             if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime;
-            shapes.forEach(shape => shape.update(elapsed));
-            const maxTime = 2500; if (elapsed < maxTime) { requestAnimationFrame(animate); }
+
+            if (animationState === 'entrance') {
+                shapes.forEach(shape => shape.update(elapsed));
+                const maxTime = 2500;
+                if (elapsed < maxTime) {
+                    requestAnimationFrame(animate);
+                } else {
+                    animationState = 'hold';
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(exitProgress);
+
+                // Scale down and fade
+                shapes.forEach(shape => {
+                    const scale = 1 - eased;
+                    const opacity = 1 - eased;
+                    shape.path.style.transform = `scale(${scale})`;
+                    shape.path.style.transformOrigin = 'center';
+                    shape.path.style.opacity = opacity;
+                });
+
+                if (exitProgress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    restart();
+                }
+            }
         }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
+        }
+
         function restart() {
+            animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;
+            exitStartTime = null;
             requestAnimationFrame(animate);
         }
         if (prefersReducedMotion) {
@@ -145,7 +190,13 @@
             initializeParameters();
             requestAnimationFrame(animate);
         }
-        document.body.addEventListener('click', restart);
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance') {
+                restart();
+            }
+        });
     </script>
 </body>
 </html>

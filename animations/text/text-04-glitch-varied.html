@@ -63,43 +63,87 @@
             const text = document.querySelector('.text');
             const glitchLayers = document.querySelectorAll('.glitch-layer');
             const scanline = document.querySelector('.scanline');
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
             let startTime = null;
+            let exitStartTime = null;
             const totalDuration = 2000; const glitchDuration = 1200;
+            const EXIT_DURATION = 250;
+
+            function easeInCubic(t) {
+                return t * t * t;
+            }
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
-                if (elapsed < glitchDuration) {
-                    const intensity = 1 - (elapsed / glitchDuration);
-                    glitchLayers.forEach(layer => { layer.style.opacity = intensity * 0.7; });
-                    scanline.style.opacity = intensity * mode.scanOp;
-                    const jitterX = (Math.random() - 0.5) * mode.jitter * intensity * config.jitterMod;
-                    const jitterY = (Math.random() - 0.5) * mode.jitter * intensity * config.jitterMod;
-                    text.style.transform = `translate(${jitterX}px, ${jitterY}px) skewX(${(Math.random() - 0.5) * 5 * intensity}deg)`;
-                    requestAnimationFrame(animate);
-                } else if (elapsed < totalDuration) {
-                    const stabilize = (elapsed - glitchDuration) / (totalDuration - glitchDuration);
-                    glitchLayers.forEach(layer => { layer.style.opacity = (1 - stabilize) * 0.3; });
-                    scanline.style.opacity = (1 - stabilize) * 0.3;
-                    const jitterX = (Math.random() - 0.5) * 3 * (1 - stabilize);
-                    const jitterY = (Math.random() - 0.5) * 3 * (1 - stabilize);
-                    text.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
-                    requestAnimationFrame(animate);
-                } else {
-                    glitchLayers.forEach(layer => { layer.style.opacity = 0; });
-                    scanline.style.opacity = 0; text.style.transform = 'none';
+
+                if (animationState === 'entrance') {
+                    if (elapsed < glitchDuration) {
+                        const intensity = 1 - (elapsed / glitchDuration);
+                        glitchLayers.forEach(layer => { layer.style.opacity = intensity * 0.7; });
+                        scanline.style.opacity = intensity * mode.scanOp;
+                        const jitterX = (Math.random() - 0.5) * mode.jitter * intensity * config.jitterMod;
+                        const jitterY = (Math.random() - 0.5) * mode.jitter * intensity * config.jitterMod;
+                        text.style.transform = `translate(${jitterX}px, ${jitterY}px) skewX(${(Math.random() - 0.5) * 5 * intensity}deg)`;
+                        requestAnimationFrame(animate);
+                    } else if (elapsed < totalDuration) {
+                        const stabilize = (elapsed - glitchDuration) / (totalDuration - glitchDuration);
+                        glitchLayers.forEach(layer => { layer.style.opacity = (1 - stabilize) * 0.3; });
+                        scanline.style.opacity = (1 - stabilize) * 0.3;
+                        const jitterX = (Math.random() - 0.5) * 3 * (1 - stabilize);
+                        const jitterY = (Math.random() - 0.5) * 3 * (1 - stabilize);
+                        text.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
+                        requestAnimationFrame(animate);
+                    } else {
+                        glitchLayers.forEach(layer => { layer.style.opacity = 0; });
+                        scanline.style.opacity = 0; text.style.transform = 'none';
+                        animationState = 'hold';
+                    }
+                } else if (animationState === 'exit') {
+                    const exitElapsed = timestamp - exitStartTime;
+                    const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                    const eased = easeInCubic(exitProgress);
+
+                    // Intense glitch burst
+                    const intensity = 1;
+                    glitchLayers.forEach(layer => { layer.style.opacity = intensity * 0.9 * (1 - exitProgress); });
+                    scanline.style.opacity = intensity * mode.scanOp * (1 - exitProgress);
+                    const jitterX = (Math.random() - 0.5) * mode.jitter * 2 * intensity;
+                    const jitterY = (Math.random() - 0.5) * mode.jitter * 2 * intensity;
+                    text.style.transform = `translate(${jitterX}px, ${jitterY}px) skewX(${(Math.random() - 0.5) * 15 * intensity}deg)`;
+                    text.style.opacity = 1 - eased;
+
+                    if (exitProgress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        restart();
+                    }
                 }
             }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = performance.now();
+                requestAnimationFrame(animate);
+            }
+
             function restart() {
+                animationState = 'entrance';
                 initializeParameters();  // Regenerate all random parameters
-                startTime = null; text.style.transform = 'none';
+                startTime = null; exitStartTime = null; text.style.transform = 'none'; text.style.opacity = '1';
                 glitchLayers.forEach(layer => { layer.style.opacity = 0; });
                 scanline.style.opacity = 0; requestAnimationFrame(animate);
             }
 
             initializeParameters();
             requestAnimationFrame(animate);
-            document.body.addEventListener('click', restart);
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         } else {
             initializeParameters();
         }

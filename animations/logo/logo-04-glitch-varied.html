@@ -186,75 +186,118 @@
                     selectedMode.glitchDuration;
             }
 
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitStartTime = null;
+            const EXIT_DURATION = 250;
+
+            function easeInCubic(t) {
+                return t * t * t;
+            }
+
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
 
-                if (elapsed < glitchDuration) {
-                    // Intense glitch phase
-                    const intensity = 1 - (elapsed / glitchDuration);
+                if (animationState === 'entrance') {
+                    if (elapsed < glitchDuration) {
+                        // Intense glitch phase
+                        const intensity = 1 - (elapsed / glitchDuration);
 
-                    // Randomize RGB offsets
-                    const rOffsetX = Random.vary(rgbOffset, rgbOffset * 0.5);
-                    const rOffsetY = Random.vary(-rgbOffset * 0.7, rgbOffset * 0.3);
-                    const gOffsetX = Random.vary(-rgbOffset, rgbOffset * 0.5);
-                    const gOffsetY = Random.vary(rgbOffset * 0.7, rgbOffset * 0.3);
-                    const bOffsetX = Random.vary(rgbOffset * 0.5, rgbOffset * 0.5);
-                    const bOffsetY = Random.vary(rgbOffset, rgbOffset * 0.3);
+                        // Randomize RGB offsets
+                        const rOffsetX = Random.vary(rgbOffset, rgbOffset * 0.5);
+                        const rOffsetY = Random.vary(-rgbOffset * 0.7, rgbOffset * 0.3);
+                        const gOffsetX = Random.vary(-rgbOffset, rgbOffset * 0.5);
+                        const gOffsetY = Random.vary(rgbOffset * 0.7, rgbOffset * 0.3);
+                        const bOffsetX = Random.vary(rgbOffset * 0.5, rgbOffset * 0.5);
+                        const bOffsetY = Random.vary(rgbOffset, rgbOffset * 0.3);
 
-                    offsetR.setAttribute('dx', rOffsetX);
-                    offsetR.setAttribute('dy', rOffsetY);
-                    offsetG.setAttribute('dx', gOffsetX);
-                    offsetG.setAttribute('dy', gOffsetY);
-                    offsetB.setAttribute('dx', bOffsetX);
-                    offsetB.setAttribute('dy', bOffsetY);
+                        offsetR.setAttribute('dx', rOffsetX);
+                        offsetR.setAttribute('dy', rOffsetY);
+                        offsetG.setAttribute('dx', gOffsetX);
+                        offsetG.setAttribute('dy', gOffsetY);
+                        offsetB.setAttribute('dx', bOffsetX);
+                        offsetB.setAttribute('dy', bOffsetY);
 
+                        glitchLayers.forEach((layer, i) => {
+                            layer.style.opacity = intensity * 0.8;
+
+                            const tx = (Math.random() - 0.5) * 20 * intensity;
+                            const ty = (Math.random() - 0.5) * 20 * intensity;
+                            const skew = (Math.random() - 0.5) * 10 * intensity;
+                            layer.style.transform = `translate(${tx}px, ${ty}px) skewX(${skew}deg)`;
+                        });
+
+                        // Main logo jitter
+                        const jitterX = (Math.random() - 0.5) * jitterMax * intensity;
+                        const jitterY = (Math.random() - 0.5) * jitterMax * intensity;
+                        logo.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
+
+                        requestAnimationFrame(animate);
+                    } else if (elapsed < totalDuration) {
+                        // Stabilizing phase
+                        const stabilize = (elapsed - glitchDuration) / (totalDuration - glitchDuration);
+
+                        glitchLayers.forEach((layer, i) => {
+                            layer.style.opacity = (1 - stabilize) * 0.4;
+
+                            const tx = (Math.random() - 0.5) * 5 * (1 - stabilize);
+                            const ty = (Math.random() - 0.5) * 5 * (1 - stabilize);
+                            layer.style.transform = `translate(${tx}px, ${ty}px)`;
+                        });
+
+                        const jitterX = (Math.random() - 0.5) * 2 * (1 - stabilize);
+                        const jitterY = (Math.random() - 0.5) * 2 * (1 - stabilize);
+                        logo.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
+
+                        requestAnimationFrame(animate);
+                    } else {
+                        // Final stable state
+                        glitchLayers.forEach(layer => {
+                            layer.style.opacity = 0;
+                            layer.style.transform = 'none';
+                        });
+                        logo.style.transform = 'none';
+                        animationState = 'hold';
+                    }
+                } else if (animationState === 'exit') {
+                    const exitElapsed = timestamp - exitStartTime;
+                    const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+                    const eased = easeInCubic(progress);
+
+                    // Intense glitch burst then fade
                     glitchLayers.forEach((layer, i) => {
-                        layer.style.opacity = intensity * 0.8;
-
-                        const tx = (Math.random() - 0.5) * 20 * intensity;
-                        const ty = (Math.random() - 0.5) * 20 * intensity;
-                        const skew = (Math.random() - 0.5) * 10 * intensity;
+                        layer.style.opacity = (1 - eased) * 0.9;
+                        const tx = (Math.random() - 0.5) * 40 * (1 - eased);
+                        const ty = (Math.random() - 0.5) * 40 * (1 - eased);
+                        const skew = (Math.random() - 0.5) * 30 * (1 - eased);
                         layer.style.transform = `translate(${tx}px, ${ty}px) skewX(${skew}deg)`;
                     });
 
-                    // Main logo jitter
-                    const jitterX = (Math.random() - 0.5) * jitterMax * intensity;
-                    const jitterY = (Math.random() - 0.5) * jitterMax * intensity;
+                    const jitterX = (Math.random() - 0.5) * 30 * (1 - eased);
+                    const jitterY = (Math.random() - 0.5) * 30 * (1 - eased);
                     logo.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
+                    logo.style.opacity = 1 - eased;
 
-                    requestAnimationFrame(animate);
-                } else if (elapsed < totalDuration) {
-                    // Stabilizing phase
-                    const stabilize = (elapsed - glitchDuration) / (totalDuration - glitchDuration);
-
-                    glitchLayers.forEach((layer, i) => {
-                        layer.style.opacity = (1 - stabilize) * 0.4;
-
-                        const tx = (Math.random() - 0.5) * 5 * (1 - stabilize);
-                        const ty = (Math.random() - 0.5) * 5 * (1 - stabilize);
-                        layer.style.transform = `translate(${tx}px, ${ty}px)`;
-                    });
-
-                    const jitterX = (Math.random() - 0.5) * 2 * (1 - stabilize);
-                    const jitterY = (Math.random() - 0.5) * 2 * (1 - stabilize);
-                    logo.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
-
-                    requestAnimationFrame(animate);
-                } else {
-                    // Final stable state
-                    glitchLayers.forEach(layer => {
-                        layer.style.opacity = 0;
-                        layer.style.transform = 'none';
-                    });
-                    logo.style.transform = 'none';
+                    if (exitElapsed < EXIT_DURATION) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        restart();
+                    }
                 }
+            }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = performance.now();
+                requestAnimationFrame(animate);
             }
 
             function restart() {
                 initializeParameters();  // Regenerate all random parameters
                 startTime = null;
+                animationState = 'entrance';
                 logo.style.transform = 'none';
+                logo.style.opacity = '1';
                 glitchLayers.forEach(layer => {
                     layer.style.opacity = 0;
                     layer.style.transform = 'none';
@@ -264,7 +307,13 @@
 
             initializeParameters();
             requestAnimationFrame(animate);
-            document.body.addEventListener('click', restart);
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         }
     </script>
 </body>

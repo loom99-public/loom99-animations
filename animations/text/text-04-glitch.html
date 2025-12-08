@@ -61,35 +61,14 @@
 
         .glitch-r {
             color: #ff0000;
-            animation: glitch-r 0.1s infinite;
         }
 
         .glitch-g {
             color: #00ff00;
-            animation: glitch-g 0.15s infinite;
         }
 
         .glitch-b {
             color: #0000ff;
-            animation: glitch-b 0.12s infinite;
-        }
-
-        @keyframes glitch-r {
-            0%, 100% { transform: translate(0, 0); }
-            33% { transform: translate(3px, -2px); }
-            66% { transform: translate(-2px, 1px); }
-        }
-
-        @keyframes glitch-g {
-            0%, 100% { transform: translate(0, 0); }
-            33% { transform: translate(-2px, 2px); }
-            66% { transform: translate(1px, -3px); }
-        }
-
-        @keyframes glitch-b {
-            0%, 100% { transform: translate(0, 0); }
-            33% { transform: translate(2px, 3px); }
-            66% { transform: translate(-3px, -1px); }
         }
 
         .scanline {
@@ -102,16 +81,38 @@
                 0deg,
                 transparent,
                 transparent 2px,
-                rgba(0, 255, 0, 0.03) 2px,
-                rgba(0, 255, 0, 0.03) 4px
+                rgba(0, 255, 0, 0.06) 2px,
+                rgba(0, 255, 0, 0.06) 4px
             );
             pointer-events: none;
             opacity: 0;
+            z-index: 10;
+        }
+
+        .corruption-bars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 5;
+        }
+
+        .corruption-bar {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(0, 255, 255, 0.8);
+            mix-blend-mode: screen;
         }
 
         @media (prefers-reduced-motion: reduce) {
             .glitch-layer,
-            .scanline {
+            .scanline,
+            .corruption-bars {
                 display: none !important;
             }
             .text {
@@ -154,6 +155,7 @@
             </div>
 
             <div class="scanline"></div>
+            <div class="corruption-bars"></div>
         </div>
     </div>
 
@@ -168,6 +170,16 @@
             const text = document.querySelector('.text');
             const glitchLayers = document.querySelectorAll('.glitch-layer');
             const scanline = document.querySelector('.scanline');
+            const corruptionBars = document.querySelector('.corruption-bars');
+
+            // Create corruption bars
+            for (let i = 0; i < 6; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'corruption-bar';
+                corruptionBars.appendChild(bar);
+            }
+
+            const bars = corruptionBars.querySelectorAll('.corruption-bar');
 
             let startTime = null;
             const totalDuration = 2000;
@@ -183,18 +195,35 @@
                         const intensity = 1 - (elapsed / glitchDuration);
 
                         glitchLayers.forEach(layer => {
-                            layer.style.opacity = intensity * 0.7;
+                            layer.style.opacity = intensity * 0.85;
+
+                            // More dramatic RGB separation
+                            const tx = (Math.random() - 0.5) * 40 * intensity;
+                            const ty = (Math.random() - 0.5) * 40 * intensity;
+                            const skew = (Math.random() - 0.5) * 12 * intensity;
+                            layer.style.transform = `translate(${tx}px, ${ty}px) skewX(${skew}deg)`;
                         });
 
-                        scanline.style.opacity = intensity * 0.5;
+                        scanline.style.opacity = intensity * 0.7;
+
+                        // Corruption bars
+                        bars.forEach(bar => {
+                            if (Math.random() > 0.65) {
+                                bar.style.top = `${Math.random() * 100}%`;
+                                bar.style.height = `${2 + Math.random() * 8}px`;
+                                bar.style.opacity = intensity * 0.95;
+                            } else {
+                                bar.style.opacity = 0;
+                            }
+                        });
 
                         // Random position jitter on main text
-                        const jitterX = (Math.random() - 0.5) * 10 * intensity;
-                        const jitterY = (Math.random() - 0.5) * 10 * intensity;
+                        const jitterX = (Math.random() - 0.5) * 15 * intensity;
+                        const jitterY = (Math.random() - 0.5) * 15 * intensity;
                         text.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
 
                         // Random skew
-                        const skewX = (Math.random() - 0.5) * 5 * intensity;
+                        const skewX = (Math.random() - 0.5) * 8 * intensity;
                         text.style.transform += ` skewX(${skewX}deg)`;
 
                         requestAnimationFrame(animate);
@@ -203,14 +232,22 @@
                         const stabilize = (elapsed - glitchDuration) / (totalDuration - glitchDuration);
 
                         glitchLayers.forEach(layer => {
-                            layer.style.opacity = (1 - stabilize) * 0.3;
+                            layer.style.opacity = (1 - stabilize) * 0.4;
+
+                            const tx = (Math.random() - 0.5) * 10 * (1 - stabilize);
+                            const ty = (Math.random() - 0.5) * 10 * (1 - stabilize);
+                            layer.style.transform = `translate(${tx}px, ${ty}px)`;
                         });
 
-                        scanline.style.opacity = (1 - stabilize) * 0.3;
+                        scanline.style.opacity = (1 - stabilize) * 0.35;
+
+                        bars.forEach(bar => {
+                            bar.style.opacity = (1 - stabilize) * 0.5;
+                        });
 
                         // Reduce jitter
-                        const jitterX = (Math.random() - 0.5) * 3 * (1 - stabilize);
-                        const jitterY = (Math.random() - 0.5) * 3 * (1 - stabilize);
+                        const jitterX = (Math.random() - 0.5) * 4 * (1 - stabilize);
+                        const jitterY = (Math.random() - 0.5) * 4 * (1 - stabilize);
                         text.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
 
                         requestAnimationFrame(animate);
@@ -218,8 +255,12 @@
                         // Final stable state
                         glitchLayers.forEach(layer => {
                             layer.style.opacity = 0;
+                            layer.style.transform = 'none';
                         });
                         scanline.style.opacity = 0;
+                        bars.forEach(bar => {
+                            bar.style.opacity = 0;
+                        });
                         text.style.transform = 'none';
                         animationState = 'hold';
                     }
@@ -231,21 +272,33 @@
                     const intensity = progress;
 
                     glitchLayers.forEach(layer => {
-                        layer.style.opacity = intensity * 0.9;
+                        layer.style.opacity = intensity * 1.2;
+
+                        const tx = (Math.random() - 0.5) * 50 * intensity;
+                        const ty = (Math.random() - 0.5) * 50 * intensity;
+                        const skew = (Math.random() - 0.5) * 25 * intensity;
+                        layer.style.transform = `translate(${tx}px, ${ty}px) skewX(${skew}deg)`;
                     });
 
-                    scanline.style.opacity = intensity * 0.8;
+                    scanline.style.opacity = intensity;
+
+                    // Extreme corruption
+                    bars.forEach(bar => {
+                        bar.style.top = `${Math.random() * 100}%`;
+                        bar.style.height = `${4 + Math.random() * 12}px`;
+                        bar.style.opacity = intensity;
+                    });
 
                     // Extreme jitter and distortion
-                    const jitterX = (Math.random() - 0.5) * 30 * intensity;
-                    const jitterY = (Math.random() - 0.5) * 30 * intensity;
-                    const skewX = (Math.random() - 0.5) * 20 * intensity;
+                    const jitterX = (Math.random() - 0.5) * 40 * intensity;
+                    const jitterY = (Math.random() - 0.5) * 40 * intensity;
+                    const skewX = (Math.random() - 0.5) * 30 * intensity;
                     text.style.transform = `translate(${jitterX}px, ${jitterY}px) skewX(${skewX}deg)`;
 
                     // Fade out
                     text.style.opacity = 1 - progress;
                     glitchLayers.forEach(layer => {
-                        layer.style.opacity = intensity * 0.9 * (1 - progress);
+                        layer.style.opacity = intensity * 1.2 * (1 - progress);
                     });
 
                     if (exitElapsed < EXIT_DURATION) {
@@ -270,8 +323,12 @@
                 text.style.opacity = 1;
                 glitchLayers.forEach(layer => {
                     layer.style.opacity = 0;
+                    layer.style.transform = 'none';
                 });
                 scanline.style.opacity = 0;
+                bars.forEach(bar => {
+                    bar.style.opacity = 0;
+                });
                 requestAnimationFrame(animate);
             }
 

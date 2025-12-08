@@ -371,22 +371,64 @@
         }
 
         let startTime = null;
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
+
+        function easeInCubic(t) {
+            return t * t * t;
+        }
 
         function animate(timestamp) {
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
 
-            lines.forEach(line => line.update(elapsed));
+            if (animationState === 'entrance') {
+                lines.forEach(line => line.update(elapsed));
 
-            const allDone = lines.every(l => l.foldComplete);
-            if (!allDone) {
-                requestAnimationFrame(animate);
+                const allDone = lines.every(l => l.foldComplete);
+                if (allDone) {
+                    animationState = 'hold';
+                } else {
+                    requestAnimationFrame(animate);
+                }
+            } else if (animationState === 'exit') {
+                if (!exitStartTime) exitStartTime = timestamp;
+                const exitElapsed = timestamp - exitStartTime;
+                const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(exitProgress);
+
+                // Lines shoot out to edges
+                lines.forEach(line => {
+                    const firstPoint = line.getFirstPoint();
+                    const angle = Math.atan2(firstPoint.y - 100, firstPoint.x - 300);
+                    const distance = 800 * eased;
+                    const offsetX = Math.cos(angle) * distance;
+                    const offsetY = Math.sin(angle) * distance;
+
+                    line.path.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+                    line.path.style.opacity = 1 - eased;
+                });
+
+                if (exitProgress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    restart();
+                }
             }
+        }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = null;
+            requestAnimationFrame(animate);
         }
 
         function restart() {
             initializeParameters();  // Regenerate all random parameters
             startTime = null;
+            animationState = 'entrance';
+            exitStartTime = null;
             requestAnimationFrame(animate);
         }
 
@@ -413,7 +455,13 @@
             requestAnimationFrame(animate);
         }
 
-        document.body.addEventListener('click', restart);
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance') {
+                restart();
+            }
+        });
     </script>
 </body>
 </html>

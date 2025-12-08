@@ -53,12 +53,12 @@
                 </linearGradient>
             </defs>
 
-            <path class="logo-part" d="M 40 40 L 40 160 L 100 160" stroke="#00d4ff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #00d4ff)"/>
-            <circle class="logo-part" cx="150" cy="100" r="40" stroke="#7b2ff7" stroke-width="12" fill="none" filter="drop-shadow(0 0 8px #7b2ff7)"/>
-            <circle class="logo-part" cx="240" cy="100" r="40" stroke="#7b2ff7" stroke-width="12" fill="none" filter="drop-shadow(0 0 8px #7b2ff7)"/>
-            <path class="logo-part" d="M 300 160 L 300 40 L 350 100 L 400 40 L 400 160" stroke="#ff2d75" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #ff2d75)"/>
-            <path class="logo-part" d="M 460 70 C 460 45, 500 45, 500 70 C 500 95, 460 95, 460 70 M 500 70 C 500 95, 495 130, 475 155 C 460 175, 440 170, 435 160" stroke="#00d4ff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #00d4ff)"/>
-            <path class="logo-part" d="M 540 70 C 540 45, 580 45, 580 70 C 580 95, 540 95, 540 70 M 580 70 C 580 95, 575 130, 555 155 C 540 175, 520 170, 515 160" stroke="#00d4ff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 8px #00d4ff)"/>
+            <path class="logo-part" d="M 40 40 L 40 160 L 100 160" stroke="#00d4ff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 10px #00d4ff)"/>
+            <circle class="logo-part" cx="150" cy="100" r="40" stroke="#7b2ff7" stroke-width="12" fill="none" filter="drop-shadow(0 0 10px #7b2ff7)"/>
+            <circle class="logo-part" cx="240" cy="100" r="40" stroke="#7b2ff7" stroke-width="12" fill="none" filter="drop-shadow(0 0 10px #7b2ff7)"/>
+            <path class="logo-part" d="M 300 160 L 300 40 L 350 100 L 400 40 L 400 160" stroke="#ff2d75" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 10px #ff2d75)"/>
+            <path class="logo-part" d="M 460 70 C 460 45, 500 45, 500 70 C 500 95, 460 95, 460 70 M 500 70 C 500 95, 495 130, 475 155 C 460 175, 440 170, 435 160" stroke="#00d4ff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 10px #00d4ff)"/>
+            <path class="logo-part" d="M 540 70 C 540 45, 580 45, 580 70 C 580 95, 540 95, 540 70 M 580 70 C 580 95, 575 130, 555 155 C 540 175, 520 170, 515 160" stroke="#00d4ff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="drop-shadow(0 0 10px #00d4ff)"/>
         </svg>
     </div>
 
@@ -74,7 +74,7 @@
 
             let startTime = null;
             const ENTRANCE_DURATION = 3000;
-            const waveCount = 2;
+            const waveCount = 3;
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
@@ -85,15 +85,17 @@
                         const time = elapsed / 1000;
                         const wavePhase = (index / parts.length) * Math.PI * 2 * waveCount;
 
-                        const y = Math.sin(time * 3 + wavePhase) * 20 * Math.max(0, 1 - elapsed / ENTRANCE_DURATION);
-                        const scale = 1 + Math.sin(time * 2 + wavePhase) * 0.15 * Math.max(0, 1 - elapsed / ENTRANCE_DURATION);
+                        // More pronounced wave effects
+                        const y = Math.sin(time * 4 + wavePhase) * 35 * Math.max(0, 1 - elapsed / ENTRANCE_DURATION);
+                        const scale = 1 + Math.sin(time * 3 + wavePhase) * 0.25 * Math.max(0, 1 - elapsed / ENTRANCE_DURATION);
+                        const rotate = Math.sin(time * 2.5 + wavePhase) * 15 * Math.max(0, 1 - elapsed / ENTRANCE_DURATION);
 
                         const bbox = part.getBBox();
                         const centerX = bbox.x + bbox.width / 2;
                         const centerY = bbox.y + bbox.height / 2;
 
                         part.style.transformOrigin = `${centerX}px ${centerY}px`;
-                        part.style.transform = `translateY(${y}px) scale(${scale})`;
+                        part.style.transform = `translateY(${y}px) scale(${scale}) rotate(${rotate}deg)`;
                     });
 
                     if (elapsed < ENTRANCE_DURATION) {
@@ -109,9 +111,9 @@
                     const progress = Math.min(1, exitElapsed / EXIT_DURATION);
 
                     parts.forEach((part, index) => {
-                        // Collapse inward with wave effect
+                        // Collapse inward with intense wave effect
                         const wavePhase = (index / parts.length) * Math.PI * 2;
-                        const waveOffset = Math.sin(wavePhase + progress * Math.PI * 4) * 20 * (1 - progress);
+                        const waveOffset = Math.sin(wavePhase + progress * Math.PI * 6) * 40 * (1 - progress);
 
                         const bbox = part.getBBox();
                         const centerX = bbox.x + bbox.width / 2;
@@ -126,9 +128,10 @@
                         const scale = 1 - progress;
                         const translateX = dx * progress + waveOffset;
                         const translateY = dy * progress;
+                        const rotate = progress * 180 * (index % 2 === 0 ? 1 : -1);
 
                         part.style.transformOrigin = `${centerX}px ${centerY}px`;
-                        part.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                        part.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale}) rotate(${rotate}deg)`;
                         part.style.opacity = 1 - progress;
                     });
 

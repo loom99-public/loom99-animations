@@ -117,11 +117,19 @@
             let currentIndex = 0;
             let typoMode = false;
             let typoChar = null;
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitStartTime = null;
+            const EXIT_DURATION = 250;
+
+            function easeInCubic(t) {
+                return t * t * t;
+            }
 
             function typeCharacter() {
                 if (currentIndex >= text.length) {
                     setTimeout(() => {
                         cursor.style.display = 'none';
+                        animationState = 'hold';
                     }, Random.range(500, 2000));
                     return;
                 }
@@ -171,10 +179,52 @@
                 setTimeout(typeCharacter, nextDelay);
             }
 
+            function deleteCharacter(index) {
+                const letters = logo.querySelectorAll('.letter');
+                if (index >= 0 && index < letters.length) {
+                    letters[index].remove();
+                }
+            }
+
+            let deleteIndex = text.length - 1;
+
+            function animateExit(timestamp) {
+                if (!exitStartTime) exitStartTime = timestamp;
+                const exitElapsed = timestamp - exitStartTime;
+                const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+
+                if (exitProgress < 1) {
+                    // Delete characters in reverse
+                    const targetIndex = Math.floor((1 - exitProgress) * text.length);
+                    while (deleteIndex > targetIndex) {
+                        deleteCharacter(deleteIndex);
+                        deleteIndex--;
+                    }
+                    requestAnimationFrame(animateExit);
+                } else {
+                    // Ensure all are deleted
+                    while (deleteIndex >= 0) {
+                        deleteCharacter(deleteIndex);
+                        deleteIndex--;
+                    }
+                    restart();
+                }
+            }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = null;
+                deleteIndex = text.length - 1;
+                cursor.style.display = 'inline-block';
+                requestAnimationFrame(animateExit);
+            }
+
             function restart() {
                 initializeParameters();
                 currentIndex = 0;
                 typoMode = false;
+                animationState = 'entrance';
+                exitStartTime = null;
 
                 const letters = logo.querySelectorAll('.letter');
                 letters.forEach(letter => letter.remove());
@@ -186,7 +236,13 @@
 
             initializeParameters();
             setTimeout(typeCharacter, Random.range(200, 1000));
-            document.body.addEventListener('click', restart);
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         } else {
             cursor.style.display = 'none';
 

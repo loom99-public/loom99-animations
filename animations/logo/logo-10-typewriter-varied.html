@@ -144,9 +144,13 @@
 
         if (!prefersReducedMotion) {
             let currentIndex = 0;
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitIndex = 0;
+            const EXIT_CHAR_DELAY = 30;
 
             function typeCharacter() {
                 if (currentIndex >= text.length) {
+                    animationState = 'hold';
                     setTimeout(() => {
                         cursor.style.display = 'none';
                     }, 1000);
@@ -177,9 +181,38 @@
                 setTimeout(typeCharacter, nextDelay);
             }
 
+            function deleteCharacter() {
+                const letters = logo.querySelectorAll('.letter');
+
+                if (exitIndex >= letters.length) {
+                    // Deletion complete - restart
+                    restart();
+                    return;
+                }
+
+                const letter = letters[letters.length - 1 - exitIndex];
+                letter.remove();
+
+                exitIndex++;
+                setTimeout(deleteCharacter, EXIT_CHAR_DELAY);
+            }
+
+            function startExit() {
+                if (animationState !== 'hold') return;
+
+                animationState = 'exit';
+                exitIndex = 0;
+
+                cursor.style.display = 'inline-block';
+
+                deleteCharacter();
+            }
+
             function restart() {
                 initializeParameters();
                 currentIndex = 0;
+                exitIndex = 0;
+                animationState = 'entrance';
 
                 const letters = logo.querySelectorAll('.letter');
                 letters.forEach(letter => letter.remove());
@@ -191,7 +224,13 @@
 
             initializeParameters();
             setTimeout(typeCharacter, 500);
-            document.body.addEventListener('click', restart);
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         } else {
             cursor.style.display = 'none';
 

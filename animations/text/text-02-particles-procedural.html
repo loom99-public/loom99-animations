@@ -278,38 +278,95 @@
                 duration = baseDuration;
             }
 
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitStartTime = null;
+            const EXIT_DURATION = 250;
+
             let startTime = null;
+
+            function easeInCubic(t) {
+                return t * t * t;
+            }
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
-                const progress = Math.min(1, (elapsed * config.timing.speed) / duration);
 
                 // Clear canvas
                 ctx.fillStyle = '#1a1a2e';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Update and draw particles
-                particles.forEach(particle => {
-                    particle.update(progress);
-                    particle.draw();
-                });
+                if (animationState === 'entrance') {
+                    const progress = Math.min(1, (elapsed * config.timing.speed) / duration);
 
-                if (progress < 1) {
+                    // Update and draw particles
+                    particles.forEach(particle => {
+                        particle.update(progress);
+                        particle.draw();
+                    });
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        animationState = 'hold';
+                        requestAnimationFrame(animate);
+                    }
+                } else if (animationState === 'hold') {
+                    // Draw particles at final positions
+                    particles.forEach(particle => {
+                        particle.update(1);
+                        particle.draw();
+                    });
                     requestAnimationFrame(animate);
+                } else if (animationState === 'exit') {
+                    const exitElapsed = timestamp - exitStartTime;
+                    const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                    const eased = easeInCubic(exitProgress);
+
+                    // Scatter particles outward
+                    particles.forEach(particle => {
+                        const dx = particle.targetX - canvas.width / 2;
+                        const dy = particle.targetY - canvas.height / 2;
+                        const angle = Math.atan2(dy, dx);
+                        const scatterDist = 800 * eased;
+
+                        particle.x = particle.targetX + Math.cos(angle) * scatterDist;
+                        particle.y = particle.targetY + Math.sin(angle) * scatterDist;
+                        particle.opacity = 1 - eased;
+                        particle.draw();
+                    });
+
+                    if (exitProgress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        restart();
+                    }
                 }
             }
 
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = performance.now();
+            }
+
             function restart() {
+                animationState = 'entrance';
                 initializeParameters();  // Regenerate all random parameters
                 startTime = null;
+                exitStartTime = null;
                 requestAnimationFrame(animate);
             }
 
             // Initial setup
             initializeParameters();
             requestAnimationFrame(animate);
-            canvas.addEventListener('click', restart);
+            canvas.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         }
     </script>
 </body>

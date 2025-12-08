@@ -44,8 +44,8 @@
         <svg id="svg" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <filter id="goo">
-                    <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
-                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" result="goo"/>
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur"/>
+                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 25 -10" result="goo"/>
                     <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
                 </filter>
 
@@ -77,11 +77,15 @@
             return t * t * t;
         }
 
+        function easeInOutSine(t) {
+            return -(Math.cos(Math.PI * t) - 1) / 2;
+        }
+
         class Blob {
             constructor(targetX, targetY, targetR, hue) {
-                this.startX = 300 + (Math.random() - 0.5) * 100;
-                this.startY = -30;
-                this.startR = 6;
+                this.startX = 300 + (Math.random() - 0.5) * 150;
+                this.startY = -50;
+                this.startR = 8;
 
                 this.targetX = targetX;
                 this.targetY = targetY;
@@ -97,11 +101,17 @@
                 this.circle.setAttribute('fill', `hsl(${hue}, 80%, 60%)`);
                 blobsGroup.appendChild(this.circle);
 
-                this.delay = Math.random() * 400;
-                this.duration = 1500 + Math.random() * 500;
+                this.delay = Math.random() * 500;
+                this.duration = 1500 + Math.random() * 600;
 
-                // Exit properties
-                this.exitVelocityY = 2 + Math.random() * 3;
+                // Organic wobble parameters
+                this.wobblePhase = Math.random() * Math.PI * 2;
+                this.wobbleSpeed = 0.8 + Math.random() * 0.4;
+                this.wobbleAmplitude = 3 + Math.random() * 4;
+
+                // Exit properties - drip downward
+                this.exitVelocityY = 3 + Math.random() * 4;
+                this.exitWobble = Math.random() * 5;
             }
 
             updateEntrance(elapsed) {
@@ -121,13 +131,21 @@
                     this.y = this.startY + (this.targetY - this.startY) * dropEase;
                     this.x = this.startX + (this.targetX - this.startX) * spreadEase;
                     this.r = this.startR + (this.targetR - this.startR) * spreadEase;
+
+                    // Add organic wobble during drop
+                    const wobble = Math.sin(localTime / 100 * this.wobbleSpeed + this.wobblePhase) * this.wobbleAmplitude * (1 - spreadEase);
+                    this.x += wobble;
                 } else {
                     const t = (progress - 0.7) / 0.3;
-                    const settleEase = easeOutCubic(t);
+                    const settleEase = easeInOutSine(t);
 
                     this.x = this.x + (this.targetX - this.x) * settleEase;
                     this.y = this.y + (this.targetY - this.y) * settleEase;
                     this.r = this.r + (this.targetR - this.r) * settleEase;
+
+                    // Gentle wobble as it settles
+                    const wobble = Math.sin(localTime / 100 * this.wobbleSpeed + this.wobblePhase) * this.wobbleAmplitude * (1 - t) * 0.5;
+                    this.x += wobble;
                 }
 
                 this.circle.setAttribute('cx', this.x);
@@ -138,12 +156,19 @@
             updateExit(exitElapsed) {
                 const progress = Math.min(1, exitElapsed / EXIT_DURATION);
 
-                // Drip downward and fade
-                this.y = this.targetY + this.exitVelocityY * exitElapsed;
-                this.r = this.targetR * (1 - progress);
+                // Drip downward with stretching effect
+                this.y = this.targetY + this.exitVelocityY * exitElapsed * 0.5;
 
+                // Horizontal wobble as it drips
+                const wobble = Math.sin(exitElapsed / 30 + this.wobblePhase) * this.exitWobble;
+                this.x = this.targetX + wobble;
+
+                // Stretch vertically and shrink
+                const stretch = 1 + progress * 0.5;
                 this.circle.setAttribute('cy', this.y);
-                this.circle.setAttribute('r', this.r);
+                this.circle.setAttribute('cx', this.x);
+                this.circle.setAttribute('r', this.targetR * (1 - progress));
+                this.circle.setAttribute('transform', `scale(1, ${stretch})`);
                 this.circle.style.opacity = 1 - progress;
             }
 
@@ -152,6 +177,7 @@
                 this.y = this.startY;
                 this.r = this.startR;
                 this.circle.setAttribute('r', 0);
+                this.circle.setAttribute('transform', '');
                 this.circle.style.opacity = '1';
             }
         }
@@ -163,20 +189,20 @@
             blobs.push(new Blob(x, y, r, 190));
         });
 
-        // O (first - purple)
-        for (let angle = 0; angle < 360; angle += 30) {
+        // O (first - purple) - more blobs for smoother circle
+        for (let angle = 0; angle < 360; angle += 25) {
             const rad = angle * Math.PI / 180;
             const x = 150 + Math.cos(rad) * 40;
             const y = 100 + Math.sin(rad) * 40;
-            blobs.push(new Blob(x, y, 10, 280));
+            blobs.push(new Blob(x, y, 11, 280));
         }
 
         // O (second - purple)
-        for (let angle = 0; angle < 360; angle += 30) {
+        for (let angle = 0; angle < 360; angle += 25) {
             const rad = angle * Math.PI / 180;
             const x = 240 + Math.cos(rad) * 40;
             const y = 100 + Math.sin(rad) * 40;
-            blobs.push(new Blob(x, y, 10, 280));
+            blobs.push(new Blob(x, y, 11, 280));
         }
 
         // M (pink)
@@ -187,11 +213,11 @@
         });
 
         // 9 (first - cyan) - curved flowing design
-        for (let angle = 0; angle < 360; angle += 40) {
+        for (let angle = 0; angle < 360; angle += 35) {
             const rad = angle * Math.PI / 180;
             const x = 480 + Math.cos(rad) * 20;
             const y = 70 + Math.sin(rad) * 20;
-            blobs.push(new Blob(x, y, 8, 190));
+            blobs.push(new Blob(x, y, 9, 190));
         }
         // Curved tail going down and left
         [[490, 95, 9], [480, 115, 9], [465, 135, 9], [450, 155, 9], [440, 165, 8]].forEach(([x, y, r]) => {
@@ -199,11 +225,11 @@
         });
 
         // 9 (second - cyan) - curved flowing design
-        for (let angle = 0; angle < 360; angle += 40) {
+        for (let angle = 0; angle < 360; angle += 35) {
             const rad = angle * Math.PI / 180;
             const x = 560 + Math.cos(rad) * 20;
             const y = 70 + Math.sin(rad) * 20;
-            blobs.push(new Blob(x, y, 8, 190));
+            blobs.push(new Blob(x, y, 9, 190));
         }
         // Curved tail going down and left
         [[570, 95, 9], [560, 115, 9], [545, 135, 9], [530, 155, 9], [520, 165, 8]].forEach(([x, y, r]) => {

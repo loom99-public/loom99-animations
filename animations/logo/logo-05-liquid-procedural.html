@@ -148,6 +148,13 @@
         }
 
         let blobs = [];
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let exitStartTime = null;
+        const EXIT_DURATION = 250;
+
+        function easeInCubic(t) {
+            return t * t * t;
+        }
 
         function createBlobs() {
             // Clear existing blobs
@@ -222,17 +229,51 @@
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
 
-            blobs.forEach(blob => blob.update(elapsed));
+            if (animationState === 'entrance') {
+                blobs.forEach(blob => blob.update(elapsed));
 
-            if (elapsed < totalDuration) {
-                requestAnimationFrame(animate);
+                if (elapsed >= totalDuration) {
+                    animationState = 'hold';
+                } else {
+                    requestAnimationFrame(animate);
+                }
+            } else if (animationState === 'exit') {
+                if (!exitStartTime) exitStartTime = timestamp;
+                const exitElapsed = timestamp - exitStartTime;
+                const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(exitProgress);
+
+                // Drip downward
+                blobs.forEach(blob => {
+                    const dropDistance = 400 * eased;
+                    const newY = blob.targetY + dropDistance;
+                    const newR = blob.targetR * (1 + eased * 2);
+
+                    blob.circle.setAttribute('cy', newY);
+                    blob.circle.setAttribute('r', newR);
+                    blob.circle.setAttribute('opacity', 1 - eased);
+                });
+
+                if (exitProgress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    restart();
+                }
             }
+        }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = null;
+            requestAnimationFrame(animate);
         }
 
         function restart() {
             initializeParameters();
             createBlobs();
             startTime = null;
+            animationState = 'entrance';
+            exitStartTime = null;
             requestAnimationFrame(animate);
         }
 
@@ -253,7 +294,13 @@
             requestAnimationFrame(animate);
         }
 
-        document.body.addEventListener('click', restart);
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance') {
+                restart();
+            }
+        });
     </script>
 </body>
 </html>

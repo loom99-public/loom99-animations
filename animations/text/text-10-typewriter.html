@@ -42,6 +42,7 @@
 
         .letter {
             opacity: 0;
+            display: inline-block;
         }
 
         .cursor {
@@ -50,8 +51,9 @@
             height: 80px;
             background: currentColor;
             margin-left: 2px;
-            animation: blink 0.7s infinite;
+            animation: blink 0.7s infinite, pulse 1.5s ease-in-out infinite;
             vertical-align: text-bottom;
+            box-shadow: 0 0 12px currentColor;
         }
 
         @keyframes blink {
@@ -59,13 +61,41 @@
             50%, 100% { opacity: 0; }
         }
 
-        .word1 { color: #ff2d2d; text-shadow: 0 0 10px rgba(255, 45, 45, 0.5); }
-        .word2 { color: #ff6b00; text-shadow: 0 0 10px rgba(255, 107, 0, 0.5); }
-        .word3 { color: #ffdd00; text-shadow: 0 0 10px rgba(255, 221, 0, 0.5); }
+        @keyframes pulse {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.15); }
+        }
+
+        @keyframes letterBounce {
+            0% { transform: scale(1.4) translateY(-8px); }
+            40% { transform: scale(0.85) translateY(3px); }
+            70% { transform: scale(1.05) translateY(-2px); }
+            100% { transform: scale(1) translateY(0); }
+        }
+
+        .letter-bounce {
+            animation: letterBounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .word1 {
+            color: #ff2d2d;
+            text-shadow: 0 0 12px rgba(255, 45, 45, 0.6);
+        }
+
+        .word2 {
+            color: #ff6b00;
+            text-shadow: 0 0 12px rgba(255, 107, 0, 0.6);
+        }
+
+        .word3 {
+            color: #ffdd00;
+            text-shadow: 0 0 12px rgba(255, 221, 0, 0.6);
+        }
 
         @media (prefers-reduced-motion: reduce) {
             .letter {
                 opacity: 1 !important;
+                animation: none !important;
             }
             .cursor {
                 display: none !important;
@@ -93,8 +123,8 @@
 
         const words = [
             { text: 'DO', element: document.getElementById('word1'), delay: 0 },
-            { text: 'IT', element: document.getElementById('word2'), delay: 500 },
-            { text: 'NOW', element: document.getElementById('word3'), delay: 900 }
+            { text: 'IT', element: document.getElementById('word2'), delay: 400 },
+            { text: 'NOW', element: document.getElementById('word3'), delay: 700 }
         ];
 
         if (!prefersReducedMotion) {
@@ -103,10 +133,8 @@
             let currentCharIndex = 0;
             let exitWordIndex = 0;
             let exitCharIndex = 0;
-            let startTime = null;
-            let exitStartTime = null;
-            const charDelay = 100;
-            const exitCharDelay = 30; // Faster deletion
+            const charDelay = 90;
+            const exitCharDelay = 20;
 
             words.forEach(word => {
                 const cursor = word.element.querySelector('.cursor');
@@ -115,7 +143,7 @@
 
             function typeCharacter() {
                 if (currentWordIndex >= words.length) {
-                    // Typing complete - hide all cursors and enter hold state
+                    // Typing complete
                     words.forEach(word => {
                         const cursor = word.element.querySelector('.cursor');
                         cursor.style.display = 'none';
@@ -128,25 +156,27 @@
                 const chars = word.text.split('');
 
                 if (currentCharIndex === 0) {
-                    // Show cursor for current word
                     const cursor = word.element.querySelector('.cursor');
                     cursor.style.display = 'inline-block';
                 }
 
                 if (currentCharIndex < chars.length) {
-                    // Type next character
                     const span = document.createElement('span');
-                    span.className = 'letter';
+                    span.className = 'letter letter-bounce';
                     span.textContent = chars[currentCharIndex];
                     span.style.opacity = '1';
 
                     const cursor = word.element.querySelector('.cursor');
                     word.element.insertBefore(span, cursor);
 
+                    // Remove bounce class after animation
+                    setTimeout(() => {
+                        span.classList.remove('letter-bounce');
+                    }, 400);
+
                     currentCharIndex++;
                     setTimeout(typeCharacter, charDelay);
                 } else {
-                    // Move to next word
                     const cursor = word.element.querySelector('.cursor');
                     cursor.style.display = 'none';
 
@@ -164,7 +194,6 @@
 
             function deleteCharacter() {
                 if (exitWordIndex < 0) {
-                    // Deletion complete - restart entrance
                     restart();
                     return;
                 }
@@ -173,25 +202,28 @@
                 const letters = word.element.querySelectorAll('.letter');
 
                 if (exitCharIndex < 0) {
-                    // Move to previous word
                     exitWordIndex--;
                     if (exitWordIndex >= 0) {
                         const prevWord = words[exitWordIndex];
                         const prevLetters = prevWord.element.querySelectorAll('.letter');
                         exitCharIndex = prevLetters.length - 1;
 
-                        // Show cursor on previous word
                         const cursor = prevWord.element.querySelector('.cursor');
                         cursor.style.display = 'inline-block';
                     }
                     setTimeout(deleteCharacter, exitCharDelay);
                 } else {
-                    // Delete character
                     const cursor = word.element.querySelector('.cursor');
                     cursor.style.display = 'inline-block';
 
                     if (letters[exitCharIndex]) {
-                        letters[exitCharIndex].remove();
+                        letters[exitCharIndex].style.opacity = '0';
+                        letters[exitCharIndex].style.transform = 'scale(0.3)';
+                        letters[exitCharIndex].style.transition = 'all 0.08s ease-out';
+
+                        setTimeout(() => {
+                            letters[exitCharIndex].remove();
+                        }, 80);
                     }
 
                     exitCharIndex--;
@@ -201,15 +233,12 @@
 
             function startExit() {
                 animationState = 'exit';
-                exitStartTime = performance.now();
 
-                // Start from the last word, last character
                 exitWordIndex = words.length - 1;
                 const lastWord = words[exitWordIndex];
                 const lastLetters = lastWord.element.querySelectorAll('.letter');
                 exitCharIndex = lastLetters.length - 1;
 
-                // Hide all cursors first
                 words.forEach(word => {
                     const cursor = word.element.querySelector('.cursor');
                     cursor.style.display = 'none';
@@ -224,11 +253,9 @@
                 animationState = 'entrance';
 
                 words.forEach(word => {
-                    // Remove all letter spans
                     const letters = word.element.querySelectorAll('.letter');
                     letters.forEach(letter => letter.remove());
 
-                    // Hide cursor
                     const cursor = word.element.querySelector('.cursor');
                     cursor.style.display = 'none';
                 });
@@ -242,12 +269,10 @@
                 if (animationState === 'hold') {
                     startExit();
                 } else if (animationState === 'entrance') {
-                    // Restart if clicked during entrance
                     restart();
                 }
             });
         } else {
-            // Show all text immediately
             words.forEach(word => {
                 const chars = word.text.split('');
                 const cursor = word.element.querySelector('.cursor');

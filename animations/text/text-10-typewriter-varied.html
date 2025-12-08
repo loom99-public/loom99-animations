@@ -20,8 +20,18 @@
 
         const ColorRandom = { baseColors: { red: { h: 0, s: 100, l: 59 }, orange: { h: 25, s: 100, l: 50 }, yellow: { h: 50, s: 100, l: 50 } }, shiftHue: (hsl, shift) => ({ h: (hsl.h + shift + 360) % 360, s: hsl.s, l: hsl.l }), toHSL: (hsl) => `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` };
 
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let deleteTimeout = null;
+
+        function easeInCubic(t) { return t * t * t; }
+
         function typeCharacter() {
-            if (currentWordIndex >= words.length) { words.forEach(word => { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; }); return; }
+            if (animationState !== 'entrance') return;
+            if (currentWordIndex >= words.length) {
+                words.forEach(word => { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; });
+                animationState = 'hold';
+                return;
+            }
             const word = words[currentWordIndex], chars = word.text.split('');
             if (currentCharIndex === 0) { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'inline-block'; }
             if (currentCharIndex < chars.length) {
@@ -33,7 +43,28 @@
                 currentWordIndex++; currentCharIndex = 0;
                 const nextWord = words[currentWordIndex];
                 if (nextWord) { setTimeout(typeCharacter, nextWord.delay); }
+                else { typeCharacter(); }
             }
+        }
+
+        function deleteCharacter() {
+            if (animationState !== 'exit') return;
+
+            // Find the last word with letters
+            for (let i = words.length - 1; i >= 0; i--) {
+                const word = words[i];
+                const letters = word.element.querySelectorAll('.letter');
+                if (letters.length > 0) {
+                    const cursor = word.element.querySelector('.cursor');
+                    cursor.style.display = 'inline-block';
+                    letters[letters.length - 1].remove();
+                    deleteTimeout = setTimeout(deleteCharacter, config.charDelay() * 0.5);
+                    return;
+                }
+            }
+
+            // All characters deleted
+            restart();
         }
 
         function initializeParameters() {
@@ -58,7 +89,16 @@
             words.forEach(word => { const letters = word.element.querySelectorAll('.letter'); letters.forEach(letter => letter.remove()); const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; });
         }
 
+        function startExit() {
+            if (deleteTimeout) clearTimeout(deleteTimeout);
+            words.forEach(word => { const cursor = word.element.querySelector('.cursor'); cursor.style.display = 'none'; });
+            animationState = 'exit';
+            deleteTimeout = setTimeout(deleteCharacter, 100);
+        }
+
         function restart() {
+            if (deleteTimeout) clearTimeout(deleteTimeout);
+            animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             setTimeout(typeCharacter, words[0].delay);
         }
@@ -66,7 +106,13 @@
         if (!prefersReducedMotion) {
             initializeParameters();
             setTimeout(typeCharacter, words[0].delay);
-            document.body.addEventListener('click', restart);
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         } else {
             const staticWords = [ { text: 'DO', element: document.getElementById('word1') }, { text: 'IT', element: document.getElementById('word2') }, { text: 'NOW', element: document.getElementById('word3') } ];
             staticWords.forEach(word => {

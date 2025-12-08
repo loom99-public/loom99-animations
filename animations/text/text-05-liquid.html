@@ -43,10 +43,10 @@
     <div class="container">
         <svg id="svg" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <!-- Goo filter for liquid effect -->
+                <!-- Enhanced goo filter for more fluid effect -->
                 <filter id="goo">
-                    <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>
-                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo"/>
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="blur"/>
+                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9" result="goo"/>
                     <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
                 </filter>
 
@@ -83,16 +83,20 @@
             return t * t * t;
         }
 
+        function easeInOutSine(t) {
+            return -(Math.cos(Math.PI * t) - 1) / 2;
+        }
+
         let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
         let exitStartTime = null;
         const EXIT_DURATION = 250;
 
         class Blob {
             constructor(targetX, targetY, targetR, color) {
-                // Start as small droplet from top
-                this.startX = targetX + (Math.random() - 0.5) * 200;
-                this.startY = -50;
-                this.startR = 5;
+                // Start as small droplet from varying heights
+                this.startX = targetX + (Math.random() - 0.5) * 250;
+                this.startY = -80 - Math.random() * 50;
+                this.startR = 6;
 
                 this.targetX = targetX;
                 this.targetY = targetY;
@@ -106,15 +110,19 @@
 
                 this.circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 this.circle.setAttribute('fill', color);
-                this.circle.setAttribute('filter', 'url(#goo)');
                 blobsGroup.appendChild(this.circle);
 
-                this.delay = Math.random() * 300;
-                this.duration = 1500 + Math.random() * 500;
+                this.delay = Math.random() * 400;
+                this.duration = 1600 + Math.random() * 700;
 
-                // Exit properties
-                this.exitAngle = Math.random() * Math.PI * 2;
-                this.exitDistance = 100 + Math.random() * 50;
+                // Organic wobble parameters
+                this.wobblePhase = Math.random() * Math.PI * 2;
+                this.wobbleSpeed = 0.7 + Math.random() * 0.5;
+                this.wobbleAmplitude = 4 + Math.random() * 5;
+
+                // Exit properties - drip with variation
+                this.exitVelocityY = 3.5 + Math.random() * 5;
+                this.exitWobble = 3 + Math.random() * 6;
             }
 
             updateEntrance(elapsed) {
@@ -126,7 +134,7 @@
                 const localTime = elapsed - this.delay;
                 const progress = Math.min(1, localTime / this.duration);
 
-                // Drop and spread
+                // Drop and spread with organic motion
                 if (progress < 0.7) {
                     const t = progress / 0.7;
                     const dropEase = easeInCubic(t);
@@ -135,14 +143,24 @@
                     this.y = this.startY + (this.targetY - this.startY) * dropEase;
                     this.x = this.startX + (this.targetX - this.startX) * spreadEase;
                     this.r = this.startR + (this.targetR - this.startR) * spreadEase;
+
+                    // Add organic wobble during drop
+                    const wobbleX = Math.sin(localTime / 100 * this.wobbleSpeed + this.wobblePhase) * this.wobbleAmplitude * (1 - spreadEase);
+                    const wobbleY = Math.cos(localTime / 120 * this.wobbleSpeed + this.wobblePhase) * this.wobbleAmplitude * 0.5 * (1 - spreadEase);
+                    this.x += wobbleX;
+                    this.y += wobbleY;
                 } else {
-                    // Settle
+                    // Settle with smooth easing
                     const t = (progress - 0.7) / 0.3;
-                    const settleEase = easeOutCubic(t);
+                    const settleEase = easeInOutSine(t);
 
                     this.x = this.x + (this.targetX - this.x) * settleEase;
                     this.y = this.y + (this.targetY - this.y) * settleEase;
                     this.r = this.r + (this.targetR - this.r) * settleEase;
+
+                    // Gentle wobble as it settles
+                    const wobble = Math.sin(localTime / 100 * this.wobbleSpeed + this.wobblePhase) * this.wobbleAmplitude * (1 - t) * 0.4;
+                    this.x += wobble;
                 }
 
                 this.circle.setAttribute('cx', this.x);
@@ -152,17 +170,21 @@
 
             updateExit(elapsed) {
                 const progress = Math.min(1, elapsed / EXIT_DURATION);
-                const eased = easeInCubic(progress);
 
-                // Blobs dissolve and scatter
-                const exitX = this.targetX + Math.cos(this.exitAngle) * this.exitDistance * eased;
-                const exitY = this.targetY + Math.sin(this.exitAngle) * this.exitDistance * eased;
-                const exitR = this.targetR * (1 - eased);
+                // Drip downward with organic stretching
+                this.y = this.targetY + this.exitVelocityY * elapsed * 0.6;
 
-                this.circle.setAttribute('cx', exitX);
-                this.circle.setAttribute('cy', exitY);
-                this.circle.setAttribute('r', exitR);
-                this.circle.setAttribute('opacity', 1 - eased);
+                // Horizontal wobble as it drips
+                const wobbleX = Math.sin(elapsed / 35 + this.wobblePhase) * this.exitWobble;
+                this.x = this.targetX + wobbleX;
+
+                // Vertical stretch effect for dripping
+                const stretch = 1 + progress * 0.7;
+                this.circle.setAttribute('cy', this.y);
+                this.circle.setAttribute('cx', this.x);
+                this.circle.setAttribute('r', this.targetR * (1 - progress));
+                this.circle.setAttribute('transform', `scale(1, ${stretch})`);
+                this.circle.setAttribute('opacity', 1 - progress);
             }
 
             reset() {
@@ -170,18 +192,20 @@
                 this.y = this.startY;
                 this.r = this.startR;
                 this.circle.setAttribute('r', 0);
+                this.circle.setAttribute('transform', '');
                 this.circle.setAttribute('opacity', 1);
             }
         }
 
         const blobs = [];
 
-        // Create blobs for "DO"
+        // Create blobs for "DO" - larger, more organic
         const doY = 60;
         const doBlobs = [
-            [115, doY, 25], [115, doY + 40, 25],
-            [160, doY, 20], [160, doY + 40, 20],
-            [220, doY + 20, 25], [260, doY + 20, 25]
+            [100, doY, 28], [100, doY + 45, 28],
+            [150, doY, 22], [150, doY + 45, 22],
+            [125, doY + 22, 18],
+            [220, doY + 22, 28], [270, doY + 22, 28], [245, doY + 10, 20], [245, doY + 35, 20]
         ];
         doBlobs.forEach(([x, y, r]) => {
             blobs.push(new Blob(x, y, r, 'url(#redGrad)'));
@@ -190,26 +214,29 @@
         // Create blobs for "IT"
         const itY = 150;
         const itBlobs = [
-            [100, itY, 20], [100, itY + 30, 20],
-            [160, itY - 10, 20], [160, itY + 20, 20], [160, itY + 40, 20],
-            [140, itY - 10, 15], [180, itY - 10, 15]
+            [95, itY, 22], [95, itY + 35, 22],
+            [165, itY - 12, 22], [165, itY + 25, 22], [165, itY + 48, 22],
+            [140, itY - 12, 18], [190, itY - 12, 18],
+            [140, itY + 48, 18], [190, itY + 48, 18]
         ];
         itBlobs.forEach(([x, y, r]) => {
             blobs.push(new Blob(x, y, r, 'url(#orangeGrad)'));
         });
 
-        // Create blobs for "NOW"
+        // Create blobs for "NOW" - more organic distribution
         const nowY = 240;
         const nowBlobs = [
-            [90, nowY, 22], [90, nowY + 30, 22],
-            [110, nowY + 15, 18],
-            [140, nowY, 22], [140, nowY + 30, 22],
-            [215, nowY + 15, 25],
-            [290, nowY, 18], [310, nowY + 30, 18],
-            [320, nowY + 15, 16], [340, nowY + 30, 18],
-            [360, nowY, 18], [380, nowY + 15, 16],
-            [400, nowY, 15], [400, nowY + 22, 15],
-            [400, nowY + 32, 8]
+            [85, nowY, 25], [85, nowY + 35, 25],
+            [110, nowY + 17, 20],
+            [140, nowY, 25], [140, nowY + 35, 25],
+            [165, nowY + 17, 18],
+            [215, nowY + 17, 28],
+            [245, nowY + 5, 18], [245, nowY + 30, 18],
+            [295, nowY, 20], [320, nowY + 35, 20],
+            [325, nowY + 17, 18], [350, nowY + 35, 20],
+            [370, nowY, 20], [395, nowY + 17, 18],
+            [405, nowY, 17], [405, nowY + 25, 17],
+            [405, nowY + 37, 10]
         ];
         nowBlobs.forEach(([x, y, r]) => {
             blobs.push(new Blob(x, y, r, 'url(#yellowGrad)'));

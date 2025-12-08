@@ -95,54 +95,113 @@
             const parts = document.querySelectorAll('.logo-part');
 
             let startTime = null;
+            let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+            let exitStartTime = null;
+            const EXIT_DURATION = 250;
+
+            function easeInCubic(t) {
+                return t * t * t;
+            }
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
 
-                parts.forEach((part, index) => {
-                    const time = elapsed / 1000;
-                    const wavePhase = (index / parts.length) * Math.PI * 2 * config.waveCount +
-                                    phaseOffsets[index];
+                if (animationState === 'entrance') {
+                    parts.forEach((part, index) => {
+                        const time = elapsed / 1000;
+                        const wavePhase = (index / parts.length) * Math.PI * 2 * config.waveCount +
+                                        phaseOffsets[index];
 
-                    const dampingFactor = Math.max(0, 1 - elapsed / config.duration);
+                        const dampingFactor = Math.max(0, 1 - elapsed / config.duration);
 
-                    // Wild multi-dimensional motion
-                    const y = Math.sin(time * config.frequency + wavePhase) *
-                            config.amplitude * dampingFactor * config.damping;
-                    const x = Math.cos(time * config.frequency * 0.7 + wavePhase) *
-                            (config.amplitude * 0.3) * dampingFactor;
-                    const rotation = Math.sin(time * config.frequency * 0.5 + wavePhase) *
-                                   Random.range(0, 15) * dampingFactor;
-                    const scale = 1 + Math.sin(time * 2 + wavePhase) *
-                                config.scaleAmount * dampingFactor;
+                        // Wild multi-dimensional motion
+                        const y = Math.sin(time * config.frequency + wavePhase) *
+                                config.amplitude * dampingFactor * config.damping;
+                        const x = Math.cos(time * config.frequency * 0.7 + wavePhase) *
+                                (config.amplitude * 0.3) * dampingFactor;
+                        const rotation = Math.sin(time * config.frequency * 0.5 + wavePhase) *
+                                       Random.range(0, 15) * dampingFactor;
+                        const scale = 1 + Math.sin(time * 2 + wavePhase) *
+                                    config.scaleAmount * dampingFactor;
 
-                    const bbox = part.getBBox();
-                    const centerX = bbox.x + bbox.width / 2;
-                    const centerY = bbox.y + bbox.height / 2;
+                        const bbox = part.getBBox();
+                        const centerX = bbox.x + bbox.width / 2;
+                        const centerY = bbox.y + bbox.height / 2;
 
-                    part.style.transformOrigin = `${centerX}px ${centerY}px`;
-                    part.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`;
-                });
-
-                if (elapsed < config.duration) {
-                    requestAnimationFrame(animate);
-                } else {
-                    parts.forEach(part => {
-                        part.style.transform = 'none';
+                        part.style.transformOrigin = `${centerX}px ${centerY}px`;
+                        part.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`;
                     });
+
+                    if (elapsed >= config.duration) {
+                        parts.forEach(part => {
+                            part.style.transform = 'none';
+                        });
+                        animationState = 'hold';
+                    } else {
+                        requestAnimationFrame(animate);
+                    }
+                } else if (animationState === 'exit') {
+                    if (!exitStartTime) exitStartTime = timestamp;
+                    const exitElapsed = timestamp - exitStartTime;
+                    const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                    const eased = easeInCubic(exitProgress);
+
+                    // Collapse inward with wave
+                    parts.forEach((part, index) => {
+                        const bbox = part.getBBox();
+                        const centerX = bbox.x + bbox.width / 2;
+                        const centerY = bbox.y + bbox.height / 2;
+
+                        const towardsCenterX = (300 - centerX) * eased;
+                        const towardsCenterY = (100 - centerY) * eased;
+
+                        const wavePhase = (index / parts.length) * Math.PI * 2;
+                        const waveOffset = Math.sin(exitProgress * Math.PI * 4 + wavePhase) * 20 * (1 - exitProgress);
+
+                        const scale = 1 - eased;
+                        const rotation = 360 * eased;
+
+                        part.style.transformOrigin = `${centerX}px ${centerY}px`;
+                        part.style.transform = `translate(${towardsCenterX + waveOffset}px, ${towardsCenterY}px) rotate(${rotation}deg) scale(${scale})`;
+                        part.style.opacity = 1 - eased;
+                    });
+
+                    if (exitProgress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        restart();
+                    }
                 }
+            }
+
+            function startExit() {
+                animationState = 'exit';
+                exitStartTime = null;
+                requestAnimationFrame(animate);
             }
 
             function restart() {
                 initializeParameters();
                 startTime = null;
+                animationState = 'entrance';
+                exitStartTime = null;
+                parts.forEach(part => {
+                    part.style.opacity = 1;
+                    part.style.transform = 'none';
+                });
                 requestAnimationFrame(animate);
             }
 
             initializeParameters();
             requestAnimationFrame(animate);
-            document.body.addEventListener('click', restart);
+            document.body.addEventListener('click', () => {
+                if (animationState === 'hold') {
+                    startExit();
+                } else if (animationState === 'entrance') {
+                    restart();
+                }
+            });
         }
     </script>
 </body>

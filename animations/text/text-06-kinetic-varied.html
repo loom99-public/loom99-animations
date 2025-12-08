@@ -86,11 +86,63 @@
             document.querySelectorAll('.word3 .letter').forEach(el => el.style.color = ColorRandom.toHSL(ColorRandom.shiftHue(ColorRandom.baseColors.yellow, config.hueShift)));
         }
 
-        let startTime = null; const totalDuration = 2000;
-        function animate(timestamp) { if (!startTime) startTime = timestamp; const elapsed = timestamp - startTime; letters.forEach(letter => letter.update(elapsed)); if (elapsed < totalDuration) { requestAnimationFrame(animate); } }
+        let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
+        let startTime = null;
+        let exitStartTime = null;
+        const totalDuration = 2000;
+        const EXIT_DURATION = 250;
+
+        function easeInCubic(t) { return t * t * t; }
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+
+            if (animationState === 'entrance') {
+                letters.forEach(letter => letter.update(elapsed));
+                if (elapsed >= totalDuration) {
+                    animationState = 'hold';
+                } else {
+                    requestAnimationFrame(animate);
+                }
+            } else if (animationState === 'exit') {
+                const exitElapsed = timestamp - exitStartTime;
+                const exitProgress = Math.min(1, exitElapsed / EXIT_DURATION);
+                const eased = easeInCubic(exitProgress);
+
+                letters.forEach(letter => {
+                    // Fly away in opposite direction from entrance
+                    const exitAngle = letter.startRotation > 0 ?
+                        Math.atan2(letter.startY, letter.startX) :
+                        Math.atan2(letter.startY, letter.startX) + Math.PI;
+                    const distance = config.distance * 2 * eased;
+                    const x = Math.cos(exitAngle) * distance;
+                    const y = Math.sin(exitAngle) * distance;
+                    const rotation = letter.startRotation * 2 * eased;
+                    const scale = 1 - eased;
+                    letter.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`;
+                    letter.element.style.opacity = 1 - eased;
+                });
+
+                if (exitProgress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    restart();
+                }
+            }
+        }
+
+        function startExit() {
+            animationState = 'exit';
+            exitStartTime = performance.now();
+            requestAnimationFrame(animate);
+        }
+
         function restart() {
+            animationState = 'entrance';
             initializeParameters();  // Regenerate all random parameters
             startTime = null;
+            exitStartTime = null;
             requestAnimationFrame(animate);
         }
         if (prefersReducedMotion) {
@@ -100,7 +152,13 @@
             initializeParameters();
             requestAnimationFrame(animate);
         }
-        document.body.addEventListener('click', restart);
+        document.body.addEventListener('click', () => {
+            if (animationState === 'hold') {
+                startExit();
+            } else if (animationState === 'entrance') {
+                restart();
+            }
+        });
     </script>
 </body>
 </html>

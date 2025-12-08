@@ -1,73 +1,128 @@
-# React + TypeScript + Vite
+# loom99 Animation Gallery
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript gallery for viewing and managing animation techniques.
 
-Currently, two official plugins are available:
+## Architecture
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Core Track System
 
-## React Compiler
+The gallery includes a greenfield animation track system:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Track.ts**: Time-based value interpolation with easing
+- **Element.ts**: Base class for animated elements
+- **Animation.ts**: Lifecycle orchestration (entrance/hold/exit/waiting)
+- **easing.ts**: Comprehensive easing functions library
+- **SVGExporter.ts**: Export animations as static SVG with SMIL
 
-## Expanding the ESLint configuration
+### Element Types
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **LineElement**: Animated SVG paths with line drawing and fade effects
+- Extensible architecture for additional element types
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### React Components
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- **Gallery**: Main container with expand/collapse controls
+- **TechniqueSection**: Collapsible accordion for each technique
+- **AnimationCard**: Individual animation preview with iframe
+- **MobX Store**: Reactive state management
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Data Structure
+
+Metadata-driven architecture:
+- **types.ts**: TypeScript type definitions
+- **techniques.ts**: 10 animation technique definitions
+- **animations.ts**: Animation file metadata
+
+## Development
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start dev server
+pnpm dev
+
+# Build for production
+pnpm build
+
+# Preview production build
+pnpm preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Project Structure
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+gallery/
+├── src/
+│   ├── core/              # Track system
+│   │   ├── Track.ts
+│   │   ├── Element.ts
+│   │   ├── Animation.ts
+│   │   ├── easing.ts
+│   │   └── SVGExporter.ts
+│   ├── elements/          # Element types
+│   │   └── LineElement.ts
+│   ├── components/        # React components
+│   │   ├── Gallery.tsx
+│   │   ├── TechniqueSection.tsx
+│   │   └── AnimationCard.tsx
+│   ├── stores/            # MobX stores
+│   │   └── galleryStore.ts
+│   ├── data/              # Animation metadata
+│   │   ├── types.ts
+│   │   ├── techniques.ts
+│   │   └── animations.ts
+│   ├── App.tsx
+│   └── main.tsx
+└── vite.config.ts
+```
+
+## Features
+
+- Metadata-driven animation gallery
+- Collapsible technique sections
+- Iframe-based animation preview
+- Expand/collapse all controls
+- Dark theme UI matching existing design
+- TypeScript type safety
+- MobX reactive state
+- SVG export capability
+- Production-ready build
+
+## Adding New Animations
+
+To add a new animation:
+
+1. Create the animation HTML file in `../animations/`
+2. Add metadata to `src/data/animations.ts`:
+
+```typescript
+{
+  id: 'logo-11-bounce',
+  title: 'Original',
+  description: 'Bouncy entrance effect',
+  technique: '11',
+  target: 'logo',
+  variant: 'original',
+  filePath: 'logo/logo-11-bounce.html',
+}
+```
+
+3. The gallery will automatically render the new animation
+
+## Phase 1 Status
+
+Complete:
+- React + Vite + TypeScript setup
+- Core track system implementation
+- React gallery components
+- MobX state management
+- One technique (Line Drawing) with 6 animations
+- Production build verified
+
+Next Steps:
+- Add remaining animation metadata (54 files)
+- Test iframe embedding with actual files
+- Consider URL state management
+- Add keyboard navigation
+- Add search/filter capabilities

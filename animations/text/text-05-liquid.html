@@ -197,65 +197,139 @@
                 this.circle.setAttribute('transform', '');
                 this.circle.setAttribute('opacity', 1);
             }
+
+            remove() {
+                if (this.circle && this.circle.parentNode) {
+                    this.circle.parentNode.removeChild(this.circle);
+                }
+            }
         }
 
-        const blobs = [];
+        let blobs = [];
 
-        // Create blobs for "DO" - larger, more organic
-        const doY = 60;
-        const doBlobs = [
-            [100, doY, 28], [100, doY + 45, 28],
-            [150, doY, 22], [150, doY + 45, 22],
-            [125, doY + 22, 18],
-            [220, doY + 22, 28], [270, doY + 22, 28], [245, doY + 10, 20], [245, doY + 35, 20]
-        ];
-        doBlobs.forEach(([x, y, r]) => {
-            blobs.push(new Blob(x, y, r, 'url(#redGrad)'));
-        });
+        // Function to generate blobs from path data using circle packing
+        function generateBlobsFromPaths(pathData) {
+            const newBlobs = [];
+            const colors = ['url(#redGrad)', 'url(#orangeGrad)', 'url(#yellowGrad)'];
 
-        // Create blobs for "MORE"
-        const moreY = 150;
-        const moreBlobs = [
-            // M
-            [80, moreY, 18], [80, moreY + 20, 18], [80, moreY + 40, 18],
-            [95, moreY + 10, 14], [110, moreY + 25, 16],
-            [125, moreY + 10, 14], [140, moreY, 18], [140, moreY + 20, 18], [140, moreY + 40, 18],
-            // O
-            [185, moreY, 20], [210, moreY, 16], [235, moreY, 20],
-            [185, moreY + 40, 20], [210, moreY + 40, 16], [235, moreY + 40, 20],
-            [175, moreY + 20, 14], [245, moreY + 20, 14],
-            // R
-            [280, moreY, 18], [280, moreY + 20, 18], [280, moreY + 40, 18],
-            [300, moreY, 16], [315, moreY + 10, 14], [300, moreY + 20, 14],
-            [305, moreY + 35, 14], [320, moreY + 45, 12],
-            // E
-            [355, moreY, 18], [355, moreY + 20, 18], [355, moreY + 40, 18],
-            [375, moreY, 14], [390, moreY, 12],
-            [370, moreY + 20, 12],
-            [375, moreY + 40, 14], [390, moreY + 40, 12]
-        ];
-        moreBlobs.forEach(([x, y, r]) => {
-            blobs.push(new Blob(x, y, r, 'url(#orangeGrad)'));
-        });
+            // Create a temporary canvas for point-in-path testing
+            const canvas = document.createElement('canvas');
+            canvas.width = 700;
+            canvas.height = 280;
+            const ctx = canvas.getContext('2d');
 
-        // Create blobs for "NOW" - more organic distribution
-        const nowY = 240;
-        const nowBlobs = [
-            [85, nowY, 25], [85, nowY + 35, 25],
-            [110, nowY + 17, 20],
-            [140, nowY, 25], [140, nowY + 35, 25],
-            [165, nowY + 17, 18],
-            [215, nowY + 17, 28],
-            [245, nowY + 5, 18], [245, nowY + 30, 18],
-            [295, nowY, 20], [320, nowY + 35, 20],
-            [325, nowY + 17, 18], [350, nowY + 35, 20],
-            [370, nowY, 20], [395, nowY + 17, 18],
-            [405, nowY, 17], [405, nowY + 25, 17],
-            [405, nowY + 37, 10]
-        ];
-        nowBlobs.forEach(([x, y, r]) => {
-            blobs.push(new Blob(x, y, r, 'url(#yellowGrad)'));
-        });
+            pathData.forEach((item, index) => {
+                const color = colors[index % colors.length];
+                const path = new Path2D(item.d);
+
+                // Calculate bounds from the path data
+                // For better bounds, we'd need to parse the path, but for now use provided bounds or estimate
+                let bounds;
+                if (item.bounds) {
+                    bounds = item.bounds;
+                } else {
+                    // Estimate bounds based on typical text layout
+                    const y = item.y || (80 + index * 80);
+                    bounds = {
+                        x1: 50,
+                        x2: 450,
+                        y1: y - 60,
+                        y2: y + 20
+                    };
+                }
+
+                // Calculate target blob count based on area
+                const area = (bounds.x2 - bounds.x1) * (bounds.y2 - bounds.y1);
+                const targetCount = Math.floor(area / 400); // Roughly one blob per 400 sq units
+
+                // Generate blobs using random point-in-path testing
+                const blobsForLetter = [];
+                let attempts = 0;
+                const maxAttempts = targetCount * 20;
+
+                while (blobsForLetter.length < targetCount && attempts < maxAttempts) {
+                    const x = bounds.x1 + Math.random() * (bounds.x2 - bounds.x1);
+                    const y = bounds.y1 + Math.random() * (bounds.y2 - bounds.y1);
+
+                    // Check if point is inside the path
+                    if (ctx.isPointInPath(path, x, y)) {
+                        const radius = 8 + Math.random() * 12; // Random radius between 8 and 20
+                        blobsForLetter.push(new Blob(x, y, radius, color));
+                    }
+                    attempts++;
+                }
+
+                newBlobs.push(...blobsForLetter);
+                console.log(`Generated ${blobsForLetter.length} blobs for "${item.text}" (target: ${targetCount})`);
+            });
+
+            return newBlobs;
+        }
+
+        // Initialize with default blobs
+        function initializeDefaultBlobs() {
+            const defaultBlobs = [];
+
+            // Create blobs for "DO" - larger, more organic
+            const doY = 60;
+            const doBlobs = [
+                [100, doY, 28], [100, doY + 45, 28],
+                [150, doY, 22], [150, doY + 45, 22],
+                [125, doY + 22, 18],
+                [220, doY + 22, 28], [270, doY + 22, 28], [245, doY + 10, 20], [245, doY + 35, 20]
+            ];
+            doBlobs.forEach(([x, y, r]) => {
+                defaultBlobs.push(new Blob(x, y, r, 'url(#redGrad)'));
+            });
+
+            // Create blobs for "MORE"
+            const moreY = 150;
+            const moreBlobs = [
+                // M
+                [80, moreY, 18], [80, moreY + 20, 18], [80, moreY + 40, 18],
+                [95, moreY + 10, 14], [110, moreY + 25, 16],
+                [125, moreY + 10, 14], [140, moreY, 18], [140, moreY + 20, 18], [140, moreY + 40, 18],
+                // O
+                [185, moreY, 20], [210, moreY, 16], [235, moreY, 20],
+                [185, moreY + 40, 20], [210, moreY + 40, 16], [235, moreY + 40, 20],
+                [175, moreY + 20, 14], [245, moreY + 20, 14],
+                // R
+                [280, moreY, 18], [280, moreY + 20, 18], [280, moreY + 40, 18],
+                [300, moreY, 16], [315, moreY + 10, 14], [300, moreY + 20, 14],
+                [305, moreY + 35, 14], [320, moreY + 45, 12],
+                // E
+                [355, moreY, 18], [355, moreY + 20, 18], [355, moreY + 40, 18],
+                [375, moreY, 14], [390, moreY, 12],
+                [370, moreY + 20, 12],
+                [375, moreY + 40, 14], [390, moreY + 40, 12]
+            ];
+            moreBlobs.forEach(([x, y, r]) => {
+                defaultBlobs.push(new Blob(x, y, r, 'url(#orangeGrad)'));
+            });
+
+            // Create blobs for "NOW" - more organic distribution
+            const nowY = 240;
+            const nowBlobs = [
+                [85, nowY, 25], [85, nowY + 35, 25],
+                [110, nowY + 17, 20],
+                [140, nowY, 25], [140, nowY + 35, 25],
+                [165, nowY + 17, 18],
+                [215, nowY + 17, 28],
+                [245, nowY + 5, 18], [245, nowY + 30, 18],
+                [295, nowY, 20], [320, nowY + 35, 20],
+                [325, nowY + 17, 18], [350, nowY + 35, 20],
+                [370, nowY, 20], [395, nowY + 17, 18],
+                [405, nowY, 17], [405, nowY + 25, 17],
+                [405, nowY + 37, 10]
+            ];
+            nowBlobs.forEach(([x, y, r]) => {
+                defaultBlobs.push(new Blob(x, y, r, 'url(#yellowGrad)'));
+            });
+
+            return defaultBlobs;
+        }
+
+        blobs = initializeDefaultBlobs();
 
         let startTime = null;
         const totalDuration = 3000;
@@ -302,6 +376,40 @@
             });
             requestAnimationFrame(animate);
         }
+
+        // Listen for messages from parent (gallery editor)
+        window.addEventListener('message', function(event) {
+            // Validate origin - allow same origin and localhost dev servers
+            const allowedOrigins = [
+                window.location.origin,
+                "http://localhost:8888",
+                "http://127.0.0.1:8888",
+                "null"  // file:// protocol for local development
+            ];
+
+            if (!allowedOrigins.includes(event.origin)) {
+                console.warn("Rejected postMessage from unauthorized origin:", event.origin);
+                return;
+            }
+
+            if (event.data && event.data.type === 'updateTextPaths') {
+                const pathData = event.data.pathData;
+
+                console.log('Updating liquid blobs with path data:', pathData);
+
+                // Remove old blobs
+                blobs.forEach(blob => blob.remove());
+
+                // Generate new blobs from path data
+                blobs = generateBlobsFromPaths(pathData);
+
+                // Restart animation
+                if (holdTimeout) clearTimeout(holdTimeout);
+                startTime = null;
+                animationState = 'entrance';
+                requestAnimationFrame(animate);
+            }
+        });
 
         if (prefersReducedMotion) {
             blobs.forEach(blob => {

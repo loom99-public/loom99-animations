@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    environment: 'jsdom',
+    environment: 'happy-dom', // lighter than jsdom, less memory issues
     globals: true,
     setupFiles: './src/__tests__/setup.ts',
     coverage: {

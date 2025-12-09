@@ -3,3 +3,4 @@
  */
 
 export { PathMorphCompositor, type Point, type PathMorphConfig } from './PathMorphCompositor';
+export { TransformCompositor, type TransformState, type TransformConfig } from './TransformCompositor';

@@ -423,7 +423,7 @@
                 if (exitProgress < 1) {
                     requestAnimationFrame(animate);
                 } else {
-                    restart();
+                    animationState = 'waiting';
                 }
             }
         }

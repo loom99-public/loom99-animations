@@ -1,11 +1,15 @@
 /**
  * LineDrawingViewer - React component for line drawing animations
  * Uses Track system to replace standalone HTML files
+ *
+ * Implements proper lifecycle: entrance → hold → exit → waiting (NO auto-restart)
+ * Supports 3 variance modes: original, varied, procedural
  */
 
 import { useEffect, useRef, useState } from 'react';
 import { Animation } from '../../core/Animation';
-import { LineElement } from '../../elements/LineElement';
+import { createLineDrawingAnimation, createLineDrawingExit } from '../../animations/LineDrawingAnimation';
+import type { VarianceLevel, LineDefinition } from '../../animations/LineDrawingAnimation';
 import { LOGO_PATHS, TEXT_PATHS, pathPointsToSVGPath, type LineData } from '../../data/pathData';
 import './LineDrawingViewer.css';
 
@@ -13,6 +17,19 @@ export interface LineDrawingViewerProps {
   target: 'logo' | 'text';
   variant: 'original' | 'varied' | 'procedural';
   holdDuration?: number;
+}
+
+/**
+ * Convert LineData to LineDefinition for factory
+ */
+function convertToLineDefinition(lineData: LineData, target: 'logo' | 'text'): LineDefinition {
+  const pathString = pathPointsToSVGPath(lineData.points);
+  return {
+    id: `line-${lineData.color}-${lineData.delay}`,
+    path: pathString,
+    stroke: lineData.color,
+    strokeWidth: target === 'logo' ? 12 : 4,
+  };
 }
 
 /**
@@ -26,7 +43,7 @@ function getPathsForTarget(target: 'logo' | 'text'): LineData[] {
  * Get viewport dimensions based on target
  */
 function getViewBox(target: 'logo' | 'text'): string {
-  return target === 'logo' ? '0 0 600 200' : '0 0 400 300';
+  return target === 'logo' ? '0 0 600 200' : '0 0 700 280';
 }
 
 /**
@@ -40,68 +57,105 @@ export function LineDrawingViewer({
   const svgRef = useRef<SVGSVGElement>(null);
   const animationRef = useRef<Animation | null>(null);
   const [animationState, setAnimationState] = useState<'waiting' | 'entrance' | 'hold' | 'exit'>('waiting');
+  const holdTimeoutRef = useRef<number | null>(null);
+  const prefersReducedMotion = useRef(
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
 
-  // Create animation on mount
+  /**
+   * Create animation using factory
+   */
+  const createAnimation = (): Animation => {
+    const paths = getPathsForTarget(target);
+    const lines: LineDefinition[] = paths.map(p => convertToLineDefinition(p, target));
+
+    // Use factory to create animation with proper variance
+    const animation = createLineDrawingAnimation({
+      lines,
+      variance: variant as VarianceLevel,
+      duration: 400, // Match HTML original
+      stagger: 80,   // Match HTML original
+      entranceEasing: 'easeOutQuart',
+    });
+
+    return animation;
+  };
+
+  /**
+   * Play animation sequence: entrance → hold → exit → waiting
+   */
+  const playAnimation = async (animation: Animation) => {
+    // Clear any existing timeout
+    if (holdTimeoutRef.current !== null) {
+      window.clearTimeout(holdTimeoutRef.current);
+      holdTimeoutRef.current = null;
+    }
+
+    try {
+      // Entrance
+      setAnimationState('entrance');
+      await animation.entrance();
+
+      // Hold
+      setAnimationState('hold');
+      await new Promise<void>((resolve) => {
+        holdTimeoutRef.current = window.setTimeout(() => {
+          holdTimeoutRef.current = null;
+          resolve();
+        }, holdDuration);
+      });
+
+      // Add exit animations to elements
+      const elements = animation.getElements();
+      createLineDrawingExit(elements as any[], {
+        duration: 250,
+        stagger: 20,
+        easing: 'easeInCubic',
+      });
+
+      // Exit
+      setAnimationState('exit');
+      await animation.exit();
+
+      // Waiting (NO auto-restart - this prevents infinite loop)
+      setAnimationState('waiting');
+    } catch (error) {
+      console.error('Animation error:', error);
+      setAnimationState('waiting');
+    }
+  };
+
+  /**
+   * Initialize animation on mount
+   */
   useEffect(() => {
     if (!svgRef.current) return;
 
     const svg = svgRef.current;
-    const paths = getPathsForTarget(target);
-
-    // Apply variance if needed
-    const modifiedPaths = variant === 'varied' ? applyVariance(paths) : paths;
-
-    // Create LineElements from path data
-    const elements: LineElement[] = modifiedPaths.map((lineData, index) => {
-      const pathString = pathPointsToSVGPath(lineData.points);
-
-      const element = new LineElement({
-        id: `line-${index}`,
-        path: pathString,
-        stroke: lineData.color,
-        strokeWidth: 12,
-        fill: 'none',
-      });
-
-      // Add line drawing animation with delay
-      element.addLineDrawing(lineData.duration, lineData.delay, 'easeOutQuart');
-
-      // Add fade in
-      element.addFadeIn(100, lineData.delay, 'linear');
-
-      return element;
-    });
-
-    // Create animation
-    const animation = new Animation({
-      elements,
-      onEntranceComplete: () => {
-        setAnimationState('hold');
-      },
-      onExitComplete: () => {
-        setAnimationState('waiting');
-      },
-    });
-
+    const animation = createAnimation();
     animationRef.current = animation;
 
     // Render elements to SVG
-    elements.forEach((element) => {
+    animation.getElements().forEach((element) => {
       element.render(svg);
     });
 
-    // Start entrance animation
-    setAnimationState('entrance');
-    animation.entrance().then(() => {
-      // Hold, then exit
-      setTimeout(() => {
-        setAnimationState('exit');
-        animation.exit();
-      }, holdDuration);
-    });
+    // Handle reduced motion
+    if (prefersReducedMotion.current) {
+      setAnimationState('waiting');
+      return;
+    }
+
+    // Start animation sequence
+    playAnimation(animation);
 
     // Cleanup
     return () => {
+      if (holdTimeoutRef.current !== null) {
+        window.clearTimeout(holdTimeoutRef.current);
+        holdTimeoutRef.current = null;
+      }
       animation.reset();
       while (svg.firstChild) {
         svg.removeChild(svg.firstChild);
@@ -109,66 +163,35 @@ export function LineDrawingViewer({
     };
   }, [target, variant, holdDuration]);
 
-  // Handle click to restart
+  /**
+   * Handle click to restart (ONLY from waiting state)
+   */
   const handleClick = () => {
-    if (!svgRef.current || !animationRef.current) return;
+    if (animationState !== 'waiting' || !svgRef.current || prefersReducedMotion.current) {
+      return;
+    }
 
     const svg = svgRef.current;
-    const animation = animationRef.current;
 
     // Clear existing elements
     while (svg.firstChild) {
       svg.removeChild(svg.firstChild);
     }
 
-    // Reset and recreate
-    animation.reset();
+    // Create new animation (important for varied/procedural to get new randomization)
+    const animation = createAnimation();
+    animationRef.current = animation;
 
-    const paths = getPathsForTarget(target);
-    const modifiedPaths = variant === 'varied' ? applyVariance(paths) : paths;
-
-    const elements: LineElement[] = modifiedPaths.map((lineData, index) => {
-      const pathString = pathPointsToSVGPath(lineData.points);
-
-      const element = new LineElement({
-        id: `line-${index}`,
-        path: pathString,
-        stroke: lineData.color,
-        strokeWidth: 12,
-        fill: 'none',
-      });
-
-      element.addLineDrawing(lineData.duration, lineData.delay, 'easeOutQuart');
-      element.addFadeIn(100, lineData.delay, 'linear');
-
-      return element;
-    });
-
-    // Re-create animation
-    const newAnimation = new Animation({
-      elements,
-      onEntranceComplete: () => {
-        setAnimationState('hold');
-      },
-      onExitComplete: () => {
-        setAnimationState('waiting');
-      },
-    });
-
-    animationRef.current = newAnimation;
-
-    elements.forEach((element) => {
+    // Render elements
+    animation.getElements().forEach((element) => {
       element.render(svg);
     });
 
-    setAnimationState('entrance');
-    newAnimation.entrance().then(() => {
-      setTimeout(() => {
-        setAnimationState('exit');
-        newAnimation.exit();
-      }, holdDuration);
-    });
+    // Play animation sequence
+    playAnimation(animation);
   };
+
+  const isDevelopment = import.meta.env.DEV;
 
   return (
     <div className="line-drawing-viewer" onClick={handleClick}>
@@ -186,19 +209,9 @@ export function LineDrawingViewer({
           </linearGradient>
         </defs>
       </svg>
-      <div className="animation-state-indicator">{animationState}</div>
+      {isDevelopment && (
+        <div className="animation-state-indicator">{animationState}</div>
+      )}
     </div>
   );
-}
-
-/**
- * Apply variance to paths (for 'varied' variant)
- * Randomizes delays and durations
- */
-function applyVariance(paths: LineData[]): LineData[] {
-  return paths.map((path) => ({
-    ...path,
-    delay: path.delay + Math.random() * 100 - 50,
-    duration: path.duration + Math.random() * 200 - 100,
-  }));
 }

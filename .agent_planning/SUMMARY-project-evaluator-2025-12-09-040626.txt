@@ -1,0 +1,4 @@
+Agent: project-evaluator | 2025-12-09 04:16:00
+Completion: 40% actual work | 0% of stated goal | Critical Misalignment: HIGH
+Ambiguities: 8 critical | Workflow: PAUSE | Browser Testing: NEVER DONE
+-> CRITICAL: User goal (replace HTML with React) vs implementation (iframe loader) mismatch. User must clarify before proceeding.

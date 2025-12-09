@@ -139,7 +139,8 @@
                 });
 
                 if (progress >= 1) {
-                    restart();
+                    // Exit complete - wait for user interaction
+                    animationState = 'waiting';
                 } else {
                     requestAnimationFrame(animate);
                 }

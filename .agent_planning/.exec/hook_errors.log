@@ -1,0 +1,5 @@
+[2025-12-08 06:06:32] [session_start] INFO: Found leftover execution ID: 20251208-052027
+[2025-12-08 06:06:32] [session_start] INFO: Moved 6 leftover PARTIAL files
+[2025-12-08 06:06:32] [session_start] INFO: Deleted old leftover directory: 20251208-052027-20251208-060632
+[2025-12-08 06:06:32] [session_start] INFO: Cleaned up 1 old leftover directories
+[2025-12-09 04:28:36] [session_end] INFO: Archived 8 PARTIAL files for execution 20251209-040626

@@ -1,0 +1,1680 @@
+# Implementation Plan - Dynamic Text Geometry Animations (Remaining Work)
+**Generated**: 2025-12-07 21:22:19
+**Source STATUS**: STATUS-2025-12-07-212219.md
+**Initiative**: dynamic-text-geometry-animations.md
+**README Version**: Current (2025-12-07)
+
+---
+
+## Executive Summary
+
+**Current State**: The dynamic text feature is 90% complete with:
+- ✅ All P0 items (font fixes, security) COMPLETE
+- ✅ All P1 items (particles, liquid) COMPLETE
+- ✅ P2-2 (morphing with flubber.js) COMPLETE
+- ✅ 15/18 animation types support dynamic text (9 unique animation styles)
+- ✅ 8 fonts working correctly
+- ✅ postMessage security implemented
+
+**Remaining Work**: Quality, robustness, and documentation
+- ❌ P2-1: Test infrastructure (no test suite exists)
+- ❌ P3-1: Input validation (edge cases not handled)
+- ❌ P3-2: Documentation updates (README doesn't mention feature)
+- ⏸️ P3-3: Line drawing research (optional, deferred per initiative)
+- ❌ P3-4: Architecture documentation (state machine)
+
+**Total Work Items**: 5 (P2: 1, P3: 4)
+
+**Recommended Approach**:
+1. Create test infrastructure for long-term maintainability
+2. Add input validation for robustness
+3. Update documentation for discoverability
+4. (Optional) Research line drawing feasibility
+5. Document animation state machines
+
+---
+
+## Priority Breakdown
+
+### P2 (Medium) - 1 item
+Testing infrastructure for regression detection and confidence in changes.
+
+### P3 (Lower Priority) - 4 items
+Polish, validation, documentation, and optional research.
+
+---
+
+## Work Items
+
+## P2 (Medium)
+
+### P2-1: Create Test Infrastructure for Text Geometry System
+
+**Status**: Not Started
+**Complexity**: Medium
+**Dependencies**: None (all implementation complete)
+**Spec Reference**: Testing best practices • **Status Reference**: STATUS-2025-12-07-212219.md lines 594-627 ("Test Suite Assessment")
+
+#### Description
+Create comprehensive test suite for text-to-path conversion, font loading, postMessage communication, particle sampling, circle packing, and flubber interpolation. Currently no tests exist (0% coverage).
+
+**Test Categories**:
+1. **Unit Tests**: Core functions (generateTextPathData, loadFont, particle sampling, circle packing)
+2. **Integration Tests**: postMessage flow, font loading pipeline, origin validation
+3. **E2E Tests**: Browser automation (Playwright) for user interactions
+4. **Visual Regression**: Screenshot comparison for rendering consistency
+5. **Performance**: Benchmarks for particle/liquid generation
+
+**Testing Framework**: Vitest for unit/integration, Playwright for E2E
+
+#### Acceptance Criteria
+- [ ] Test framework installed and configured (Vitest + Playwright)
+- [ ] Unit tests for `generateTextPathData()` function (10+ test cases)
+  - Empty string returns empty array
+  - Single word generates single path
+  - Multiple words generate multiple paths with correct Y spacing
+  - Special characters handled without errors
+  - Font bounds calculated correctly
+- [ ] Unit tests for `loadFont()` caching behavior (5+ test cases)
+  - Cache hit returns cached font
+  - Cache miss loads from network
+  - Error handling for missing fonts
+  - Concurrent requests for same font
+- [ ] Unit tests for circle packing algorithm (5+ test cases)
+  - Blob count proportional to letter area
+  - All blobs inside letter bounds
+  - Point-in-polygon test works correctly
+  - Attempt limiting prevents infinite loops
+- [ ] Integration tests for postMessage flow (8+ test cases)
+  - Gallery sends message to iframe
+  - Receiver validates origin (accept valid)
+  - Receiver rejects invalid origin
+  - Path data structure correct
+  - Particle text message format correct
+  - Message received during animation (queue or ignore)
+- [ ] E2E tests for at least 3 animation types (SVG path, particle, liquid)
+  - User enters text in gallery
+  - User selects font
+  - User clicks "Generate"
+  - Animation updates with custom text
+  - Multiple generations work (not just first)
+- [ ] Visual regression tests for path generation (baseline screenshots)
+  - Capture reference images for each animation type
+  - Compare against baseline on changes
+  - Detect rendering regressions automatically
+- [ ] Performance benchmarks (baseline metrics)
+  - Font loading time
+  - Path generation time
+  - Circle packing time
+  - Particle sampling time
+  - Flubber interpolation time
+- [ ] All tests passing in CI and locally
+- [ ] Code coverage report generated (target: >80% for core functions)
+- [ ] Test documentation in README or separate TESTING.md
+
+#### Technical Notes
+
+**Setup**:
+```bash
+# Install dependencies
+pnpm add -D vitest @vitest/ui @vitest/coverage-v8
+pnpm add -D playwright @playwright/test
+
+# Initialize Playwright
+npx playwright install
+
+# Create test structure
+mkdir -p tests/unit tests/integration tests/e2e
+```
+
+**Unit Test Examples** (generateTextPathData):
+```javascript
+// tests/unit/text-to-paths.test.js
+import { describe, test, expect, beforeAll } from 'vitest';
+import * as opentype from 'opentype.js';
+
+let font;
+
+beforeAll(async () => {
+    font = await opentype.load('fonts/Anton-Regular.ttf');
+});
+
+describe('generateTextPathData', () => {
+    test('empty string returns empty array', () => {
+        const result = generateTextPathData(font, '', 80);
+        expect(result).toEqual([]);
+    });
+
+    test('single word generates single path', () => {
+        const result = generateTextPathData(font, 'HELLO', 80);
+        expect(result).toHaveLength(1);
+        expect(result[0]).toHaveProperty('d');
+        expect(result[0].d).toMatch(/^M/); // SVG path starts with M
+        expect(result[0]).toHaveProperty('text', 'HELLO');
+        expect(result[0]).toHaveProperty('color');
+        expect(result[0]).toHaveProperty('y', 80);
+        expect(result[0]).toHaveProperty('bounds');
+    });
+
+    test('multiple words generate multiple paths with correct Y spacing', () => {
+        const result = generateTextPathData(font, 'DO IT NOW', 80);
+        expect(result).toHaveLength(3);
+        expect(result[0].text).toBe('DO');
+        expect(result[1].text).toBe('IT');
+        expect(result[2].text).toBe('NOW');
+
+        // Y spacing should be fontSize * 1.2
+        expect(result[1].y).toBe(result[0].y + 80 * 1.2);
+        expect(result[2].y).toBe(result[1].y + 80 * 1.2);
+    });
+
+    test('special characters handled without errors', () => {
+        expect(() => generateTextPathData(font, '!@#$%', 80)).not.toThrow();
+    });
+
+    test('bounds calculated correctly', () => {
+        const result = generateTextPathData(font, 'A', 100);
+        const bounds = result[0].bounds;
+        expect(bounds).toHaveProperty('x1');
+        expect(bounds).toHaveProperty('y1');
+        expect(bounds).toHaveProperty('x2');
+        expect(bounds).toHaveProperty('y2');
+        expect(bounds.x2).toBeGreaterThan(bounds.x1);
+        expect(bounds.y2).toBeGreaterThan(bounds.y1);
+    });
+});
+```
+
+**Integration Test Examples** (postMessage):
+```javascript
+// tests/integration/postmessage.test.js
+import { describe, test, expect } from 'vitest';
+import { JSDOM } from 'jsdom';
+
+describe('postMessage communication', () => {
+    test('receiver validates origin correctly', () => {
+        const { window } = new JSDOM(`<!DOCTYPE html>`);
+        const allowedOrigins = ['http://localhost:8888', 'http://example.com'];
+
+        const validEvent = { origin: 'http://localhost:8888', data: { type: 'updateText' } };
+        const invalidEvent = { origin: 'http://evil.com', data: { type: 'updateText' } };
+
+        expect(allowedOrigins.includes(validEvent.origin)).toBe(true);
+        expect(allowedOrigins.includes(invalidEvent.origin)).toBe(false);
+    });
+
+    test('path data structure validation', () => {
+        const validPathData = [
+            { d: 'M0,0 L10,10', text: 'A', color: '#fff', y: 80, bounds: { x1: 0, y1: 0, x2: 10, y2: 10 } }
+        ];
+
+        const invalidPathData = [
+            { d: 'M0,0', text: 'A' } // Missing color, y, bounds
+        ];
+
+        expect(validatePathData(validPathData)).toBe(true);
+        expect(validatePathData(invalidPathData)).toBe(false);
+    });
+});
+
+function validatePathData(pathData) {
+    if (!Array.isArray(pathData) || pathData.length === 0) return false;
+    return pathData.every(item =>
+        item.d && typeof item.d === 'string' &&
+        item.text && typeof item.text === 'string' &&
+        item.color && typeof item.color === 'string' &&
+        typeof item.y === 'number' &&
+        item.bounds && item.bounds.x1 !== undefined
+    );
+}
+```
+
+**E2E Test Examples** (Playwright):
+```javascript
+// tests/e2e/gallery.spec.js
+import { test, expect } from '@playwright/test';
+
+test.describe('Dynamic Text Feature', () => {
+    test('user can generate custom text in SVG path animation', async ({ page }) => {
+        await page.goto('http://localhost:8888/index.html');
+
+        // Find universal-paths animation card
+        const card = page.locator('.animation-card').filter({ hasText: 'Universal Paths' });
+        await expect(card).toBeVisible();
+
+        // Enter custom text
+        await card.locator('.param-text').fill('HELLO');
+
+        // Select font
+        await card.locator('.param-font').selectOption('Anton-Regular');
+
+        // Click generate
+        await card.locator('.editor-btn-apply').click();
+
+        // Wait for animation to update
+        await page.waitForTimeout(500);
+
+        // Verify iframe has SVG path elements
+        const iframe = card.frameLocator('iframe');
+        const paths = iframe.locator('svg path.text-path');
+
+        await expect(paths).toHaveCount(1); // "HELLO" is one word
+    });
+
+    test('user can generate multi-word text in particle animation', async ({ page }) => {
+        await page.goto('http://localhost:8888/index.html');
+
+        const card = page.locator('.animation-card').filter({ hasText: 'Particles' }).first();
+
+        await card.locator('.param-text').fill('GO NOW');
+        await card.locator('.param-font').selectOption('Roboto-Bold');
+        await card.locator('.editor-btn-apply').click();
+
+        await page.waitForTimeout(1000);
+
+        // Verify canvas exists and is not empty
+        const iframe = card.frameLocator('iframe');
+        const canvas = iframe.locator('canvas');
+        await expect(canvas).toBeVisible();
+    });
+
+    test('multiple generations update animation correctly', async ({ page }) => {
+        await page.goto('http://localhost:8888/index.html');
+
+        const card = page.locator('.animation-card').filter({ hasText: 'Universal Paths' });
+
+        // First generation
+        await card.locator('.param-text').fill('FIRST');
+        await card.locator('.editor-btn-apply').click();
+        await page.waitForTimeout(500);
+
+        // Second generation (should replace first)
+        await card.locator('.param-text').fill('SECOND');
+        await card.locator('.editor-btn-apply').click();
+        await page.waitForTimeout(500);
+
+        // Verify updated (implementation-specific check)
+        const iframe = card.frameLocator('iframe');
+        const paths = iframe.locator('svg path.text-path');
+        await expect(paths).toHaveCount(1); // Still one word
+    });
+});
+```
+
+**Visual Regression Testing**:
+```javascript
+// tests/e2e/visual-regression.spec.js
+import { test, expect } from '@playwright/test';
+
+test('SVG path rendering matches baseline', async ({ page }) => {
+    await page.goto('http://localhost:8888/index.html');
+
+    const card = page.locator('.animation-card').filter({ hasText: 'Universal Paths' });
+    await card.locator('.param-text').fill('TEST');
+    await card.locator('.param-font').selectOption('Anton-Regular');
+    await card.locator('.editor-btn-apply').click();
+
+    await page.waitForTimeout(2000); // Wait for animation to settle
+
+    const iframe = card.frameLocator('iframe');
+    await expect(iframe.locator('svg')).toHaveScreenshot('universal-paths-TEST-Anton.png');
+});
+```
+
+**Performance Benchmarks**:
+```javascript
+// tests/performance/benchmarks.test.js
+import { describe, test, expect } from 'vitest';
+
+describe('Performance benchmarks', () => {
+    test('font loading completes within 200ms', async () => {
+        const start = performance.now();
+        const font = await loadFont('Anton-Regular');
+        const duration = performance.now() - start;
+
+        expect(font).toBeDefined();
+        expect(duration).toBeLessThan(200);
+    });
+
+    test('path generation completes within 100ms for typical text', async () => {
+        const font = await loadFont('Anton-Regular');
+        const start = performance.now();
+        const pathData = generateTextPathData(font, 'HELLO WORLD TEST', 80);
+        const duration = performance.now() - start;
+
+        expect(pathData).toHaveLength(3);
+        expect(duration).toBeLessThan(100);
+    });
+
+    test('circle packing completes within 300ms for typical text', async () => {
+        const font = await loadFont('Anton-Regular');
+        const pathData = generateTextPathData(font, 'GO', 80);
+
+        const start = performance.now();
+        // Run circle packing algorithm
+        const blobs = packCirclesInPaths(pathData);
+        const duration = performance.now() - start;
+
+        expect(blobs.length).toBeGreaterThan(0);
+        expect(duration).toBeLessThan(300);
+    });
+});
+```
+
+**Watch for**:
+- Browser font caching may affect font loading timing tests
+- Visual regression tests sensitive to anti-aliasing differences across platforms
+- E2E tests need stable animations (wait for entrance animation to complete)
+- Performance benchmarks should use consistent hardware for CI
+
+---
+
+## P3 (Lower Priority)
+
+### P3-1: Add Input Validation and Error Handling
+
+**Status**: Not Started
+**Complexity**: Small
+**Dependencies**: None
+**Spec Reference**: Defensive programming best practices • **Status Reference**: STATUS-2025-12-07-212219.md lines 629-681 ("Security Assessment" > "Still Missing")
+
+#### Description
+Add comprehensive input validation to prevent edge cases: empty text, extremely long text, special characters, invalid path data, etc. Improve error messaging to users with specific, actionable feedback.
+
+**Current Gaps** (from STATUS):
+- No validation of text input (empty string, extremely long text)
+- No validation of path data structure before sending via postMessage
+- Error handling shows "❌ Error" without specific details
+- No feedback if iframe doesn't receive message
+- No loading state shown during font fetch
+
+#### Acceptance Criteria
+- [ ] Text input validation: Empty string rejected with user message
+- [ ] Text length limit: Max 100 characters (configurable constant)
+- [ ] Special character handling: Warn about unsupported characters
+- [ ] Path data structure validation: Check before sending postMessage
+- [ ] Error messages: Specific user-friendly descriptions (not generic "Error")
+- [ ] Loading states: Show "Loading font..." during font fetch
+- [ ] Timeout handling: Detect if animation iframe doesn't respond (5s timeout)
+- [ ] Console logging: Detailed errors for debugging (but user-friendly UI messages)
+- [ ] Validation feedback: Red border or icon on invalid input
+- [ ] Success feedback: Green checkmark or "✓ Applied!" message
+
+#### Technical Notes
+
+**Input Validation** (index.html):
+```javascript
+// Add constants at top of file
+const MAX_TEXT_LENGTH = 100;
+const ALLOWED_CHARS_REGEX = /^[\w\s.,!?'-]+$/;
+
+async function applyTextToAnimation(button) {
+    const panel = button.closest('.animation-card').querySelector('.editor-panel');
+    const textInput = panel.querySelector('.param-text');
+    const text = textInput?.value || '';
+
+    // Validate text
+    if (!text || text.trim().length === 0) {
+        showError(button, 'Please enter some text', textInput);
+        return;
+    }
+
+    if (text.length > MAX_TEXT_LENGTH) {
+        showError(button, `Text too long (max ${MAX_TEXT_LENGTH} characters)`, textInput);
+        return;
+    }
+
+    // Check for unsupported characters
+    if (!ALLOWED_CHARS_REGEX.test(text)) {
+        showWarning(button, 'Some special characters may not render correctly');
+        // Continue anyway, but warn user
+    }
+
+    // Clear any previous error states
+    textInput.classList.remove('error');
+
+    // ... proceed with generation
+}
+
+function showError(button, message, inputElement = null) {
+    button.classList.add('error');
+    button.textContent = `❌ ${message}`;
+
+    if (inputElement) {
+        inputElement.classList.add('error');
+    }
+
+    console.error('Validation error:', message);
+
+    setTimeout(() => {
+        button.classList.remove('error');
+        button.textContent = '✨ Generate';
+        if (inputElement) {
+            inputElement.classList.remove('error');
+        }
+    }, 3000);
+}
+
+function showWarning(button, message) {
+    console.warn('Validation warning:', message);
+    // Could show tooltip or temporary warning icon
+}
+```
+
+**Path Data Validation**:
+```javascript
+function validatePathData(pathData) {
+    if (!Array.isArray(pathData)) {
+        console.error('Path data is not an array:', typeof pathData);
+        return false;
+    }
+
+    if (pathData.length === 0) {
+        console.error('Path data array is empty');
+        return false;
+    }
+
+    const isValid = pathData.every((item, index) => {
+        const valid =
+            item.d && typeof item.d === 'string' &&
+            item.text && typeof item.text === 'string' &&
+            item.color && typeof item.color === 'string' &&
+            typeof item.y === 'number' &&
+            item.bounds &&
+            typeof item.bounds.x1 === 'number' &&
+            typeof item.bounds.y1 === 'number' &&
+            typeof item.bounds.x2 === 'number' &&
+            typeof item.bounds.y2 === 'number';
+
+        if (!valid) {
+            console.error(`Invalid path data at index ${index}:`, item);
+        }
+
+        return valid;
+    });
+
+    return isValid;
+}
+
+// In applyTextToAnimation, before sending:
+if (!validatePathData(pathData)) {
+    showError(button, 'Failed to generate valid paths');
+    return;
+}
+```
+
+**Loading State**:
+```javascript
+async function loadFont(fontFile) {
+    if (fontCache.has(fontFile)) {
+        return fontCache.get(fontFile);
+    }
+
+    console.log(`Loading font: ${fontFile}...`);
+
+    // Show loading indicator (optional - could update UI)
+    // document.getElementById('loading-indicator')?.classList.add('visible');
+
+    try {
+        const font = await opentype.load(`fonts/${fontFile}.ttf`);
+        fontCache.set(fontFile, font);
+        console.log(`Font loaded successfully: ${fontFile}`);
+        return font;
+    } catch (error) {
+        console.error(`Failed to load font ${fontFile}:`, error);
+        throw new Error(`Font "${fontFile}" could not be loaded. Please try a different font.`);
+    } finally {
+        // Hide loading indicator
+        // document.getElementById('loading-indicator')?.classList.remove('visible');
+    }
+}
+
+// In applyTextToAnimation:
+try {
+    button.classList.add('generating');
+    button.textContent = '⏳ Loading font...';
+
+    const font = await loadFont(fontFile);
+
+    button.textContent = '⏳ Generating...';
+
+    const pathData = generateTextPathData(font, text, 'stacked');
+
+    // ... rest of logic
+} catch (error) {
+    console.error('Error during text generation:', error);
+    showError(button, error.message || 'Generation failed');
+}
+```
+
+**Timeout Detection** (optional enhancement):
+```javascript
+async function applyTextToAnimation(button) {
+    // ... validation and generation logic
+
+    // Set timeout to detect if animation doesn't respond
+    const timeoutId = setTimeout(() => {
+        console.warn('Animation iframe did not respond within 5 seconds');
+        showWarning(button, 'Animation took longer than expected');
+    }, 5000);
+
+    // Send message
+    iframe.contentWindow.postMessage({ ... }, window.location.origin);
+
+    // Note: Current animations don't send acknowledgment
+    // To properly clear timeout, would need animations to respond with confirmation message
+    // For now, just log warning if timeout occurs
+}
+```
+
+**CSS for Error States**:
+```css
+.param-text.error {
+    border: 2px solid #ff2d2d;
+    background-color: rgba(255, 45, 45, 0.1);
+}
+
+.editor-btn-apply.error {
+    background-color: #ff2d2d;
+    animation: shake 0.3s;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.editor-btn-apply.success {
+    background-color: #00d4ff;
+}
+```
+
+---
+
+### P3-2: Update Documentation for Dynamic Text Feature
+
+**Status**: Not Started
+**Complexity**: Small
+**Dependencies**: P2-1 (tests), P3-1 (validation) - optional but preferred
+**Spec Reference**: README.md • **Status Reference**: STATUS-2025-12-07-212219.md lines 742-758 ("Implementation Assessment" > "Documentation")
+
+#### Description
+Update README.md to document the dynamic text feature, supported animations, usage instructions, available fonts, technical architecture, and troubleshooting. Currently README doesn't mention custom text capability.
+
+#### Acceptance Criteria
+- [ ] README section added: "Dynamic Text Feature"
+- [ ] Document which animations support custom text (15/18 types, 9 unique styles)
+- [ ] Explain how to use gallery editor (font picker, text input, generate button)
+- [ ] List available fonts (8 fonts with descriptions)
+- [ ] Document technical architecture (opentype.js, postMessage, canvas/SVG approaches)
+- [ ] Add troubleshooting section (common issues: font loading, special characters, long text)
+- [ ] Update "Technologies Used" section to include opentype.js, flubber.js
+- [ ] Add "Security" section documenting postMessage origin validation
+- [ ] Add screenshots or GIFs demonstrating custom text feature (optional but recommended)
+- [ ] Link to TESTING.md if tests exist (from P2-1)
+
+#### Technical Notes
+
+**Proposed README Structure** (add after "Animation Techniques" section):
+
+```markdown
+## Dynamic Text Feature
+
+**NEW**: Selected animations now support custom text input, allowing you to generate personalized animations with your own words and fonts!
+
+### Supported Animation Types
+
+**9 unique animation styles across 15 animation files** (83% coverage):
+
+**SVG Path-Based** (6 animations):
+- ✅ Universal Paths - Entrance animation showcase
+- ✅ Glitch - Digital corruption effects
+- ✅ 3D Transforms - Perspective and depth
+- ✅ Reveal/Mask - Sliding mask reveals
+- ✅ Wave/Ripple - Fluid wave distortions
+- ✅ Typewriter - Sequential character typing
+
+**Particle-Based** (3 animations):
+- ✅ Particles - Canvas pixel sampling
+  - Base: Standard particle system
+  - Varied: Different particle behaviors
+  - Procedural: Randomized generation
+
+**Liquid/Blob** (3 animations):
+- ✅ Liquid/Blobs - Circle packing in letter shapes
+  - Base: Metaball coalescing
+  - Varied: Different blob behaviors
+  - Procedural: Randomized blob patterns
+
+**Morphing** (3 animations):
+- ✅ Morphing - Shape interpolation with flubber.js
+  - Base: Circle to letter morphing
+  - Varied: Different start shapes
+  - Procedural: Random shape generation
+
+**Not Yet Supported**:
+- ⏸️ Line Drawing (3 animations) - Requires stroke extraction (complex)
+
+### How to Use
+
+1. Open the gallery (`index.html` in a browser)
+2. Scroll to an animation card with the editor panel (look for font picker and text input)
+3. **Select a font** from the dropdown (8 fonts available)
+4. **Enter your custom text** in the text input field (max 100 characters)
+5. Click the **"✨ Generate"** button
+6. Watch your text come alive with the selected animation!
+
+**Tips**:
+- Use short, impactful phrases for best results ("DO MORE", "GO BIG", etc.)
+- Different fonts create dramatically different visual styles
+- Try the same text across multiple animation types
+- Multi-word text creates stacked layouts in most animations
+
+### Available Fonts
+
+| Font | Style | Best For |
+|------|-------|----------|
+| **Anton** | Bold sans-serif | Strong, impactful messages |
+| **Roboto Bold** | Modern sans-serif | Clean, professional text |
+| **Oswald Bold** | Condensed sans-serif | Tall, narrow layouts |
+| **Bangers** | Comic/display | Fun, energetic vibes |
+| **Bungee** | Layered display | Retro, bold statements |
+| **Black Ops One** | Stencil military | Edgy, tactical themes |
+| **Permanent Marker** | Hand-drawn | Casual, handwritten feel |
+| **Press Start 2P** | 8-bit pixel | Retro gaming nostalgia |
+
+All fonts are open-source and loaded from `/fonts/` directory.
+
+### Technical Architecture
+
+The dynamic text system uses several modern web technologies:
+
+**Text-to-Path Conversion**:
+- **opentype.js** - Parses TrueType fonts (.ttf) and converts text to SVG path data
+- Each letter becomes a `<path>` element with precise vector outlines
+- Supports arbitrary fonts and text without pre-rendering
+
+**Animation-Specific Processing**:
+- **SVG Path animations** - Use raw path data from opentype.js
+- **Particle animations** - Render text to canvas, sample pixels for particle positions
+- **Liquid animations** - Pack circles inside letter shapes using point-in-polygon tests
+- **Morphing animations** - Use flubber.js to smoothly interpolate between shapes
+
+**Gallery ↔ Animation Communication**:
+- **postMessage API** - Secure cross-iframe messaging
+- **Origin validation** - Only accepts messages from same origin (prevents XSS)
+- Two message types:
+  - `updateTextPaths` - SVG path data for path-based animations
+  - `updateText` - Raw text + font for canvas-based animations
+
+**Libraries Used**:
+- [opentype.js](https://opentype.js.org/) (v1.3.4) - Font parsing
+- [flubber.js](https://github.com/veltman/flubber) (v0.4.2) - Path morphing
+- Canvas API - Pixel sampling for particles
+- SVG - Vector rendering and animation
+
+### Troubleshooting
+
+**Problem**: Font doesn't load / "Font not loaded" error
+
+**Solutions**:
+- Check browser console for specific error messages
+- Verify font files exist in `/fonts/` directory
+- Ensure font files are valid TrueType (.ttf) format
+- Try a different font - some may fail to load due to file corruption
+- Hard refresh the page (Cmd+Shift+R / Ctrl+Shift+R)
+
+---
+
+**Problem**: Text looks wrong or doesn't render
+
+**Solutions**:
+- Some fonts may not support all special characters
+- Stick to alphanumeric characters (A-Z, 0-9) for best compatibility
+- Avoid emojis and complex Unicode characters
+- Try a simpler font (Anton, Roboto) if issues persist
+
+---
+
+**Problem**: Text is cut off or too small
+
+**Solutions**:
+- Text is rendered with fixed viewBox dimensions (700x280)
+- Very long text may overflow - keep phrases short (< 20 characters recommended)
+- Use 1-3 words for optimal visual impact
+- Multi-word text automatically stacks vertically
+
+---
+
+**Problem**: Animation doesn't update after clicking "Generate"
+
+**Solutions**:
+- Refresh the page and try again
+- Ensure browser JavaScript is enabled
+- Check browser console for errors
+- Try a different animation type (some may have issues)
+- Wait a few seconds - generation may take time for complex text
+
+---
+
+**Problem**: Multiple clicks don't work
+
+**Solutions**:
+- Wait for previous generation to complete (button shows "✓ Applied!")
+- Some animations queue messages, others replace immediately
+- Try clicking after animation entrance completes (~2-3 seconds)
+
+### Security
+
+Dynamic text uses **origin-validated postMessage** for secure cross-iframe communication:
+- Gallery only sends messages with explicit origin (no wildcard `'*'`)
+- Animations validate `event.origin` before processing messages
+- Allowed origins: same origin + localhost dev servers
+- Prevents malicious sites from injecting text into animations
+
+See [Security Documentation](SECURITY.md) for more details. *(Optional: create SECURITY.md)*
+
+### Performance
+
+**Typical timings** (on modern hardware):
+- Font loading: < 100ms (cached after first load)
+- Path generation: < 50ms (for 1-10 words)
+- Particle sampling: < 100ms
+- Circle packing: 100-200ms
+- Flubber interpolation: < 50ms
+
+**Large text** (> 20 words) may experience:
+- Slower generation times (200-500ms)
+- Reduced frame rate during animation
+- Increased memory usage
+
+**Recommendations**:
+- Keep text short (1-10 words) for best performance
+- Avoid rapid clicking of "Generate" button
+- Close unused animation cards to free resources
+
+### Testing
+
+See [TESTING.md](TESTING.md) for information about:
+- Running unit tests
+- Running E2E tests
+- Visual regression testing
+- Performance benchmarks
+
+*(Note: Create TESTING.md if P2-1 is completed)*
+
+---
+
+## Technologies Used
+
+*(Update existing section to add:)*
+
+- **opentype.js** - TrueType font parsing and path generation
+- **flubber.js** - Smooth SVG path interpolation for morphing
+- **Canvas API** - Pixel sampling for particle animations
+- **postMessage API** - Secure iframe communication
+
+*(Keep existing technologies like GSAP, etc.)*
+```
+
+**Screenshot/GIF Recommendations**:
+- Capture gallery with font picker and text input visible
+- Record short GIF of user entering text and clicking Generate
+- Show before/after of different fonts with same text
+- Demonstrate multi-animation comparison (same text, different styles)
+
+**Tools for GIFs**:
+- [ScreenToGif](https://www.screentogif.com/) (Windows)
+- [Kap](https://getkap.co/) (Mac)
+- [Peek](https://github.com/phw/peek) (Linux)
+
+---
+
+### P3-3: Explore Line Drawing Stroke Extraction (Research Only)
+
+**Status**: Not Started
+**Complexity**: High (Research task, not implementation)
+**Dependencies**: None (independent research)
+**Spec Reference**: initiative lines 9-31 ("Line Drawing (Hardest)") • **Status Reference**: STATUS-2025-12-07-212219.md lines 509-542 ("Line Drawing Animations")
+
+#### Description
+Research and document approaches for converting filled font paths (from opentype.js) to drawable stroke paths for line-drawing animations. This is explicitly marked "hardest" in initiative document - **DO NOT IMPLEMENT** without user approval.
+
+**Research Goals**:
+1. Evaluate library options (paper.js, svg-path-commander, custom algorithms)
+2. Prototype simple proof-of-concept (single letter, e.g., "A")
+3. Document complexity, trade-offs, and estimated effort
+4. Recommend whether to pursue or defer indefinitely
+
+**Deliverable**: Research document `.agent_planning/RESEARCH-line-drawing-strokes.md`
+
+**Time Box**: 6 hours maximum (do not fall into implementation rabbit hole)
+
+#### Acceptance Criteria
+- [ ] Research document created with findings
+- [ ] At least 3 approaches evaluated (paper.js, svg-path-commander, custom)
+- [ ] Proof-of-concept code for one approach (simple letter "A" or "O")
+- [ ] Complexity assessment: Small/Medium/Large/XL
+- [ ] Effort estimate: Number of work items required
+- [ ] Recommendation: Implement / Defer / Alternative approach
+- [ ] If recommend implementation: Detailed plan with work items and dependencies
+- [ ] If recommend defer: Explanation of blockers or low ROI
+- [ ] Performance considerations documented (processing time, library size)
+- [ ] Visual quality assessment (does output look good?)
+
+#### Technical Notes
+
+**Libraries to Investigate**:
+
+1. **paper.js** (http://paperjs.org/)
+   - **Pros**: Full-featured vector graphics, path offset capabilities, boolean operations
+   - **Cons**: Large library (~300KB minified), complex API, may be overkill
+   - **Approach**: Use `path.offsetPath()` to create outline stroke at fixed distance
+   - **Test**: Load paper.js, import opentype.js path, attempt offset
+
+2. **svg-path-commander** (https://github.com/thednp/svg-path-commander)
+   - **Pros**: Lightweight (~20KB), focused on path manipulation
+   - **Cons**: May need custom logic on top, less feature-complete
+   - **Approach**: Parse path, manipulate commands, generate parallel path
+   - **Test**: Convert opentype.js path to drawable segments
+
+3. **Custom Algorithm**
+   - **Pros**: No dependencies, full control
+   - **Cons**: Extremely complex, weeks of work, hard to get right
+   - **Approach**:
+     1. Sample points along path at regular intervals
+     2. Calculate normals at each point
+     3. Offset points by stroke width
+     4. Connect offset points into drawable path
+   - **Test**: Implement for straight line, then curve, then letter "I", then "O"
+
+**Proof-of-Concept Goals**:
+- Convert letter "A" (simple shape with straight segments and sharp corners)
+- OR letter "O" (closed curve with inner counter)
+- Generate drawable stroke path that outlines the letter
+- Determine stroke order (which segment to draw first)
+- Measure processing time for one letter
+- Visual comparison: Does it look like hand-drawn outline?
+
+**Questions to Answer**:
+1. Can we extract a clean outline from a filled path?
+2. How do we handle closed shapes (O, P, A) with inner counters (holes)?
+3. What's the stroke segmentation logic? (Single continuous stroke vs multiple segments)
+4. Is the visual result worth the implementation complexity?
+5. Are there simpler alternatives (e.g., use stroked fonts instead of filled fonts)?
+6. Performance: Can we process text in real-time (< 500ms)?
+7. Library size: Does paper.js bloat significantly outweigh benefit?
+
+**Research Structure**:
+
+```markdown
+# Line Drawing Stroke Extraction - Research
+
+## Objective
+Evaluate feasibility of converting filled font paths to drawable strokes for line-drawing animations.
+
+## Approaches Evaluated
+
+### Approach 1: paper.js
+**Evaluation**:
+- [Details of testing]
+- [Code snippet]
+- [Visual result screenshot/description]
+
+**Pros**:
+- [List]
+
+**Cons**:
+- [List]
+
+**Complexity**: Small/Medium/Large/XL
+
+---
+
+### Approach 2: svg-path-commander
+[Similar structure]
+
+---
+
+### Approach 3: Custom Algorithm
+[Similar structure]
+
+---
+
+## Proof-of-Concept Results
+
+**Letter Tested**: [A/O/other]
+
+**Code**:
+```javascript
+[Minimal working code]
+```
+
+**Processing Time**: [Xms]
+
+**Visual Quality**: [Description or screenshot]
+
+**Challenges Encountered**:
+- [List specific problems]
+
+---
+
+## Recommendation
+
+**Decision**: Implement / Defer / Alternative
+
+**Rationale**: [Detailed explanation]
+
+**If Implement**:
+- **Chosen Approach**: [paper.js / svg-path-commander / custom]
+- **Estimated Effort**: [X work items, Y complexity]
+- **Work Items**:
+  1. [Item 1]
+  2. [Item 2]
+  ...
+- **Dependencies**: [Library integration, testing, etc.]
+- **Timeline**: [No time-based estimates, just complexity sizing]
+
+**If Defer**:
+- **Blockers**: [Technical challenges that make this impractical]
+- **ROI Analysis**: [Effort required vs value delivered]
+- **Alternative**: [Simpler approach if any]
+
+---
+
+## Alternatives Considered
+
+1. **Use stroke fonts instead of filled fonts**
+   - [Evaluation]
+2. **Pre-generate stroke data for common letters**
+   - [Evaluation]
+3. **Manual stroke paths (current approach)**
+   - [Keep as-is vs dynamic text trade-off]
+
+---
+
+## Conclusion
+
+[Final summary and recommended next steps]
+```
+
+**Success Criteria for "Implement" Recommendation**:
+- Proof-of-concept works with good visual quality
+- Processing time < 500ms for typical word (5 letters)
+- Complexity assessed as Medium or lower
+- Library size acceptable (< 100KB if external)
+- Clear implementation plan exists
+
+**Success Criteria for "Defer" Recommendation**:
+- Proof-of-concept fails or has poor visual quality
+- Complexity assessed as Large or XL
+- No clear path to acceptable performance
+- Better alternatives exist (stroke fonts, etc.)
+
+---
+
+### P3-4: Add Animation State Machine Documentation
+
+**Status**: Not Started
+**Complexity**: Small
+**Dependencies**: None (documentation task)
+**Spec Reference**: Software engineering best practices • **Status Reference**: N/A
+
+#### Description
+Document the animation state machine for dynamic text animations showing state transitions: idle → receiving message → generating geometry → animating → hold → idle. Helps future developers understand the flow and debug issues.
+
+**Target Audience**: Developers adding new animation types, debugging postMessage flow, or modifying animation lifecycle.
+
+**Deliverable**: `.agent_planning/ARCHITECTURE-animation-state.md`
+
+#### Acceptance Criteria
+- [ ] Architecture document created
+- [ ] State machine diagram (Mermaid syntax for GitHub rendering)
+- [ ] State descriptions (idle, receiving, processing, animating, hold, error)
+- [ ] Transition triggers (postMessage received, validation, generation complete, animation done, timeout)
+- [ ] Code examples for each state
+- [ ] Edge case handling documented (message during animation, duplicate messages, errors)
+- [ ] Differences between SVG path vs canvas/geometry approaches explained
+- [ ] Flow diagrams for each animation type (SVG, particle, liquid, morphing)
+
+#### Technical Notes
+
+**State Machine Diagram** (Mermaid):
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Receiving: postMessage event
+    Receiving --> Processing: Origin valid
+    Receiving --> Error: Origin invalid
+    Processing --> Animating: Geometry generated
+    Processing --> Error: Generation failed
+    Animating --> Hold: Animation complete
+    Hold --> Idle: User action / timeout
+    Error --> Idle: Error timeout (3s)
+
+    note right of Idle
+        Default state
+        Waiting for input
+    end note
+
+    note right of Receiving
+        Validate origin
+        Check message type
+    end note
+
+    note right of Processing
+        Generate geometry:
+        - SVG paths
+        - Particles
+        - Circles
+        - Interpolators
+    end note
+
+    note right of Animating
+        Entrance phase
+        requestAnimationFrame
+        loop
+    end note
+
+    note right of Hold
+        Final state displayed
+        Optional exit animation
+    end note
+```
+
+**Document Structure**:
+
+```markdown
+# Animation State Machine Architecture
+
+## Overview
+
+All dynamic text animations follow a common state machine pattern for handling user input, validating messages, generating geometry, and animating results.
+
+**States**: Idle → Receiving → Processing → Animating → Hold → Idle
+
+This document describes the state machine, transitions, and implementation patterns.
+
+---
+
+## State Definitions
+
+### 1. Idle
+**Description**: Waiting for user input. Animation shows default content (either static or looping).
+
+**Characteristics**:
+- Default state on page load
+- Can accept postMessage
+- No ongoing animation (or looping default animation)
+
+**Entry**:
+- Page load
+- After hold timeout expires
+- After error recovery
+
+**Exit**:
+- postMessage event received
+
+---
+
+### 2. Receiving
+**Description**: postMessage event received. Validating origin and message structure.
+
+**Characteristics**:
+- Short-lived state (< 10ms typically)
+- Security validation happens here
+- Message type discrimination (updateText vs updateTextPaths)
+
+**Entry**:
+- postMessage event fired
+
+**Exit**:
+- Origin valid → Processing
+- Origin invalid → Error
+
+**Code Example**:
+```javascript
+window.addEventListener('message', function(event) {
+    // STATE: Receiving
+
+    const allowedOrigins = [
+        window.location.origin,
+        "http://localhost:8888",
+        "http://127.0.0.1:8888",
+        "null"
+    ];
+
+    if (!allowedOrigins.includes(event.origin)) {
+        // TRANSITION: Receiving → Error
+        console.warn("Rejected message from:", event.origin);
+        return;
+    }
+
+    if (event.data && event.data.type === 'updateTextPaths') {
+        // TRANSITION: Receiving → Processing
+        processTextPaths(event.data.pathData);
+    }
+});
+```
+
+---
+
+### 3. Processing
+**Description**: Generating animation-specific geometry from input data.
+
+**Characteristics**:
+- CPU-intensive operations
+- Duration varies by animation type (50-300ms)
+- Different logic per animation type
+
+**Entry**:
+- Origin validation passed
+- Valid message data
+
+**Exit**:
+- Geometry generated successfully → Animating
+- Generation error → Error
+
+**Implementation by Type**:
+
+**SVG Path Animations**:
+```javascript
+function processTextPaths(pathData) {
+    // STATE: Processing
+
+    // Clear existing paths
+    textGroup.innerHTML = '';
+    pathElements = [];
+
+    // Create <path> elements
+    pathData.forEach((item, index) => {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', item.d);
+        path.setAttribute('class', 'text-path');
+        path.style.fill = item.color;
+        textGroup.appendChild(path);
+        pathElements.push(path);
+    });
+
+    // TRANSITION: Processing → Animating
+    startAnimation();
+}
+```
+
+**Particle Animations**:
+```javascript
+function processText(text, fontFamily) {
+    // STATE: Processing
+
+    // Render to canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = `bold 80px ${fontFamily}`;
+    ctx.fillText(text, 50, 150);
+
+    // Sample pixels
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    particles = [];
+
+    for (let y = 0; y < canvas.height; y += 4) {
+        for (let x = 0; x < canvas.width; x += 4) {
+            const i = (y * canvas.width + x) * 4;
+            const alpha = imageData.data[i + 3];
+            if (alpha > 128) {
+                particles.push(new Particle(x, y));
+            }
+        }
+    }
+
+    // TRANSITION: Processing → Animating
+    startAnimation();
+}
+```
+
+**Liquid Animations**:
+```javascript
+function processTextPaths(pathData) {
+    // STATE: Processing
+
+    blobs = [];
+
+    pathData.forEach(item => {
+        const path = new Path2D(item.d);
+        const bounds = item.bounds;
+        const blobCount = Math.floor((bounds.x2 - bounds.x1) * (bounds.y2 - bounds.y1) / 500);
+
+        // Circle packing
+        let placed = 0;
+        let attempts = 0;
+        while (placed < blobCount && attempts < blobCount * 10) {
+            const x = bounds.x1 + Math.random() * (bounds.x2 - bounds.x1);
+            const y = bounds.y1 + Math.random() * (bounds.y2 - bounds.y1);
+
+            if (ctx.isPointInPath(path, x, y)) {
+                blobs.push(new Blob(x, y, radius, hue));
+                placed++;
+            }
+            attempts++;
+        }
+    });
+
+    // TRANSITION: Processing → Animating
+    startAnimation();
+}
+```
+
+**Morphing Animations**:
+```javascript
+function processTextPaths(pathData) {
+    // STATE: Processing
+
+    interpolators = [];
+
+    pathData.forEach(item => {
+        const startShape = getRandomStartShape();
+        const interpolator = flubber.interpolate(startShape, item.d, {
+            maxSegmentLength: 5
+        });
+        interpolators.push(interpolator);
+    });
+
+    // TRANSITION: Processing → Animating
+    startAnimation();
+}
+```
+
+---
+
+### 4. Animating
+**Description**: Entrance animation playing. Geometry morphing/moving from start state to final state.
+
+**Characteristics**:
+- requestAnimationFrame loop active
+- Progress tracked (0.0 to 1.0)
+- Easing functions applied
+- Duration varies (1-3 seconds typical)
+
+**Entry**:
+- Geometry generation complete
+
+**Exit**:
+- Animation progress >= 1.0 → Hold
+
+**Code Example**:
+```javascript
+function animate(timestamp) {
+    // STATE: Animating
+
+    if (!startTime) startTime = timestamp;
+    const elapsed = timestamp - startTime;
+    const progress = Math.min(elapsed / duration, 1.0);
+
+    // Apply easing
+    const eased = easeOutCubic(progress);
+
+    // Update geometry
+    pathElements.forEach((path, index) => {
+        // ... apply transformations based on eased progress
+    });
+
+    if (progress < 1.0) {
+        // Continue animating
+        requestAnimationFrame(animate);
+    } else {
+        // TRANSITION: Animating → Hold
+        enterHoldState();
+    }
+}
+```
+
+---
+
+### 5. Hold
+**Description**: Animation complete. Final state displayed. Waiting for user action or timeout.
+
+**Characteristics**:
+- Static display (no animation loop)
+- Optional timeout to return to idle
+- May have optional exit animation
+
+**Entry**:
+- Animation progress reached 1.0
+
+**Exit**:
+- Timeout expires → Idle
+- New postMessage received → Receiving
+
+**Code Example**:
+```javascript
+function enterHoldState() {
+    // STATE: Hold
+
+    console.log('Animation complete, entering hold state');
+
+    // Set timeout to return to idle (optional)
+    holdTimeout = setTimeout(() => {
+        // TRANSITION: Hold → Idle
+        restart();
+    }, 5000); // 5 second hold
+}
+```
+
+---
+
+### 6. Error
+**Description**: Something went wrong. Show error state briefly, then recover.
+
+**Characteristics**:
+- Short-lived (3 seconds typical)
+- Log error to console
+- Optionally show visual error indicator
+- Auto-recover to idle
+
+**Entry**:
+- Origin validation failed
+- Geometry generation failed
+- Animation error
+
+**Exit**:
+- Error timeout expires → Idle
+
+**Code Example**:
+```javascript
+function handleError(error) {
+    // STATE: Error
+
+    console.error('Animation error:', error);
+
+    // Optionally show error UI
+    // errorElement.textContent = 'Generation failed';
+    // errorElement.style.display = 'block';
+
+    // Auto-recover after 3 seconds
+    setTimeout(() => {
+        // TRANSITION: Error → Idle
+        // errorElement.style.display = 'none';
+        restart();
+    }, 3000);
+}
+```
+
+---
+
+## Edge Cases
+
+### Message Received During Animation
+
+**Scenario**: User clicks "Generate" again while entrance animation is still playing.
+
+**Options**:
+1. **Queue**: Store message, process after current animation completes
+2. **Ignore**: Reject message, continue current animation
+3. **Replace**: Immediately restart with new message (current behavior)
+
+**Current Implementation**: **Replace** (most animations)
+```javascript
+window.addEventListener('message', function(event) {
+    // No state check - always accept new messages
+    // This interrupts current animation and restarts
+    if (event.data && event.data.type === 'updateTextPaths') {
+        clearTimeout(holdTimeout); // Cancel any pending transitions
+        processTextPaths(event.data.pathData); // Restart immediately
+    }
+});
+```
+
+**Recommendation**: Keep Replace behavior for responsive UX. User expects immediate feedback.
+
+---
+
+### Duplicate Messages
+
+**Scenario**: Same text sent twice in rapid succession.
+
+**Current Behavior**: Process both (animation restarts twice)
+
+**Potential Improvement**: Debounce or detect duplicate text
+```javascript
+let lastText = '';
+
+window.addEventListener('message', function(event) {
+    const newText = event.data.pathData?.map(p => p.text).join(' ');
+
+    if (newText === lastText) {
+        console.log('Duplicate text, ignoring');
+        return;
+    }
+
+    lastText = newText;
+    processTextPaths(event.data.pathData);
+});
+```
+
+---
+
+### Animation Error During Processing
+
+**Scenario**: flubber.interpolate() throws exception, or circle packing times out.
+
+**Current Behavior**: Varies by implementation. Some have try/catch, some don't.
+
+**Recommendation**: Wrap all processing in try/catch
+```javascript
+function processTextPaths(pathData) {
+    try {
+        // ... processing logic
+    } catch (error) {
+        handleError(error);
+    }
+}
+```
+
+---
+
+## Flow Diagrams by Animation Type
+
+### SVG Path Flow
+```
+postMessage → Validate origin → Create <path> elements → Animate paths → Hold
+```
+
+### Particle Flow
+```
+postMessage → Validate origin → Render to canvas → Sample pixels →
+Create particles → Animate particles → Hold
+```
+
+### Liquid Flow
+```
+postMessage → Validate origin → Circle packing algorithm →
+Create blobs → Animate coalescence → Hold
+```
+
+### Morphing Flow
+```
+postMessage → Validate origin → Generate interpolators (flubber.js) →
+Animate interpolation → Hold
+```
+
+---
+
+## Implementation Checklist for New Animations
+
+When adding dynamic text to a new animation type:
+
+- [ ] Add postMessage event listener
+- [ ] Validate event.origin against allowlist
+- [ ] Implement processing logic (geometry generation)
+- [ ] Wrap processing in try/catch for error handling
+- [ ] Call startAnimation() after processing
+- [ ] Ensure animation can be restarted mid-animation
+- [ ] Clear any pending timeouts on restart
+- [ ] Test with multiple rapid generations
+- [ ] Test with empty text
+- [ ] Test with very long text
+- [ ] Test with all 8 fonts
+
+---
+
+## Performance Considerations
+
+**Idle**: 0% CPU (static) or low CPU (looping default animation)
+
+**Receiving**: < 1ms (simple validation)
+
+**Processing**:
+- SVG paths: 10-50ms
+- Particles: 50-100ms (canvas rendering + pixel sampling)
+- Liquid: 100-200ms (circle packing algorithm)
+- Morphing: 30-80ms (flubber interpolator generation)
+
+**Animating**: 5-10% CPU (60 FPS requestAnimationFrame)
+
+**Hold**: 0% CPU (static display)
+
+**Error**: < 1ms
+
+**Recommendations**:
+- Profile processing with Chrome DevTools Performance tab
+- Optimize circle packing if > 200ms
+- Consider Web Workers for heavy processing (particles, liquid)
+- Debounce rapid "Generate" clicks
+
+---
+
+## Conclusion
+
+All dynamic text animations follow this state machine pattern for consistency and maintainability. Understanding these states helps debug issues and add new animation types.
+
+**Key Principles**:
+1. Always validate origin in Receiving state
+2. Wrap Processing in error handling
+3. Support mid-animation restart (Replace behavior)
+4. Auto-recover from Error state
+5. Use common message types (updateText, updateTextPaths)
+
+For implementation examples, see existing animations:
+- SVG: `text-universal-paths.html`
+- Particle: `text-02-particles-procedural.html`
+- Liquid: `text-05-liquid-procedural.html`
+- Morphing: `text-03-morphing-procedural.html`
+```
+
+---
+
+## Dependency Graph
+
+```
+No dependencies between remaining items (all can be done in parallel)
+
+P2-1 (Tests) ────────┐
+                     ├──> (All can reference each other in docs)
+P3-1 (Validation) ───┤
+                     │
+P3-2 (Docs) ─────────┤
+                     │
+P3-3 (Research) ─────┤
+                     │
+P3-4 (State Docs) ───┘
+
+All items are independent and can be completed in any order.
+```
+
+**Recommended Sequence**: P2-1 → P3-1 → P3-2 → P3-4 → P3-3 (optional)
+
+**Parallelization**: All items can be done in parallel by different people.
+
+---
+
+## Recommended Work Sequence
+
+### Phase 1: Quality & Robustness
+**Goal**: Production-ready system
+**Items**: P2-1 (tests), P3-1 (validation)
+**Outcome**: Tested, validated, robust dynamic text feature
+
+### Phase 2: Documentation
+**Goal**: Discoverable and understandable
+**Items**: P3-2 (docs), P3-4 (architecture)
+**Outcome**: Well-documented feature with architecture guides
+
+### Phase 3: Optional Research
+**Goal**: Evaluate final animation type
+**Items**: P3-3 (line drawing research)
+**Outcome**: Decision on whether to pursue line drawing
+
+**Total Phases**: 3 (or 2 if skipping P3-3)
+
+---
+
+## Risk Assessment
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| **Test suite setup complexity** | Low | Medium | Use established frameworks (Vitest, Playwright) |
+| **Visual regression tests flaky** | Medium | Low | Use generous thresholds, stable test environment |
+| **Performance benchmarks inconsistent** | Medium | Low | Run on consistent hardware, average multiple runs |
+| **Line drawing research becomes time sink** | High | Low | Strict 6-hour time box, defer if no progress |
+| **Documentation gets outdated** | Medium | Medium | Link to code examples, automate where possible |
+
+---
+
+## Success Metrics
+
+1. **Test Coverage**: >80% for core functions (generateTextPathData, loadFont)
+2. **E2E Coverage**: At least 3 animation types (SVG, particle, liquid)
+3. **Validation**: Zero unhandled edge cases (empty text, long text, special chars)
+4. **Documentation**: README clearly explains feature with examples
+5. **Architecture**: State machine documented with diagrams and code examples
+6. **Research**: Line drawing feasibility clearly documented with recommendation
+7. **User Value**: Users can discover and use feature without asking for help
+
+---
+
+## File Management
+
+**Current STATUS files**: 5 files (keep latest 4 per hygiene rules)
+- STATUS-2025-12-07-184200.md (delete - oldest)
+- STATUS-2025-12-07-133137.md (keep)
+- STATUS-2025-12-07-151500.md (keep)
+- STATUS-2025-12-07-203832.md (keep)
+- STATUS-2025-12-07-212219.md (keep - latest)
+
+**Current PLAN files**: 5 files (keep latest 4 per hygiene rules)
+- PLAN-2025-12-07-130949.md (delete - oldest)
+- PLAN-2025-12-07-133137.md (keep)
+- PLAN-2025-12-07-143635.md (keep - different scope: gallery improvements)
+- PLAN-2025-12-07-204329.md (keep - previous plan)
+- PLAN-2025-12-07-212219.md (keep - this file)
+
+**Action**: Delete oldest STATUS and PLAN files to maintain 4-file limit.
+
+**No conflicting plans**: PLAN-2025-12-07-143635.md addresses different work (gallery UX). No conflict.
+
+---
+
+## Notes
+
+- **All P0, P1, P2-2 items COMPLETE** - Only quality/docs remaining
+- **No time-based estimates** per user instructions
+- **Line drawing deferred** correctly per initiative ("hardest")
+- **Test-first encouraged** for P2-1
+- **User feedback**: Feature is 90% complete and functional
+- **No breaking changes**: All work is additive
+- **Browser compatibility**: Existing functionality works cross-browser
+
+---
+
+## Appendix: Completed Work Summary
+
+| Item | Status | Completion Date |
+|------|--------|-----------------|
+| P0-1: Font fixes | ✅ COMPLETE | 2025-12-07 |
+| P0-2: Security | ✅ COMPLETE | 2025-12-07 |
+| P1-1: Particles | ✅ COMPLETE | 2025-12-07 |
+| P1-2: Liquid | ✅ COMPLETE | 2025-12-07 |
+| P2-2: Morphing | ✅ COMPLETE | 2025-12-07 |
+
+**Remaining**: P2-1 (tests), P3-1 (validation), P3-2 (docs), P3-3 (research), P3-4 (arch docs)
+
+**Initiative Completion**: 90% (9/10 animation types, deferred line drawing correctly)

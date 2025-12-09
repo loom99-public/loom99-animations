@@ -1,0 +1,753 @@
+# Animation Auto-Restart Bug Fix Plan
+**Generated**: 2025-12-07-230633
+**Source STATUS**: STATUS-2025-12-07-230442.md
+**Spec**: README.md (Animation state machine behavior)
+
+---
+
+## Executive Summary
+
+**Current State**: All procedural animation files auto-restart infinitely after exit animation completes, never entering a stopped/waiting state.
+
+**Root Cause**: Exit completion handler calls `restart()` instead of transitioning to `'waiting'` state.
+
+**Total Gap**: 5 confirmed files with bug + 8 additional files to verify = 13 files requiring review/fix.
+
+**Recommended Focus**: Fix the 5 confirmed files first (P0), then verify and fix the additional 8 files (P1).
+
+---
+
+## Backlog by Priority
+
+### P0 (Critical) - Fix Confirmed Buggy Files
+
+These 5 files are confirmed to have the auto-restart bug per STATUS-2025-12-07-230442.md:
+
+---
+
+## P0-1: Fix text-universal-paths.html Auto-Restart Bug
+
+**Status**: Not Started
+**Effort**: Small (30 minutes)
+**Dependencies**: None
+**Spec Reference**: README.md (Click-to-restart pattern) • **Status Reference**: STATUS-2025-12-07-230442.md lines 47-51
+
+### Description
+Fix the reference implementation file `text-universal-paths.html` which defines a `waiting` state but never transitions to it. After exit animation completes, the file calls `restart()` causing an infinite loop.
+
+### Technical Changes Required
+
+1. **Change initial state** (Line ~56):
+   ```javascript
+   // BEFORE:
+   let animationState = 'entrance';
+
+   // AFTER:
+   let animationState = 'waiting';
+   ```
+
+2. **Fix exit completion handler** (Line ~142):
+   ```javascript
+   // BEFORE:
+   if (progress >= 1) {
+       restart();
+   }
+
+   // AFTER:
+   if (progress >= 1) {
+       animationState = 'waiting';
+       // Animation stops here - no more requestAnimationFrame calls
+   }
+   ```
+
+3. **Update click handler** (Lines ~201-207):
+   ```javascript
+   // BEFORE:
+   document.body.addEventListener('click', () => {
+       if (animationState === 'hold') {
+           startExit();
+       } else if (animationState === 'entrance') {
+           restart();
+       }
+   });
+
+   // AFTER:
+   document.body.addEventListener('click', () => {
+       if (animationState === 'hold') {
+           startExit();
+       } else if (animationState === 'entrance' || animationState === 'waiting') {
+           restart();
+       }
+   });
+   ```
+
+4. **Verify postMessage handler** still works from waiting state (should already be fine).
+
+### Acceptance Criteria
+- [ ] Initial page load shows nothing (waiting state)
+- [ ] First click triggers entrance animation
+- [ ] After entrance, animation holds for 2 seconds
+- [ ] After hold timeout, exit animation plays
+- [ ] After exit completes, animation stops (does NOT auto-restart)
+- [ ] Clicking during waiting state restarts the animation
+- [ ] Clicking during hold state skips to exit
+- [ ] postMessage still triggers restart from any state
+
+### Technical Notes
+- This is the reference implementation; fix it correctly as template for other files
+- Preserve the existing hold timeout behavior (2 seconds → auto-exit)
+- Ensure requestAnimationFrame loop stops when in waiting state
+
+---
+
+## P0-2: Fix text-02-particles-procedural.html Auto-Restart Bug
+
+**Status**: Not Started
+**Effort**: Small (20 minutes)
+**Dependencies**: P0-1 (use as reference)
+**Spec Reference**: README.md (Click-to-restart pattern) • **Status Reference**: STATUS-2025-12-07-230442.md lines 66-69
+
+### Description
+Fix particle animation which currently has no `waiting` state defined and auto-restarts after exit completes.
+
+### Technical Changes Required
+
+Apply the same 4 changes as P0-1:
+1. **Line ~345**: Change initial state to `'waiting'`
+2. **Line ~409**: After exit completes, set `animationState = 'waiting'` instead of `restart()`
+3. **Lines ~462-468**: Update click handler to restart from `waiting` state
+4. Verify postMessage handler
+
+### Acceptance Criteria
+Same as P0-1.
+
+### Technical Notes
+- Particles should not animate until first click
+- Ensure particle cleanup happens properly when entering waiting state
+
+---
+
+## P0-3: Fix text-03-morphing-procedural.html Auto-Restart Bug
+
+**Status**: Not Started
+**Effort**: Small (20 minutes)
+**Dependencies**: P0-1 (use as reference)
+**Spec Reference**: README.md (Click-to-restart pattern) • **Status Reference**: STATUS-2025-12-07-230442.md lines 56-59
+
+### Description
+Fix morphing animation which currently has no `waiting` state defined and auto-restarts after exit completes.
+
+### Technical Changes Required
+
+Apply the same 4 changes as P0-1:
+1. **Line ~40**: Change initial state to `'waiting'`
+2. **Line ~277**: After exit completes, set `animationState = 'waiting'` instead of `restart()`
+3. **Lines ~337-343**: Update click handler to restart from `waiting` state
+4. Verify postMessage handler
+
+### Acceptance Criteria
+Same as P0-1.
+
+### Technical Notes
+- Ensure morphing paths reset properly when entering waiting state
+- Check that initial waiting state displays correctly (blank or final frame?)
+
+---
+
+## P0-4: Fix text-04-glitch-procedural.html Auto-Restart Bug
+
+**Status**: Not Started
+**Effort**: Small (20 minutes)
+**Dependencies**: P0-1 (use as reference)
+**Spec Reference**: README.md (Click-to-restart pattern) • **Status Reference**: STATUS-2025-12-07-230442.md lines 71-74
+
+### Description
+Fix glitch animation which currently has no `waiting` state defined and auto-restarts after exit completes.
+
+### Technical Changes Required
+
+Apply the same 4 changes as P0-1:
+1. **Line ~103**: Change initial state to `'waiting'`
+2. **Line ~172**: After exit completes, set `animationState = 'waiting'` instead of `restart()`
+3. **Lines ~199-205**: Update click handler to restart from `waiting` state
+4. Verify postMessage handler
+
+### Acceptance Criteria
+Same as P0-1.
+
+### Technical Notes
+- Glitch effects should not render until first click
+- Ensure RGB split and distortions are reset in waiting state
+
+---
+
+## P0-5: Fix text-05-liquid-procedural.html Auto-Restart Bug
+
+**Status**: Not Started
+**Effort**: Small (20 minutes)
+**Dependencies**: P0-1 (use as reference)
+**Spec Reference**: README.md (Click-to-restart pattern) • **Status Reference**: STATUS-2025-12-07-230442.md lines 61-64
+
+### Description
+Fix liquid animation which currently has no `waiting` state defined and auto-restarts after exit completes.
+
+### Technical Changes Required
+
+Apply the same 4 changes as P0-1:
+1. **Line ~145**: Change initial state to `'waiting'`
+2. **Line ~185**: After exit completes, set `animationState = 'waiting'` instead of `restart()`
+3. **Lines ~212-218**: Update click handler to restart from `waiting` state
+4. Verify postMessage handler
+
+### Acceptance Criteria
+Same as P0-1.
+
+### Technical Notes
+- Metaball/goo filter effects should be hidden in waiting state
+- Ensure proper cleanup of SVG filters when transitioning to waiting
+
+---
+
+### P1 (High) - Verify and Fix Additional Procedural Files
+
+These 8 files were mentioned in the user's request but not yet verified by the STATUS report. They likely have the same bug pattern.
+
+---
+
+## P1-1: Verify and Fix Remaining Procedural Animation Files
+
+**Status**: Not Started
+**Effort**: Medium (2-3 hours total)
+**Dependencies**: All P0 items completed
+**Spec Reference**: README.md (Click-to-restart pattern) • **Status Reference**: User request (not yet evaluated in STATUS)
+
+### Description
+Review and fix these 8 additional procedural animation files if they have the same auto-restart bug:
+
+1. `text-01-line-drawing-procedural.html`
+2. `text-06-kinetic-procedural.html`
+3. `text-07-3d-transforms-procedural.html`
+4. `text-08-reveal-mask-procedural.html`
+5. `text-09-wave-ripple-procedural.html`
+6. `text-10-typewriter-procedural.html`
+7. Any other *-procedural.html files discovered
+
+### Investigation Steps
+
+For each file:
+1. Search for `animationState` variable declaration
+2. Find exit animation completion logic (search for `progress >= 1` or similar)
+3. Check if it calls `restart()` after exit completes
+4. Verify click handler logic
+5. If buggy, apply the same 4-step fix as P0 items
+
+### Acceptance Criteria
+- [ ] All procedural files reviewed for auto-restart bug
+- [ ] List of affected files documented
+- [ ] All affected files fixed with same pattern as P0 items
+- [ ] Each file tested: entrance → hold → exit → STOP
+- [ ] Each file verified: click during waiting restarts animation
+
+### Technical Notes
+- Some files may have different state machine structures
+- Look for variations in variable names (e.g., `state` vs `animationState`)
+- Document any files that deviate from the standard pattern
+
+---
+
+### P1-2: Verify Non-Procedural Variants Don't Have the Bug
+
+**Status**: Not Started
+**Effort**: Small (1 hour)
+**Dependencies**: P1-1
+**Spec Reference**: README.md • **Status Reference**: STATUS-2025-12-07-230442.md lines 184
+
+### Description
+Check if the non-procedural variants (*-static.html, *-varied.html, and base .html files) have the same auto-restart bug. According to the naming convention in README.md, these are the variants:
+
+**Files to check:**
+1. `text-02-particles.html`
+2. `text-02-particles-varied.html`
+3. `text-03-morphing.html`
+4. `text-03-morphing-varied.html`
+5. `text-04-glitch.html`
+6. `text-04-glitch-varied.html`
+7. `text-05-liquid.html`
+8. `text-05-liquid-varied.html`
+9. Other base and -varied.html files for techniques 01, 06-10
+
+### Investigation Steps
+
+For each file:
+1. Check if they use a state machine (may use CSS animations instead)
+2. If they have JavaScript state management, check for auto-restart bug
+3. If they use CSS animations, verify animations don't loop infinitely
+4. Document the animation approach for each variant
+
+### Acceptance Criteria
+- [ ] All non-procedural variants reviewed
+- [ ] List of variants using state machines vs CSS animations documented
+- [ ] Any variants with auto-restart bug added to fix backlog
+- [ ] CSS-animated variants verified to have correct loop behavior
+
+### Technical Notes
+- Non-procedural variants may use entirely different animation approaches
+- CSS animations with `animation-iteration-count: infinite` would be a different issue
+- Focus on JavaScript-based state machines similar to procedural files
+
+---
+
+### P2 (Medium) - Testing and Verification
+
+---
+
+## P2-1: Manual Testing Checklist
+
+**Status**: Not Started
+**Effort**: Small (1 hour)
+**Dependencies**: All P0 and P1 items
+**Spec Reference**: README.md (How to Use, Accessibility) • **Status Reference**: STATUS-2025-12-07-230442.md recommendations
+
+### Description
+Create and execute a comprehensive manual testing checklist for all fixed animation files.
+
+### Testing Checklist
+
+For each fixed file, verify:
+
+**Initial State:**
+- [ ] Page loads with blank/waiting state (no animation playing)
+
+**Entrance Animation:**
+- [ ] Click triggers entrance animation
+- [ ] Entrance animation plays smoothly
+- [ ] Entrance completes within expected duration
+
+**Hold State:**
+- [ ] After entrance, animation enters hold state
+- [ ] Hold state persists for ~2 seconds
+- [ ] Visual feedback during hold (completed animation visible)
+
+**Exit Animation (Auto-triggered):**
+- [ ] After hold timeout, exit animation starts automatically
+- [ ] Exit animation plays smoothly
+- [ ] Exit animation completes within expected duration
+
+**Waiting State:**
+- [ ] After exit completes, animation STOPS (does not restart)
+- [ ] Page returns to waiting state
+- [ ] No infinite loop or auto-restart behavior
+
+**User Interactions:**
+- [ ] Click during waiting state restarts animation (entrance)
+- [ ] Click during entrance state restarts animation from beginning
+- [ ] Click during hold state triggers exit animation immediately
+- [ ] Click during exit state has defined behavior (restart or no-op)
+
+**PostMessage Restart:**
+- [ ] PostMessage event triggers restart from waiting state
+- [ ] PostMessage event triggers restart from other states
+- [ ] Animation responds correctly to new message content (if applicable)
+
+**Accessibility:**
+- [ ] `prefers-reduced-motion` is respected
+- [ ] No flashing/strobing effects that could trigger issues
+- [ ] Keyboard accessibility (if applicable)
+
+### Acceptance Criteria
+- [ ] All P0 files pass complete testing checklist
+- [ ] All P1 files pass complete testing checklist
+- [ ] Any failures documented and added to backlog
+
+### Technical Notes
+- Test in Chrome, Firefox, and Safari if possible
+- Use browser dev tools to simulate `prefers-reduced-motion`
+- Document any cross-browser inconsistencies
+
+---
+
+## P2-2: Create Automated Test for State Machine Behavior
+
+**Status**: Not Started
+**Effort**: Medium (3-4 hours)
+**Dependencies**: P2-1
+**Spec Reference**: README.md • **Status Reference**: STATUS-2025-12-07-230442.md Priority 3
+
+### Description
+Create an automated test that verifies animation state machine behavior to prevent regression of the auto-restart bug.
+
+### Test Requirements
+
+The test should:
+1. Load an animation file in a headless browser or jsdom environment
+2. Trigger initial click to start entrance
+3. Wait for entrance to complete
+4. Verify transition to hold state
+5. Wait for hold timeout
+6. Verify transition to exit state
+7. Wait for exit to complete
+8. **Verify animation is in waiting state and NOT restarting**
+9. Verify click during waiting triggers restart
+
+### Technical Approach Options
+
+**Option A: Playwright/Puppeteer (recommended)**
+- Full browser automation
+- Can verify visual rendering
+- Can test actual timing behavior
+
+**Option B: jsdom + manual state inspection**
+- Faster execution
+- Limited to JavaScript state inspection
+- Cannot verify visual behavior
+
+**Option C: Custom test harness**
+- Inject test hooks into animation files
+- Monitor state transitions
+- Lightweight but requires code modification
+
+### Acceptance Criteria
+- [ ] Test can run in CI/CD pipeline
+- [ ] Test fails if auto-restart bug is present
+- [ ] Test passes for all fixed files
+- [ ] Test execution time < 10 seconds per file
+- [ ] Test is documented and maintainable
+
+### Technical Notes
+- Consider creating a shared test helper for all animation files
+- Test should be deterministic (not flaky due to timing)
+- May need to mock/control `requestAnimationFrame` for timing
+
+---
+
+### P3 (Low) - State Machine Improvements
+
+These are nice-to-have improvements for long-term maintainability but not required to fix the immediate bug.
+
+---
+
+## P3-1: Refactor to Explicit State Transition Functions
+
+**Status**: Not Started
+**Effort**: Large (1-2 weeks for all files)
+**Dependencies**: All P0, P1, P2 items
+**Spec Reference**: README.md • **Status Reference**: STATUS-2025-12-07-230442.md Priority 4
+
+### Description
+Refactor the state machine implementation across all animation files to use explicit state transition functions instead of direct state variable assignment. This improves maintainability and prevents future state-related bugs.
+
+### Current Pattern (Problematic)
+```javascript
+let animationState = 'waiting';
+
+function animate(timestamp) {
+    if (animationState === 'entrance') {
+        // ... logic
+        if (allDone) {
+            animationState = 'hold'; // Direct assignment
+            holdTimeout = setTimeout(startExit, HOLD_DURATION);
+        }
+    } else if (animationState === 'exit') {
+        // ... logic
+        if (progress >= 1) {
+            animationState = 'waiting'; // Direct assignment - easy to forget
+        }
+    }
+}
+```
+
+### Proposed Pattern (Better)
+```javascript
+let animationState = 'waiting';
+
+// Centralized state transition function
+function transitionTo(newState, context = {}) {
+    const validTransitions = {
+        'waiting': ['entrance'],
+        'entrance': ['hold', 'entrance'], // Can restart during entrance
+        'hold': ['exit', 'entrance'],     // Can skip to exit or restart
+        'exit': ['waiting', 'entrance']   // Can only go to waiting or restart
+    };
+
+    // Validate transition
+    if (!validTransitions[animationState].includes(newState)) {
+        console.warn(`Invalid transition: ${animationState} -> ${newState}`);
+        return false;
+    }
+
+    // Exit handler for current state
+    if (animationState === 'hold' && holdTimeout) {
+        clearTimeout(holdTimeout);
+        holdTimeout = null;
+    }
+
+    // Debug logging
+    if (context.debug) {
+        console.log(`State transition: ${animationState} -> ${newState}`);
+    }
+
+    // Update state
+    const previousState = animationState;
+    animationState = newState;
+
+    // Entry handler for new state
+    if (newState === 'hold') {
+        holdTimeout = setTimeout(() => transitionTo('exit'), HOLD_DURATION);
+    }
+
+    return true;
+}
+
+function animate(timestamp) {
+    if (animationState === 'entrance') {
+        // ... logic
+        if (allDone) {
+            transitionTo('hold'); // Explicit transition
+        }
+    } else if (animationState === 'exit') {
+        // ... logic
+        if (progress >= 1) {
+            transitionTo('waiting'); // Explicit transition - harder to forget
+        }
+    }
+}
+```
+
+### Benefits
+- **Validation**: Prevents invalid state transitions
+- **Debugging**: Centralized logging of all state changes
+- **Cleanup**: Automatic cleanup when exiting states (e.g., clearing timeouts)
+- **Documentation**: Valid transitions clearly defined in code
+- **Testing**: Easier to unit test state machine logic
+
+### Implementation Approach
+
+1. Create a shared state machine module/helper
+2. Migrate one file as a reference implementation
+3. Apply to all other files systematically
+4. Add unit tests for state machine logic
+5. Document the pattern for future animations
+
+### Acceptance Criteria
+- [ ] State machine helper created and documented
+- [ ] One reference file migrated and tested
+- [ ] All animation files migrated to use helper
+- [ ] State transition logging available for debugging
+- [ ] Invalid transitions logged with warnings
+- [ ] No behavioral changes to user-facing animation
+
+### Technical Notes
+- This is a refactoring task, not a bug fix
+- Prioritize after all bugs are fixed
+- Consider extracting to a shared module to reduce code duplication
+- May want to add a debug mode that visualizes state transitions
+
+---
+
+## Dependency Graph
+
+```
+P0-1 (text-universal-paths)
+  ↓
+P0-2, P0-3, P0-4, P0-5 (other confirmed buggy files)
+  ↓
+P1-1 (verify remaining procedural files)
+  ↓
+P1-2 (verify non-procedural variants)
+  ↓
+P2-1 (manual testing)
+  ↓
+P2-2 (automated testing)
+  ↓
+P3-1 (state machine refactor - optional)
+```
+
+**Critical Path**: P0-1 → P0-2/3/4/5 → P2-1
+**Minimum Viable Fix**: P0 items + P2-1 manual testing
+**Complete Fix**: All P0, P1, P2 items
+
+---
+
+## Recommended Sprint Planning
+
+### Sprint 1: Fix Confirmed Bugs (1-2 days)
+**Goal**: Eliminate auto-restart bug from all confirmed files
+
+**Items**:
+- P0-1: Fix text-universal-paths.html (reference implementation)
+- P0-2: Fix text-02-particles-procedural.html
+- P0-3: Fix text-03-morphing-procedural.html
+- P0-4: Fix text-04-glitch-procedural.html
+- P0-5: Fix text-05-liquid-procedural.html
+- P2-1: Manual testing of all 5 files
+
+**Deliverable**: 5 animation files that stop after exit instead of looping infinitely
+
+---
+
+### Sprint 2: Complete Bug Fix Coverage (1 day)
+**Goal**: Verify and fix all remaining animation files
+
+**Items**:
+- P1-1: Verify and fix remaining 6-8 procedural files
+- P1-2: Verify non-procedural variants
+- P2-1: Manual testing of all fixed files
+
+**Deliverable**: All animation files verified and fixed
+
+---
+
+### Sprint 3: Testing and Quality (1-2 days)
+**Goal**: Prevent regression with automated testing
+
+**Items**:
+- P2-2: Create automated test for state machine behavior
+
+**Deliverable**: Automated test suite for animation state machine
+
+---
+
+### Sprint 4 (Optional): Refactoring (1-2 weeks)
+**Goal**: Improve long-term maintainability
+
+**Items**:
+- P3-1: Refactor to explicit state transition functions
+
+**Deliverable**: Cleaner, more maintainable state machine implementation
+
+---
+
+## Risk Assessment
+
+### High-Risk Items
+
+**R1: Breaking existing postMessage behavior**
+- **Risk**: Changes to state machine might break iframe communication
+- **Likelihood**: Low
+- **Impact**: High
+- **Mitigation**: Test postMessage thoroughly; preserve existing restart() function
+
+**R2: Introducing new animation timing bugs**
+- **Risk**: Changing initial state to 'waiting' might affect entrance timing
+- **Likelihood**: Medium
+- **Impact**: Medium
+- **Mitigation**: Manual testing with precise timing verification
+
+### Medium-Risk Items
+
+**R3: Non-procedural variants have different state machine**
+- **Risk**: Variants may use completely different animation approach
+- **Likelihood**: High
+- **Impact**: Low
+- **Mitigation**: Investigate first before assuming same fix applies
+
+**R4: Browser-specific state machine behavior**
+- **Risk**: requestAnimationFrame timing may vary across browsers
+- **Likelihood**: Low
+- **Impact**: Low
+- **Mitigation**: Cross-browser testing in P2-1
+
+### Low-Risk Items
+
+**R5: Automated testing complexity**
+- **Risk**: Creating reliable timing-based tests is hard
+- **Likelihood**: Medium
+- **Impact**: Low (manual testing is fallback)
+- **Mitigation**: Use Playwright with explicit waits, not timing-based assertions
+
+---
+
+## Blockers and Questions
+
+### Assumption: Hold Timeout Triggers Exit
+
+**Assumption**: The current design where hold state automatically transitions to exit after 2 seconds is **correct and should be preserved**.
+
+**Evidence**: STATUS-2025-12-07-230442.md shows all files implement:
+```javascript
+holdTimeout = setTimeout(startExit, HOLD_DURATION);
+```
+
+**Alternative Interpretation**: User might want hold state to persist indefinitely until clicked, never auto-exiting.
+
+**Recommendation**: Proceed with assumption that auto-exit after hold is correct. If user wants different behavior, it's a separate feature request, not part of this bug fix.
+
+### Clarification Needed: Waiting State Visual Appearance
+
+**Question**: What should the page display when in `waiting` state?
+- Option A: Blank/empty (no SVG content visible)
+- Option B: Final frame of exit animation
+- Option C: Some "click to start" visual cue
+
+**Current Status**: Not specified in STATUS report or README.
+
+**Recommendation**: Start with Option A (blank) for consistency with "initial load" behavior. Can be changed later if needed.
+
+### Clarification Needed: Click During Exit State
+
+**Question**: What should happen if user clicks during exit animation?
+- Option A: Restart immediately (interrupt exit)
+- Option B: No-op (let exit finish)
+- Option C: Queue restart after exit completes
+
+**Current Status**: Not covered in existing click handlers.
+
+**Recommendation**: Implement Option B (no-op) for simplicity. Exit animations are short, letting them complete is cleaner.
+
+---
+
+## File Management Plan
+
+After generating this plan:
+
+1. **Current PLAN files**:
+   - PLAN-2025-12-07-133137.md
+   - PLAN-2025-12-07-143635.md
+   - PLAN-2025-12-07-204329.md
+   - PLAN-2025-12-07-212219.md
+   - PLAN-2025-12-07-230633.md (this file)
+
+2. **Action Required**: Delete oldest PLAN file to maintain 4-file limit.
+   - DELETE: PLAN-2025-12-07-133137.md (oldest)
+   - KEEP: Last 4 files including this one
+
+3. **Archive Conflicts**: Check for outdated planning files that conflict with this plan:
+   - Search for any `BACKLOG.md`, `TODO.md`, or `SPRINT.md` without timestamps
+   - Move to `archive/` with `.archived` suffix if they contradict STATUS/spec
+
+---
+
+## Success Metrics
+
+### Definition of Done
+
+**Bug Fix Complete When**:
+- All 5 confirmed files (P0) stop after exit animation (no auto-restart)
+- All procedural files verified and fixed (P1)
+- Manual testing checklist passes for all files (P2-1)
+- No infinite loop behavior in any animation file
+- User interaction (click) successfully restarts animations
+- PostMessage still triggers restart correctly
+
+**Quality Metrics**:
+- Zero auto-restart bugs in production
+- All animations follow consistent state machine pattern
+- State transitions are clear and documented
+- Future developers can understand state flow
+
+**Testing Coverage**:
+- Manual testing: 100% of fixed files
+- Automated testing: At least 5 core files (P2-2)
+- Cross-browser testing: Chrome, Firefox, Safari
+
+---
+
+## Next Steps
+
+1. **Execute Sprint 1**: Fix all P0 items (estimated 2-4 hours total)
+2. **Manual testing**: Verify fixes work correctly
+3. **Expand to P1**: Check remaining files
+4. **Consider P2-2**: Automated testing to prevent regression
+5. **Document**: Update README if state machine behavior needs clarification
+
+**Immediate Action**: Start with P0-1 (text-universal-paths.html) as the reference implementation.

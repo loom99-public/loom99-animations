@@ -4,11 +4,24 @@
  */
 
 import { Animation } from '../core/Animation';
-import { LineElement } from '../elements/LineElement';
+import { MorphingLineElement } from '../elements/MorphingLineElement';
 
 export interface LineDefinition {
   id: string;
-  path: string;
+  startX: number;
+  startY: number;
+  points: Array<{
+    x: number;
+    y: number;
+    type?: 'L' | 'Q' | 'A';
+    controlX?: number;
+    controlY?: number;
+    radiusX?: number;
+    radiusY?: number;
+    rotation?: number;
+    largeArc?: boolean;
+    sweep?: boolean;
+  }>;
   stroke: string;
   strokeWidth?: number;
 }
@@ -42,10 +55,10 @@ export function createLineDrawingAnimation(config: LineDrawingConfig): Animation
     variance,
     duration: baseDuration = 1000,
     stagger: baseStagger = 100,
-    entranceEasing: baseEntranceEasing = 'easeOutCubic',
+    entranceEasing: baseEntranceEasing = 'easeOutQuart',
   } = config;
 
-  const elements: LineElement[] = [];
+  const elements: MorphingLineElement[] = [];
 
   // Variance parameters based on level
   const varianceParams = getVarianceParams(variance);
@@ -54,15 +67,17 @@ export function createLineDrawingAnimation(config: LineDrawingConfig): Animation
     // Calculate per-line parameters based on variance
     const params = calculateLineParams(varianceParams, baseDuration, baseStagger, baseEntranceEasing, index);
 
-    const element = new LineElement({
+    const element = new MorphingLineElement({
       id: lineDef.id,
-      path: lineDef.path,
+      startPos: { x: lineDef.startX, y: lineDef.startY },
+      points: lineDef.points,
       stroke: lineDef.stroke,
       strokeWidth: lineDef.strokeWidth ?? params.strokeWidth,
+      easing: params.easing,
     });
 
-    // Add line drawing animation
-    element.addLineDrawing(params.duration, params.delay, params.easing);
+    // Add morphing animation (shoot-in-and-curve effect)
+    element.addMorphAnimation(params.duration, params.delay, params.easing);
 
     elements.push(element);
   });
@@ -118,7 +133,7 @@ function calculateLineParams(
 
   let duration = baseDuration;
   let delay = baseStagger * index;
-  let strokeWidth = 2;
+  let strokeWidth = 12; // Match HTML original
   let easing = baseEasing;
 
   if (params.durationVariance > 0) {
@@ -130,7 +145,7 @@ function calculateLineParams(
   }
 
   if (params.strokeVariance > 0) {
-    strokeWidth = Random.vary(2, 2 * params.strokeVariance);
+    strokeWidth = Random.vary(12, 12 * params.strokeVariance);
   }
 
   if (params.randomizeEasing) {
@@ -148,7 +163,7 @@ function calculateLineParams(
 /**
  * Create exit animation for line drawing
  */
-export function createLineDrawingExit(elements: LineElement[], config: {
+export function createLineDrawingExit(elements: MorphingLineElement[], config: {
   duration?: number;
   stagger?: number;
   easing?: string;

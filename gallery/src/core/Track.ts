@@ -77,6 +77,20 @@ export class Track<T = number> {
   }
 
   /**
+   * Get the delay of this track
+   */
+  getDelay(): number {
+    return this.delay;
+  }
+
+  /**
+   * Get the duration of this track
+   */
+  getDuration(): number {
+    return this.duration;
+  }
+
+  /**
    * Interpolate between two values based on progress
    */
   private interpolate(from: T, to: T, progress: number): T {

@@ -1,6 +1,6 @@
 /**
  * LineDrawingViewer - React component for line drawing animations
- * Uses Track system to replace standalone HTML files
+ * Uses Track system with PathMorphCompositor for shoot-in-and-curve effect
  *
  * Implements proper lifecycle: entrance → hold → exit → waiting (NO auto-restart)
  * Supports 3 variance modes: original, varied, procedural
@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animation } from '../../core/Animation';
 import { createLineDrawingAnimation, createLineDrawingExit } from '../../animations/LineDrawingAnimation';
 import type { VarianceLevel, LineDefinition } from '../../animations/LineDrawingAnimation';
-import { LOGO_PATHS, TEXT_PATHS, pathPointsToSVGPath, type LineData } from '../../data/pathData';
+import { LOGO_PATHS, TEXT_PATHS, pathPointsToCompositorPoints, type LineData } from '../../data/pathData';
 import './LineDrawingViewer.css';
 
 export interface LineDrawingViewerProps {
@@ -23,10 +23,12 @@ export interface LineDrawingViewerProps {
  * Convert LineData to LineDefinition for factory
  */
 function convertToLineDefinition(lineData: LineData, target: 'logo' | 'text'): LineDefinition {
-  const pathString = pathPointsToSVGPath(lineData.points);
+  const points = pathPointsToCompositorPoints(lineData.points);
   return {
     id: `line-${lineData.color}-${lineData.delay}`,
-    path: pathString,
+    startX: lineData.startX,
+    startY: lineData.startY,
+    points,
     stroke: lineData.color,
     strokeWidth: target === 'logo' ? 12 : 4,
   };

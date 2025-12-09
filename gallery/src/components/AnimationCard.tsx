@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import type { AnimationMeta } from '../data/types';
+import { LineDrawingViewer } from './animations/LineDrawingViewer';
 
 interface AnimationCardProps {
   animation: AnimationMeta;
@@ -32,6 +33,9 @@ export function AnimationCard({ animation }: AnimationCardProps) {
     if (animation.variant === 'procedural') return 'Wild';
     return null;
   };
+
+  // Check if this animation should use React component instead of iframe
+  const useReactComponent = animation.technique === '01'; // Line drawing
 
   return (
     <div className={`animation-card ${getVariantClass()}`}>
@@ -62,12 +66,20 @@ export function AnimationCard({ animation }: AnimationCardProps) {
 
       {isPreviewVisible && (
         <div className="preview-container">
-          <iframe
-            className="preview-frame"
-            src={`/animations/${animation.filePath}`}
-            loading="lazy"
-            title={`${animation.title} - ${animation.technique}`}
-          />
+          {useReactComponent ? (
+            <LineDrawingViewer
+              target={animation.target}
+              variant={animation.variant}
+              holdDuration={2000}
+            />
+          ) : (
+            <iframe
+              className="preview-frame"
+              src={`/animations/${animation.filePath}`}
+              loading="lazy"
+              title={`${animation.title} - ${animation.technique}`}
+            />
+          )}
         </div>
       )}
     </div>

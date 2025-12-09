@@ -17,7 +17,7 @@ export function AnimationCard({ animation }: AnimationCardProps) {
   };
 
   const handleOpenFullscreen = () => {
-    const fullPath = `../animations/${animation.filePath}`;
+    const fullPath = `/animations/${animation.filePath}`;
     window.open(fullPath, '_blank');
   };
 
@@ -64,7 +64,7 @@ export function AnimationCard({ animation }: AnimationCardProps) {
         <div className="preview-container">
           <iframe
             className="preview-frame"
-            src={`../animations/${animation.filePath}`}
+            src={`/animations/${animation.filePath}`}
             loading="lazy"
             title={`${animation.title} - ${animation.technique}`}
           />

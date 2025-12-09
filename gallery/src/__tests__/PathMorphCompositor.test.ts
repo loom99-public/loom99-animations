@@ -7,41 +7,10 @@
  * - Verifies shoot-in-and-curve animation effect
  * - Tests SMIL export generates valid path animations
  * - No mocks - tests actual path string generation and interpolation
- *
- * EXPECTED FAILURE: This test suite will fail until PathMorphCompositor is implemented
  */
 
 import { describe, it, expect } from 'vitest';
-
-// Type definitions for PathMorphCompositor (to be implemented)
-interface Point {
-  x: number;
-  y: number;
-  type?: 'L' | 'Q' | 'A'; // Line, Quadratic, Arc
-  controlX?: number; // For Q (quadratic bezier)
-  controlY?: number;
-  radiusX?: number; // For A (arc)
-  radiusY?: number;
-  rotation?: number;
-  largeArc?: boolean;
-  sweep?: boolean;
-}
-
-interface PathMorphConfig {
-  startPos: Point;
-  points: Point[];
-  easing?: string;
-}
-
-// Import will fail until implemented
-// import { PathMorphCompositor } from '../compositors/PathMorphCompositor';
-
-// Mock implementation for type checking during test writing
-class PathMorphCompositor {
-  constructor(config: PathMorphConfig) {}
-  update(progress: number): string { return ''; }
-  toSMIL(): string { return ''; }
-}
+import { PathMorphCompositor, type Point, type PathMorphConfig } from '../compositors/PathMorphCompositor';
 
 describe('PathMorphCompositor - Basic Path Morphing', () => {
   it('returns path starting at startPos when progress is 0', () => {

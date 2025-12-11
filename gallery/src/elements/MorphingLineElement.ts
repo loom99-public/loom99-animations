@@ -37,6 +37,7 @@ export class MorphingLineElement extends BaseElement {
   // Current animated values
   private currentMorphProgress: number = 0;
   private currentOpacity: number = 1;
+  private currentExitProgress: number = 0;
 
   constructor(config: MorphingLineElementConfig) {
     super(config);
@@ -70,12 +71,64 @@ export class MorphingLineElement extends BaseElement {
       this.currentOpacity = values.opacity;
     }
 
+    // Update exit progress
+    if (values.exitProgress !== undefined) {
+      this.currentExitProgress = values.exitProgress;
+    }
+
     // Update DOM if element is rendered
     if (this.svgElement) {
-      const d = this.compositor.update(this.currentMorphProgress);
+      let d: string;
+
+      if (this.currentExitProgress > 0) {
+        // Exit animation: extend line toward start position (shoot-out effect)
+        d = this.generateExitPath(this.currentExitProgress);
+      } else {
+        // Normal entrance/hold: use compositor
+        d = this.compositor.update(this.currentMorphProgress);
+      }
+
       this.svgElement.setAttribute('d', d);
       this.svgElement.style.opacity = String(this.currentOpacity);
     }
+  }
+
+  /**
+   * Generate path with exit extension (shoot-out effect)
+   * The line extends from the last point toward the exit position
+   */
+  private generateExitPath(exitProgress: number): string {
+    // Start with the final shape (morph progress = 1)
+    const lastPoint = this.points[this.points.length - 1];
+    const firstPoint = this.points[0];
+
+    // Build the base path in final form
+    let d = `M ${firstPoint.x} ${firstPoint.y}`;
+
+    for (let i = 1; i < this.points.length; i++) {
+      const point = this.points[i];
+      const type = point.type || 'L';
+
+      if (type === 'Q') {
+        d += ` Q ${point.controlX ?? point.x} ${point.controlY ?? point.y} ${point.x} ${point.y}`;
+      } else if (type === 'A') {
+        const radiusX = point.radiusX ?? 0;
+        const radiusY = point.radiusY ?? 0;
+        const rotation = point.rotation ?? 0;
+        const largeArc = point.largeArc ? 1 : 0;
+        const sweep = point.sweep ? 1 : 0;
+        d += ` A ${radiusX} ${radiusY} ${rotation} ${largeArc} ${sweep} ${point.x} ${point.y}`;
+      } else {
+        d += ` L ${point.x} ${point.y}`;
+      }
+    }
+
+    // Extend the line toward the exit position (startPos)
+    const exitX = lastPoint.x + (this.startPos.x - lastPoint.x) * exitProgress;
+    const exitY = lastPoint.y + (this.startPos.y - lastPoint.y) * exitProgress;
+    d += ` L ${exitX} ${exitY}`;
+
+    return d;
   }
 
   /**
@@ -205,5 +258,47 @@ export class MorphingLineElement extends BaseElement {
     });
 
     this.addTrack('opacity', track);
+  }
+
+  /**
+   * Add shoot-out exit animation
+   * Lines extend toward exit position while fading out
+   */
+  addShootOutExit(duration: number, delay: number = 0, easing: string = 'easeInCubic'): void {
+    // Track exit progress from 0 to 1
+    const exitTrack = new Track({
+      from: 0,
+      to: 1,
+      duration,
+      delay,
+      easing,
+    });
+
+    this.addTrack('exitProgress', exitTrack);
+
+    // Fade out simultaneously
+    const opacityTrack = new Track({
+      from: 1,
+      to: 0,
+      duration,
+      delay,
+      easing,
+    });
+
+    this.addTrack('opacity', opacityTrack);
+  }
+
+  /**
+   * Get the start position (for exit direction calculation)
+   */
+  getStartPos(): Point {
+    return this.startPos;
+  }
+
+  /**
+   * Get the final point positions
+   */
+  getPoints(): Point[] {
+    return this.points;
   }
 }

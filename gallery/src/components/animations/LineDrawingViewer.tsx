@@ -2,7 +2,7 @@
  * LineDrawingViewer - React component for line drawing animations
  * Uses Track system with PathMorphCompositor for shoot-in-and-curve effect
  *
- * Implements proper lifecycle: entrance → hold → exit → waiting (NO auto-restart)
+ * Implements proper lifecycle: entrance → hold → exit → auto-restart
  * Supports 3 variance modes: original, varied, procedural
  */
 
@@ -17,6 +17,7 @@ export interface LineDrawingViewerProps {
   target: 'logo' | 'text';
   variant: 'original' | 'varied' | 'procedural';
   holdDuration?: number;
+  autoLoop?: boolean;
 }
 
 /**
@@ -55,11 +56,13 @@ export function LineDrawingViewer({
   target,
   variant,
   holdDuration = 2000,
+  autoLoop = true,
 }: LineDrawingViewerProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const animationRef = useRef<Animation | null>(null);
   const [animationState, setAnimationState] = useState<'waiting' | 'entrance' | 'hold' | 'exit'>('waiting');
   const holdTimeoutRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
   const prefersReducedMotion = useRef(
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -85,19 +88,60 @@ export function LineDrawingViewer({
   };
 
   /**
-   * Play animation sequence: entrance → hold → exit → waiting
+   * Play animation sequence: entrance → hold → exit → (auto-restart or waiting)
    */
-  const playAnimation = async (animation: Animation) => {
+  const playAnimation = async (svg: SVGSVGElement, shouldLoop: boolean = autoLoop) => {
     // Clear any existing timeout
     if (holdTimeoutRef.current !== null) {
       window.clearTimeout(holdTimeoutRef.current);
       holdTimeoutRef.current = null;
     }
 
+    // Clear existing elements
+    while (svg.firstChild) {
+      svg.removeChild(svg.firstChild);
+    }
+
+    // Re-add the defs
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    gradient.setAttribute('id', 'logoGradient');
+    gradient.setAttribute('x1', '0%');
+    gradient.setAttribute('y1', '0%');
+    gradient.setAttribute('x2', '100%');
+    gradient.setAttribute('y2', '0%');
+
+    const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop1.setAttribute('offset', '0%');
+    stop1.setAttribute('style', 'stop-color:#00d4ff;stop-opacity:1');
+    const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop2.setAttribute('offset', '50%');
+    stop2.setAttribute('style', 'stop-color:#7b2ff7;stop-opacity:1');
+    const stop3 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop3.setAttribute('offset', '100%');
+    stop3.setAttribute('style', 'stop-color:#ff2d75;stop-opacity:1');
+
+    gradient.appendChild(stop1);
+    gradient.appendChild(stop2);
+    gradient.appendChild(stop3);
+    defs.appendChild(gradient);
+    svg.appendChild(defs);
+
+    // Create new animation
+    const animation = createAnimation();
+    animationRef.current = animation;
+
+    // Render elements
+    animation.getElements().forEach((element) => {
+      element.render(svg);
+    });
+
     try {
       // Entrance
       setAnimationState('entrance');
       await animation.entrance();
+
+      if (!isMountedRef.current) return;
 
       // Hold
       setAnimationState('hold');
@@ -107,6 +151,8 @@ export function LineDrawingViewer({
           resolve();
         }, holdDuration);
       });
+
+      if (!isMountedRef.current) return;
 
       // Add exit animations to elements
       const elements = animation.getElements();
@@ -120,11 +166,23 @@ export function LineDrawingViewer({
       setAnimationState('exit');
       await animation.exit();
 
-      // Waiting (NO auto-restart - this prevents infinite loop)
-      setAnimationState('waiting');
+      if (!isMountedRef.current) return;
+
+      // Auto-restart or waiting
+      if (shouldLoop) {
+        // Small delay before restart
+        await new Promise(resolve => setTimeout(resolve, 100));
+        if (isMountedRef.current) {
+          playAnimation(svg, shouldLoop);
+        }
+      } else {
+        setAnimationState('waiting');
+      }
     } catch (error) {
       console.error('Animation error:', error);
-      setAnimationState('waiting');
+      if (isMountedRef.current) {
+        setAnimationState('waiting');
+      }
     }
   };
 
@@ -132,16 +190,11 @@ export function LineDrawingViewer({
    * Initialize animation on mount
    */
   useEffect(() => {
+    isMountedRef.current = true;
+
     if (!svgRef.current) return;
 
     const svg = svgRef.current;
-    const animation = createAnimation();
-    animationRef.current = animation;
-
-    // Render elements to SVG
-    animation.getElements().forEach((element) => {
-      element.render(svg);
-    });
 
     // Handle reduced motion
     if (prefersReducedMotion.current) {
@@ -150,20 +203,20 @@ export function LineDrawingViewer({
     }
 
     // Start animation sequence
-    playAnimation(animation);
+    playAnimation(svg);
 
     // Cleanup
     return () => {
+      isMountedRef.current = false;
       if (holdTimeoutRef.current !== null) {
         window.clearTimeout(holdTimeoutRef.current);
         holdTimeoutRef.current = null;
       }
-      animation.reset();
-      while (svg.firstChild) {
-        svg.removeChild(svg.firstChild);
+      if (animationRef.current) {
+        animationRef.current.reset();
       }
     };
-  }, [target, variant, holdDuration]);
+  }, [target, variant, holdDuration, autoLoop]);
 
   /**
    * Handle click to restart (ONLY from waiting state)
@@ -173,24 +226,8 @@ export function LineDrawingViewer({
       return;
     }
 
-    const svg = svgRef.current;
-
-    // Clear existing elements
-    while (svg.firstChild) {
-      svg.removeChild(svg.firstChild);
-    }
-
-    // Create new animation (important for varied/procedural to get new randomization)
-    const animation = createAnimation();
-    animationRef.current = animation;
-
-    // Render elements
-    animation.getElements().forEach((element) => {
-      element.render(svg);
-    });
-
-    // Play animation sequence
-    playAnimation(animation);
+    // Start new animation sequence
+    playAnimation(svgRef.current, autoLoop);
   };
 
   const isDevelopment = import.meta.env.DEV;
@@ -202,15 +239,7 @@ export function LineDrawingViewer({
         viewBox={getViewBox(target)}
         xmlns="http://www.w3.org/2000/svg"
         className="line-drawing-svg"
-      >
-        <defs>
-          <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style={{ stopColor: '#00d4ff', stopOpacity: 1 }} />
-            <stop offset="50%" style={{ stopColor: '#7b2ff7', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#ff2d75', stopOpacity: 1 }} />
-          </linearGradient>
-        </defs>
-      </svg>
+      />
       {isDevelopment && (
         <div className="animation-state-indicator">{animationState}</div>
       )}

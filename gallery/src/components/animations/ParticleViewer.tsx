@@ -17,6 +17,7 @@ export interface ParticleViewerProps {
   target: 'logo' | 'text';
   variant: VarianceLevel;
   holdDuration?: number;
+  autoLoop?: boolean;
 }
 
 interface Particle {
@@ -260,6 +261,7 @@ export function ParticleViewer({
   target,
   variant,
   holdDuration = 2000,
+  autoLoop = true,
 }: ParticleViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
@@ -267,6 +269,7 @@ export function ParticleViewer({
   const startTimeRef = useRef<number | null>(null);
   const exitStartTimeRef = useRef<number | null>(null);
   const holdTimeoutRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
   const [animationState, setAnimationState] = useState<'waiting' | 'entrance' | 'hold' | 'exit'>('waiting');
   const prefersReducedMotion = useRef(
     typeof window !== 'undefined' &&
@@ -393,12 +396,21 @@ export function ParticleViewer({
       draw(ctx);
 
       if (complete) {
-        setAnimationState('waiting');
+        if (autoLoop && isMountedRef.current) {
+          // Auto-restart after a small delay
+          setTimeout(() => {
+            if (isMountedRef.current) {
+              startAnimation();
+            }
+          }, 100);
+        } else {
+          setAnimationState('waiting');
+        }
       } else {
         animationFrameRef.current = requestAnimationFrame(animate);
       }
     }
-  }, [animationState, updateEntrance, updateExit, draw, holdDuration]);
+  }, [animationState, updateEntrance, updateExit, draw, holdDuration, autoLoop]);
 
   /**
    * Start animation
@@ -421,6 +433,8 @@ export function ParticleViewer({
    * Initialize on mount
    */
   useEffect(() => {
+    isMountedRef.current = true;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -446,6 +460,7 @@ export function ParticleViewer({
 
     // Cleanup
     return () => {
+      isMountedRef.current = false;
       if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;

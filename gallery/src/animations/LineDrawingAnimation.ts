@@ -162,6 +162,7 @@ function calculateLineParams(
 
 /**
  * Create exit animation for line drawing
+ * Uses shoot-out effect (line extends toward exit) with fade
  */
 export function createLineDrawingExit(elements: MorphingLineElement[], config: {
   duration?: number;
@@ -175,6 +176,6 @@ export function createLineDrawingExit(elements: MorphingLineElement[], config: {
   } = config;
 
   elements.forEach((element, index) => {
-    element.addFadeOut(duration, stagger * index, easing);
+    element.addShootOutExit(duration, stagger * index, easing);
   });
 }

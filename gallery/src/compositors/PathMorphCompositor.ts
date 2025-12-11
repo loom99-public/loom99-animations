@@ -95,18 +95,14 @@ export class PathMorphCompositor {
 
         d += ` Q ${ctrlX} ${ctrlY} ${currentX} ${currentY}`;
       } else if (type === 'A') {
-        // Arc - interpolate radius and endpoint
+        // Arc - keep radius constant, only interpolate endpoint position
         const radiusX = point.radiusX ?? 0;
         const radiusY = point.radiusY ?? 0;
         const rotation = point.rotation ?? 0;
         const largeArc = point.largeArc ? 1 : 0;
         const sweep = point.sweep ? 1 : 0;
 
-        // Interpolate radii from 0 to final values
-        const currentRadiusX = radiusX * p;
-        const currentRadiusY = radiusY * p;
-
-        d += ` A ${currentRadiusX} ${currentRadiusY} ${rotation} ${largeArc} ${sweep} ${currentX} ${currentY}`;
+        d += ` A ${radiusX} ${radiusY} ${rotation} ${largeArc} ${sweep} ${currentX} ${currentY}`;
       } else {
         // Line
         d += ` L ${currentX} ${currentY}`;

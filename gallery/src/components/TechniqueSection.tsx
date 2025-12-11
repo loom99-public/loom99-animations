@@ -40,8 +40,8 @@ export const TechniqueSection = observer(({ technique }: TechniqueSectionProps) 
               <div className="animation-row">
                 <div className="row-label">loom99 Logo</div>
                 <div className="animation-grid">
-                  {logoAnimations.map((anim) => (
-                    <AnimationCard key={anim.id} animation={anim} />
+                  {logoAnimations.map((anim, index) => (
+                    <AnimationCard key={anim.id} animation={anim} cardIndex={index} />
                   ))}
                 </div>
               </div>

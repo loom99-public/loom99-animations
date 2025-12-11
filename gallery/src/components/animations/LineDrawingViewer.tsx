@@ -18,6 +18,7 @@ export interface LineDrawingViewerProps {
   variant: 'original' | 'varied' | 'procedural';
   holdDuration?: number;
   autoLoop?: boolean;
+  enableScrubbing?: boolean;
 }
 
 /**
@@ -57,16 +58,19 @@ export function LineDrawingViewer({
   variant,
   holdDuration = 2000,
   autoLoop = true,
+  enableScrubbing = false,
 }: LineDrawingViewerProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const animationRef = useRef<Animation | null>(null);
-  const [animationState, setAnimationState] = useState<'waiting' | 'entrance' | 'hold' | 'exit'>('waiting');
+  const [animationState, setAnimationState] = useState<'waiting' | 'entrance' | 'hold' | 'exit' | 'scrubbing'>('waiting');
   const holdTimeoutRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
   const prefersReducedMotion = useRef(
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
   );
+  const [scrubPosition, setScrubPosition] = useState(0);
+  const [totalDuration, setTotalDuration] = useState(1000);
 
   /**
    * Create animation using factory
@@ -187,6 +191,130 @@ export function LineDrawingViewer({
   };
 
   /**
+   * Initialize scrubbing mode
+   */
+  const initializeScrubbing = (svg: SVGSVGElement) => {
+    // Clear existing elements
+    while (svg.firstChild) {
+      svg.removeChild(svg.firstChild);
+    }
+
+    // Re-add the defs
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    gradient.setAttribute('id', 'logoGradient');
+    gradient.setAttribute('x1', '0%');
+    gradient.setAttribute('y1', '0%');
+    gradient.setAttribute('x2', '100%');
+    gradient.setAttribute('y2', '0%');
+
+    const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop1.setAttribute('offset', '0%');
+    stop1.setAttribute('style', 'stop-color:#00d4ff;stop-opacity:1');
+    const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop2.setAttribute('offset', '50%');
+    stop2.setAttribute('style', 'stop-color:#7b2ff7;stop-opacity:1');
+    const stop3 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop3.setAttribute('offset', '100%');
+    stop3.setAttribute('style', 'stop-color:#ff2d75;stop-opacity:1');
+
+    gradient.appendChild(stop1);
+    gradient.appendChild(stop2);
+    gradient.appendChild(stop3);
+    defs.appendChild(gradient);
+    svg.appendChild(defs);
+
+    // Create animation
+    const animation = createAnimation();
+    animationRef.current = animation;
+
+    // Render elements
+    animation.getElements().forEach((element) => {
+      element.render(svg);
+    });
+
+    // Set total duration
+    const duration = animation.getEntranceDuration();
+    setTotalDuration(duration);
+
+    // Start at position 0
+    animation.seek(0);
+    setAnimationState('scrubbing');
+  };
+
+  /**
+   * Handle scrub position change from slider
+   */
+  const handleScrubChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPosition = parseFloat(e.target.value);
+    updateScrubPosition(newPosition);
+  };
+
+  /**
+   * Handle scrub position change from text input
+   */
+  const handleScrubInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPosition = parseFloat(e.target.value) || 0;
+    updateScrubPosition(Math.max(0, Math.min(totalDuration, newPosition)));
+  };
+
+  /**
+   * Update scrub position and seek animation
+   */
+  const updateScrubPosition = (newPosition: number) => {
+    setScrubPosition(newPosition);
+    if (animationRef.current) {
+      animationRef.current.seek(newPosition);
+    }
+  };
+
+  /**
+   * Play animation from scrubbing mode
+   */
+  const handlePlayFromScrub = () => {
+    if (!svgRef.current || !animationRef.current) return;
+
+    // Exit scrubbing mode and play the animation
+    setAnimationState('entrance');
+
+    const startTime = performance.now() - scrubPosition; // Resume from current position
+    const isPlayingRef = { current: true }; // Local ref to track if still playing
+
+    const animate = (timestamp: number) => {
+      if (!isMountedRef.current || !isPlayingRef.current) return;
+
+      const elapsed = timestamp - startTime;
+
+      if (animationRef.current) {
+        animationRef.current.seek(elapsed);
+        setScrubPosition(elapsed);
+      }
+
+      // Check if complete
+      if (elapsed >= totalDuration) {
+        isPlayingRef.current = false;
+        setAnimationState('scrubbing');
+        setScrubPosition(totalDuration);
+        return;
+      }
+
+      requestAnimationFrame(animate);
+    };
+
+    requestAnimationFrame(animate);
+  };
+
+  /**
+   * Reset animation to start
+   */
+  const handleResetAnimation = () => {
+    setScrubPosition(0);
+    if (animationRef.current) {
+      animationRef.current.seek(0);
+    }
+  };
+
+  /**
    * Initialize animation on mount
    */
   useEffect(() => {
@@ -199,6 +327,12 @@ export function LineDrawingViewer({
     // Handle reduced motion
     if (prefersReducedMotion.current) {
       setAnimationState('waiting');
+      return;
+    }
+
+    // Scrubbing mode - don't auto-play
+    if (enableScrubbing) {
+      initializeScrubbing(svg);
       return;
     }
 
@@ -216,7 +350,7 @@ export function LineDrawingViewer({
         animationRef.current.reset();
       }
     };
-  }, [target, variant, holdDuration, autoLoop]);
+  }, [target, variant, holdDuration, autoLoop, enableScrubbing]);
 
   /**
    * Handle click to restart (ONLY from waiting state)
@@ -233,13 +367,49 @@ export function LineDrawingViewer({
   const isDevelopment = import.meta.env.DEV;
 
   return (
-    <div className="line-drawing-viewer" onClick={handleClick}>
+    <div className="line-drawing-viewer" onClick={enableScrubbing ? undefined : handleClick}>
       <svg
         ref={svgRef}
         viewBox={getViewBox(target)}
         xmlns="http://www.w3.org/2000/svg"
         className="line-drawing-svg"
       />
+      {enableScrubbing && (
+        <div className="scrubbing-controls">
+          <div className="scrub-buttons">
+            <button className="scrub-btn" onClick={handleResetAnimation} title="Reset">
+              ⏮
+            </button>
+            <button className="scrub-btn scrub-play" onClick={handlePlayFromScrub} title="Play">
+              ▶
+            </button>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max={totalDuration}
+            step="1"
+            value={scrubPosition}
+            onChange={handleScrubChange}
+            className="scrub-slider"
+          />
+          <div className="scrub-info">
+            <span>
+              <input
+                type="number"
+                min="0"
+                max={totalDuration}
+                step="1"
+                value={Math.round(scrubPosition)}
+                onChange={handleScrubInputChange}
+                className="scrub-input"
+              />
+              ms / {Math.round(totalDuration)}ms
+            </span>
+            <span className="scrub-percent">({Math.round((scrubPosition / totalDuration) * 100)}%)</span>
+          </div>
+        </div>
+      )}
       {isDevelopment && (
         <div className="animation-state-indicator">{animationState}</div>
       )}

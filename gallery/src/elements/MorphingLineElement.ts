@@ -36,7 +36,7 @@ export class MorphingLineElement extends BaseElement {
 
   // Current animated values
   private currentMorphProgress: number = 0;
-  private currentOpacity: number = 1;
+  private currentOpacity: number = 0; // Start hidden like HTML original
   private currentExitProgress: number = 0;
 
   constructor(config: MorphingLineElementConfig) {
@@ -214,6 +214,7 @@ export class MorphingLineElement extends BaseElement {
 
   /**
    * Add morphing animation (entrance effect)
+   * Includes fast opacity fade-in that starts at the delay time
    */
   addMorphAnimation(duration: number, delay: number = 0, easing: string = 'easeOutQuart'): void {
     // Create track from 0 (straight line from start) to 1 (final curved shape)
@@ -227,6 +228,17 @@ export class MorphingLineElement extends BaseElement {
 
     this.addTrack('morphProgress', track);
     this.currentMorphProgress = 0;
+
+    // Add fast opacity fade-in at the delay time (50ms fade like HTML feel)
+    const opacityTrack = new Track({
+      from: 0,
+      to: 1,
+      duration: 50, // Fast fade-in
+      delay,
+      easing: 'linear',
+    });
+    this.addTrack('opacity', opacityTrack);
+    this.currentOpacity = 0;
   }
 
   /**

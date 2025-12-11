@@ -158,4 +158,27 @@ export class Animation {
   getElements(): BaseElement[] {
     return this.elements;
   }
+
+  /**
+   * Update all elements at a specific elapsed time
+   * Used for scrubbing/seeking through animation
+   */
+  seek(elapsed: number): void {
+    this.elements.forEach((el) => el.update(elapsed));
+  }
+
+  /**
+   * Get total duration of entrance animation
+   * Returns the max end time across all elements
+   */
+  getEntranceDuration(): number {
+    let maxDuration = 0;
+    for (const element of this.elements) {
+      const duration = element.getDuration();
+      if (duration > maxDuration) {
+        maxDuration = duration;
+      }
+    }
+    return maxDuration;
+  }
 }

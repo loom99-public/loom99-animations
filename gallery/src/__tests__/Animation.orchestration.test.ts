@@ -1,21 +1,29 @@
 /**
- * Animation.test.ts - Integration tests for Animation lifecycle
+ * Animation.orchestration.test.ts - Multi-element coordination tests
  *
- * FUNCTIONAL TESTING APPROACH:
- * - Tests real animation state machine behavior
- * - Validates lifecycle: idle → entrance → hold → exit → waiting
- * - Verifies no infinite loops (critical safety requirement)
- * - Tests with real Track/Element integration
- * - Uses real timing for integration tests (not mocked RAF)
+ * Tests animation coordination across multiple elements:
+ * - Multiple elements with different durations
+ * - Elements with delays
+ * - No infinite loops (critical safety)
+ * - Edge cases and error handling
+ * - Real-world scenarios
  *
- * NOTE: These are TRUE integration tests - they test real behavior
- * without mocking the core animation loop. Tests will take real time to run.
+ * @vitest-environment node
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { Animation } from '../core/Animation';
 import { BaseElement } from '../core/Element';
 import { Track } from '../core/Track';
+
+// Mock requestAnimationFrame and cancelAnimationFrame for node environment
+global.requestAnimationFrame = vi.fn((cb) => {
+  return setTimeout(() => cb(Date.now()), 0) as any;
+});
+
+global.cancelAnimationFrame = vi.fn((id) => {
+  clearTimeout(id as any);
+});
 
 /**
  * Mock element for testing
@@ -43,155 +51,35 @@ class MockElement extends BaseElement {
   }
 
   toSVG(): SVGElement {
-    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    rect.setAttribute('id', this.id);
-    return rect;
+    // Mock SVG element creation for node environment
+    return {
+      setAttribute: vi.fn(),
+      getAttribute: vi.fn(),
+    } as any;
   }
 }
 
-describe('Animation - State Machine', () => {
-  it('initializes in idle state', () => {
-    const element = new MockElement('test-1');
-    const animation = new Animation({ elements: [element] });
+let animations: Animation[] = [];
 
-    expect(animation.getState()).toBe('idle');
-  });
-
-  it('transitions to entrance when entrance() called', () => {
-    const element = new MockElement('test-1', 10);
-    const animation = new Animation({ elements: [element] });
-
-    animation.entrance();
-    expect(animation.getState()).toBe('entrance');
-  });
-
-  it('transitions to hold after entrance completes', async () => {
-    const element = new MockElement('test-1', 10);
-    const animation = new Animation({ elements: [element] });
-
-    await animation.entrance();
-
-    expect(animation.getState()).toBe('hold');
-  });
-
-  it('transitions to exit when exit() called', async () => {
-    const element = new MockElement('test-1', 10);
-    const animation = new Animation({ elements: [element] });
-
-    await animation.entrance();
-
-    animation.exit();
-    expect(animation.getState()).toBe('exit');
-  });
-
-  it('transitions to waiting after exit completes', async () => {
-    const element = new MockElement('test-1', 10);
-    const animation = new Animation({ elements: [element] });
-
-    await animation.entrance();
-    await animation.exit();
-
-    expect(animation.getState()).toBe('waiting');
-  });
-
-  it('resets to idle when reset() called', async () => {
-    const element = new MockElement('test-1', 10);
-    const animation = new Animation({ elements: [element] });
-
-    await animation.entrance();
+afterEach(() => {
+  // Clean up all animations created during tests
+  animations.forEach(animation => {
     animation.reset();
-
-    expect(animation.getState()).toBe('idle');
   });
+  animations = [];
+
+  // Clear all timers
+  vi.clearAllTimers();
+
+  // Force garbage collection if available
+  if (global.gc) global.gc();
 });
 
-describe('Animation - Lifecycle Execution', () => {
-  it('calls update on elements during entrance', async () => {
-    const element = new MockElement('test-1', 10);
-    const animation = new Animation({ elements: [element] });
-
-    await animation.entrance();
-
-    expect(element.updateCount).toBeGreaterThan(0);
-  });
-
-  it('entrance completes when all elements complete', async () => {
-    const element1 = new MockElement('test-1', 10);
-    const element2 = new MockElement('test-2', 20);
-    const animation = new Animation({ elements: [element1, element2] });
-
-    await animation.entrance();
-
-    expect(animation.getState()).toBe('hold');
-    expect(element1.isComplete(element1.lastElapsed)).toBe(true);
-    expect(element2.isComplete(element2.lastElapsed)).toBe(true);
-  });
-
-  it('hold waits for specified duration', async () => {
-    const animation = new Animation({ elements: [] });
-
-    const startTime = Date.now();
-    await animation.hold(50);
-    const elapsed = Date.now() - startTime;
-
-    expect(elapsed).toBeGreaterThanOrEqual(45); // Allow timing variance
-  });
-
-  it('play executes full sequence: entrance → hold → exit', async () => {
-    const element = new MockElement('test-1', 10);
-    const animation = new Animation({ elements: [element] });
-
-    await animation.play(10);
-
-    expect(animation.getState()).toBe('waiting');
-  });
-});
-
-describe('Animation - Callback Execution', () => {
-  it('calls onEntranceComplete when entrance finishes', async () => {
-    const onEntranceComplete = vi.fn();
-    const element = new MockElement('test-1', 10);
-    const animation = new Animation({
-      elements: [element],
-      onEntranceComplete
-    });
-
-    await animation.entrance();
-
-    expect(onEntranceComplete).toHaveBeenCalledOnce();
-  });
-
-  it('calls onExitComplete when exit finishes', async () => {
-    const onExitComplete = vi.fn();
-    const element = new MockElement('test-1', 10);
-    const animation = new Animation({
-      elements: [element],
-      onExitComplete
-    });
-
-    await animation.entrance();
-    await animation.exit();
-
-    expect(onExitComplete).toHaveBeenCalledOnce();
-  });
-
-  it('does not call callbacks if reset during animation', async () => {
-    const onEntranceComplete = vi.fn();
-    const element = new MockElement('test-1', 50);
-    const animation = new Animation({
-      elements: [element],
-      onEntranceComplete
-    });
-
-    animation.entrance(); // Don't await
-    await new Promise(resolve => setTimeout(resolve, 10));
-
-    animation.reset();
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    expect(onEntranceComplete).not.toHaveBeenCalled();
-  });
-});
+function createAnimation(config: { elements: BaseElement[] }): Animation {
+  const animation = new Animation(config);
+  animations.push(animation);
+  return animation;
+}
 
 describe('Animation - Multiple Elements', () => {
   it('updates all elements during animation', async () => {
@@ -200,7 +88,7 @@ describe('Animation - Multiple Elements', () => {
       new MockElement('test-2', 10),
       new MockElement('test-3', 10)
     ];
-    const animation = new Animation({ elements });
+    const animation = createAnimation({ elements });
 
     await animation.entrance();
 
@@ -212,7 +100,7 @@ describe('Animation - Multiple Elements', () => {
   it('waits for longest element to complete', async () => {
     const shortElement = new MockElement('short', 10);
     const longElement = new MockElement('long', 30);
-    const animation = new Animation({ elements: [shortElement, longElement] });
+    const animation = createAnimation({ elements: [shortElement, longElement] });
 
     await animation.entrance();
 
@@ -229,7 +117,7 @@ describe('Animation - Multiple Elements', () => {
       delay: 10
     }));
 
-    const animation = new Animation({ elements: [element1] });
+    const animation = createAnimation({ elements: [element1] });
 
     await animation.entrance();
 
@@ -239,7 +127,7 @@ describe('Animation - Multiple Elements', () => {
   });
 
   it('handles empty elements array', async () => {
-    const animation = new Animation({ elements: [] });
+    const animation = createAnimation({ elements: [] });
 
     await animation.entrance();
     expect(animation.getState()).toBe('hold');
@@ -249,54 +137,10 @@ describe('Animation - Multiple Elements', () => {
   });
 });
 
-describe('Animation - SVG Export', () => {
-  it('generates SVG with all elements', () => {
-    const elements = [
-      new MockElement('rect-1', 500),
-      new MockElement('rect-2', 500)
-    ];
-    const animation = new Animation({ elements });
-
-    const svg = animation.toSVG();
-
-    expect(svg).toContain('<svg');
-    expect(svg).toContain('xmlns="http://www.w3.org/2000/svg"');
-    expect(svg).toContain('viewBox=');
-    expect(svg).toContain('id="rect-1"');
-    expect(svg).toContain('id="rect-2"');
-  });
-
-  it('exports as downloadable blob', () => {
-    const element = new MockElement('test-1', 500);
-    const animation = new Animation({ elements: [element] });
-
-    const blob = animation.exportSVG();
-
-    expect(blob).toBeInstanceOf(Blob);
-    expect(blob.type).toBe('image/svg+xml');
-  });
-
-  it('generates valid SVG that can be parsed', () => {
-    const element = new MockElement('test-1', 500);
-    const animation = new Animation({ elements: [element] });
-
-    const svg = animation.toSVG();
-
-    expect(() => {
-      if (typeof DOMParser !== 'undefined') {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(svg, 'image/svg+xml');
-        const errors = doc.getElementsByTagName('parsererror');
-        expect(errors.length).toBe(0);
-      }
-    }).not.toThrow();
-  });
-});
-
 describe('Animation - No Infinite Loops (Critical Safety)', () => {
   it('entrance completes and does not restart', async () => {
     const element = new MockElement('test-1', 10);
-    const animation = new Animation({ elements: [element] });
+    const animation = createAnimation({ elements: [element] });
 
     await animation.entrance();
 
@@ -313,7 +157,7 @@ describe('Animation - No Infinite Loops (Critical Safety)', () => {
 
   it('exit completes and does not restart', async () => {
     const element = new MockElement('test-1', 10);
-    const animation = new Animation({ elements: [element] });
+    const animation = createAnimation({ elements: [element] });
 
     await animation.entrance();
     await animation.exit();
@@ -328,7 +172,7 @@ describe('Animation - No Infinite Loops (Critical Safety)', () => {
 
   it('play sequence completes without looping', async () => {
     const element = new MockElement('test-1', 10);
-    const animation = new Animation({ elements: [element] });
+    const animation = createAnimation({ elements: [element] });
 
     await animation.play(10);
 
@@ -341,7 +185,7 @@ describe('Animation - No Infinite Loops (Critical Safety)', () => {
 
   it('cancels animation frame when reset', async () => {
     const element = new MockElement('test-1', 50);
-    const animation = new Animation({ elements: [element] });
+    const animation = createAnimation({ elements: [element] });
 
     animation.entrance(); // Don't await
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -357,7 +201,7 @@ describe('Animation - No Infinite Loops (Critical Safety)', () => {
 
   it('handles multiple reset calls safely', () => {
     const element = new MockElement('test-1', 1000);
-    const animation = new Animation({ elements: [element] });
+    const animation = createAnimation({ elements: [element] });
 
     expect(() => {
       animation.reset();
@@ -372,7 +216,7 @@ describe('Animation - No Infinite Loops (Critical Safety)', () => {
 describe('Animation - Edge Cases', () => {
   it('handles entrance called multiple times', async () => {
     const element = new MockElement('test-1', 10);
-    const animation = new Animation({ elements: [element] });
+    const animation = createAnimation({ elements: [element] });
 
     const promise1 = animation.entrance();
     const promise2 = animation.entrance(); // Call again while running
@@ -386,7 +230,7 @@ describe('Animation - Edge Cases', () => {
 
   it('handles zero-duration elements', async () => {
     const element = new MockElement('test-1', 0);
-    const animation = new Animation({ elements: [element] });
+    const animation = createAnimation({ elements: [element] });
 
     await animation.entrance();
 
@@ -398,7 +242,7 @@ describe('Animation - Edge Cases', () => {
       new MockElement('test-1', 500),
       new MockElement('test-2', 500)
     ];
-    const animation = new Animation({ elements });
+    const animation = createAnimation({ elements });
 
     const retrieved = animation.getElements();
 
@@ -415,7 +259,7 @@ describe('Animation - Edge Cases', () => {
       duration: 0
     }));
 
-    const animation = new Animation({ elements: [element] });
+    const animation = createAnimation({ elements: [element] });
 
     await animation.entrance();
 
@@ -424,7 +268,7 @@ describe('Animation - Edge Cases', () => {
 
   it('entrance with negative hold duration', async () => {
     const element = new MockElement('test-1', 10);
-    const animation = new Animation({ elements: [element] });
+    const animation = createAnimation({ elements: [element] });
 
     await animation.play(-100); // Negative hold
 
@@ -446,7 +290,7 @@ describe('Animation - Real-World Scenarios', () => {
     lines[1].addTrack('delayed', new Track({ from: 0, to: 1, duration: 20, delay: 5 }));
     lines[2].addTrack('delayed', new Track({ from: 0, to: 1, duration: 20, delay: 10 }));
 
-    const animation = new Animation({ elements: lines });
+    const animation = createAnimation({ elements: lines });
 
     await animation.entrance();
 
@@ -462,7 +306,7 @@ describe('Animation - Real-World Scenarios', () => {
     element.addTrack('y', new Track({ from: 0, to: 0, duration: 20 }));
     element.addTrack('opacity', new Track({ from: 0, to: 1, duration: 20 }));
 
-    const animation = new Animation({ elements: [element] });
+    const animation = createAnimation({ elements: [element] });
 
     await animation.entrance();
 
@@ -472,7 +316,7 @@ describe('Animation - Real-World Scenarios', () => {
 
   it('simulates entrance → hold → exit → restart cycle', async () => {
     const element = new MockElement('test-1', 10);
-    const animation = new Animation({ elements: [element] });
+    const animation = createAnimation({ elements: [element] });
 
     // First cycle
     await animation.play(10);
@@ -497,7 +341,7 @@ describe('Animation - Real-World Scenarios', () => {
     elements[1].addTrack('delayed', new Track({ from: 0, to: 1, duration: 10, delay: 10 }));
     elements[2].addTrack('delayed', new Track({ from: 0, to: 1, duration: 10, delay: 20 }));
 
-    const animation = new Animation({ elements });
+    const animation = createAnimation({ elements });
 
     await animation.entrance();
 

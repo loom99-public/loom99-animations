@@ -1,0 +1,46 @@
+2025-12-10T02:38:06.769065 ============================================================
+2025-12-10T02:38:06.769337 init.py: SESSION START
+2025-12-10T02:38:06.769546 init.py: session_id=0c9f6619-dbf6-4289-94b2-78351a4d55c6
+2025-12-10T02:38:06.770069 init.py: cwd=/Users/bmf/code/loom99-animations
+2025-12-10T02:38:06.770337 init.py: hook_input keys=['session_id', 'transcript_path', 'cwd', 'hook_event_name', 'source']
+2025-12-10T02:38:06.770605 init.py: hook_event_name=SessionStart
+2025-12-10T02:38:06.770977 init.py: transcript_path=/Users/bmf/.claude/projects/-Users-bmf-code-loom99-animations/0c9f6619-dbf6-4289-94b2-78351a4d55c6.jsonl
+2025-12-10T02:38:06.771420 init.py: directory exists: .agent_planning/do-command-logs
+2025-12-10T02:38:06.771675 init.py: created directory: .agent_planning/do-command-logs/partials
+2025-12-10T02:38:06.772479 init.py: initialization complete
+2025-12-10T02:44:06.841693 ------------------------------------------------------------
+2025-12-10T02:44:06.842095 aggregate-exec.py: STOP HOOK TRIGGERED
+2025-12-10T02:44:06.842207 aggregate-exec.py: session_id=0c9f6619-dbf6-4289-94b2-78351a4d55c6
+2025-12-10T02:44:06.842376 aggregate-exec.py: cwd=/Users/bmf/code/loom99-animations
+2025-12-10T02:44:06.842474 aggregate-exec.py: hook_input keys=['session_id', 'transcript_path', 'cwd', 'permission_mode', 'hook_event_name', 'stop_hook_active']
+2025-12-10T02:44:06.842566 aggregate-exec.py: hook_event_name=Stop
+2025-12-10T02:44:06.842658 aggregate-exec.py: permission_mode=bypassPermissions
+2025-12-10T02:44:06.842750 aggregate-exec.py: stop_hook_active=False
+2025-12-10T02:44:06.842863 aggregate-exec.py: checking partials_dir=.agent_planning/do-command-logs/partials
+2025-12-10T02:44:06.842958 aggregate-exec.py: scanning for partial files...
+2025-12-10T02:44:06.843242 aggregate-exec.py: found 0 files matching *-PARTIAL-*.txt
+2025-12-10T02:44:06.843332 aggregate-exec.py: no partial files, nothing to aggregate
+2025-12-10T03:30:07.430380 ------------------------------------------------------------
+2025-12-10T03:30:07.430732 aggregate-exec.py: STOP HOOK TRIGGERED
+2025-12-10T03:30:07.430845 aggregate-exec.py: session_id=0c9f6619-dbf6-4289-94b2-78351a4d55c6
+2025-12-10T03:30:07.431063 aggregate-exec.py: cwd=/Users/bmf/code/loom99-animations
+2025-12-10T03:30:07.431192 aggregate-exec.py: hook_input keys=['session_id', 'transcript_path', 'cwd', 'permission_mode', 'hook_event_name', 'stop_hook_active']
+2025-12-10T03:30:07.431275 aggregate-exec.py: hook_event_name=Stop
+2025-12-10T03:30:07.431375 aggregate-exec.py: permission_mode=bypassPermissions
+2025-12-10T03:30:07.431480 aggregate-exec.py: stop_hook_active=False
+2025-12-10T03:30:07.431590 aggregate-exec.py: checking partials_dir=.agent_planning/do-command-logs/partials
+2025-12-10T03:30:07.431704 aggregate-exec.py: scanning for partial files...
+2025-12-10T03:30:07.432053 aggregate-exec.py: found 0 files matching *-PARTIAL-*.txt
+2025-12-10T03:30:07.432146 aggregate-exec.py: no partial files, nothing to aggregate
+2025-12-10T03:46:48.526916 ------------------------------------------------------------
+2025-12-10T03:46:48.527492 aggregate-exec.py: STOP HOOK TRIGGERED
+2025-12-10T03:46:48.527618 aggregate-exec.py: session_id=0c9f6619-dbf6-4289-94b2-78351a4d55c6
+2025-12-10T03:46:48.527788 aggregate-exec.py: cwd=/Users/bmf/code/loom99-animations
+2025-12-10T03:46:48.528074 aggregate-exec.py: hook_input keys=['session_id', 'transcript_path', 'cwd', 'permission_mode', 'hook_event_name', 'stop_hook_active']
+2025-12-10T03:46:48.528249 aggregate-exec.py: hook_event_name=Stop
+2025-12-10T03:46:48.528399 aggregate-exec.py: permission_mode=bypassPermissions
+2025-12-10T03:46:48.528661 aggregate-exec.py: stop_hook_active=False
+2025-12-10T03:46:48.528954 aggregate-exec.py: checking partials_dir=.agent_planning/do-command-logs/partials
+2025-12-10T03:46:48.529158 aggregate-exec.py: scanning for partial files...
+2025-12-10T03:46:48.530022 aggregate-exec.py: found 0 files matching *-PARTIAL-*.txt
+2025-12-10T03:46:48.530528 aggregate-exec.py: no partial files, nothing to aggregate

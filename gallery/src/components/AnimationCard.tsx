@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import type { AnimationMeta } from '../data/types';
 import { LineDrawingViewer } from './animations/LineDrawingViewer';
+import { ParticleViewer } from './animations/ParticleViewer';
 
 interface AnimationCardProps {
   animation: AnimationMeta;
@@ -35,7 +36,8 @@ export function AnimationCard({ animation }: AnimationCardProps) {
   };
 
   // Check if this animation should use React component instead of iframe
-  const useReactComponent = animation.technique === '01'; // Line drawing
+  const useLineDrawingViewer = animation.technique === '01'; // Line drawing
+  const useParticleViewer = animation.technique === '02'; // Particles
 
   return (
     <div className={`animation-card ${getVariantClass()}`}>
@@ -66,8 +68,14 @@ export function AnimationCard({ animation }: AnimationCardProps) {
 
       {isPreviewVisible && (
         <div className="preview-container">
-          {useReactComponent ? (
+          {useLineDrawingViewer ? (
             <LineDrawingViewer
+              target={animation.target}
+              variant={animation.variant}
+              holdDuration={2000}
+            />
+          ) : useParticleViewer ? (
+            <ParticleViewer
               target={animation.target}
               variant={animation.variant}
               holdDuration={2000}

@@ -16,21 +16,17 @@ import {
   createPlayer,
   SvgRenderer,
   PROOF_PROGRAMS,
-  type ProofProgramName,
   type PlayState,
+  type LoopMode,
   type RenderTree,
   type Scene,
 } from './runtime';
-import type { CompilerService } from './compiler';
+import type { CompilerService, Viewport } from './compiler';
 import type { Program } from './compiler/types';
 import { logStore } from './logStore';
 import './PreviewPanel.css';
 
-type ProgramSource = 'compiled' | ProofProgramName;
-
 interface PreviewPanelProps {
-  width?: number;
-  height?: number;
   compilerService?: CompilerService;
 }
 
@@ -42,21 +38,30 @@ const DEFAULT_SCENE: Scene = {
   bounds: { width: 800, height: 600 },
 };
 
-export const PreviewPanel = observer(({ width = 800, height = 600, compilerService }: PreviewPanelProps) => {
+const DEFAULT_VIEWPORT: Viewport = { width: 800, height: 600 };
+
+export const PreviewPanel = observer(({ compilerService }: PreviewPanelProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const playerRef = useRef<Player | null>(null);
   const rendererRef = useRef<SvgRenderer | null>(null);
   const lastGoodProgramRef = useRef<Program<RenderTree> | null>(null);
 
-  const [playState, setPlayState] = useState<PlayState>('paused');
+  const [playState, setPlayState] = useState<PlayState>('playing');
   const [currentTime, setCurrentTime] = useState(0);
-  const [programSource, setProgramSource] = useState<ProgramSource>(compilerService ? 'compiled' : 'lineDrawing');
   const [maxTime, setMaxTime] = useState(10000); // 10 seconds default
   const [hasCompiledProgram, setHasCompiledProgram] = useState(false);
+  const [viewport, setViewport] = useState<Viewport>(
+    compilerService?.getViewport() ?? DEFAULT_VIEWPORT
+  );
+  const [loopMode, setLoopMode] = useState<LoopMode>('loop');
 
-  // Initialize player and renderer
+  // Derive dimensions from viewport
+  const { width, height } = viewport;
+
+  // Initialize player and renderer ONCE (never destroy/recreate)
   useEffect(() => {
     if (!svgRef.current) return;
+    if (playerRef.current) return; // Already initialized
 
     const svg = svgRef.current;
     const renderer = new SvgRenderer(svg);
@@ -71,15 +76,18 @@ export const PreviewPanel = observer(({ width = 800, height = 600, compilerServi
         height,
         onStateChange: setPlayState,
         onTimeChange: setCurrentTime,
+        onLoopModeChange: setLoopMode,
       }
     );
+    player.setMaxTime(maxTime);
+    player.setLoopMode(loopMode);
     playerRef.current = player;
 
     // Set initial scene
     player.setScene(DEFAULT_SCENE);
 
-    // Set initial program based on source
-    if (programSource === 'compiled' && compilerService) {
+    // Set initial program from compiler service
+    if (compilerService) {
       const compiled = compilerService.getProgram();
       if (compiled) {
         player.setFactory(() => compiled);
@@ -87,61 +95,34 @@ export const PreviewPanel = observer(({ width = 800, height = 600, compilerServi
         setHasCompiledProgram(true);
         logStore.info('renderer', 'Loaded compiled program');
       } else {
-        // Fallback to proof program
+        // Fallback to proof program while waiting for compilation
         const program = PROOF_PROGRAMS.lineDrawing;
         player.setFactory(() => program);
-        logStore.info('renderer', 'No compiled program, using fallback');
+        logStore.info('renderer', 'No compiled program yet, using fallback');
       }
     } else {
-      const program = PROOF_PROGRAMS[programSource as ProofProgramName] ?? PROOF_PROGRAMS.lineDrawing;
+      // No compiler service - use fallback
+      const program = PROOF_PROGRAMS.lineDrawing;
       player.setFactory(() => program);
-      logStore.info('renderer', `Loaded proof program: ${programSource}`);
+      logStore.info('renderer', 'No compiler service, using fallback');
     }
 
-    // Render initial frame
-    player.scrubTo(0);
+    // Start playing immediately
+    player.play();
 
     return () => {
       player.destroy();
       renderer.clear();
     };
-  }, [width, height]);
+  }, []); // Empty deps - only run once
 
-  // Update program when source selection changes
+  // Watch for compiler service program and viewport changes
   useEffect(() => {
-    const player = playerRef.current;
-    if (!player) return;
-
-    if (programSource === 'compiled' && compilerService) {
-      const compiled = compilerService.getProgram();
-      if (compiled) {
-        player.setFactory(() => compiled);
-        lastGoodProgramRef.current = compiled;
-        setHasCompiledProgram(true);
-        logStore.info('renderer', 'Switched to compiled program');
-      } else if (lastGoodProgramRef.current) {
-        // Use last good program
-        player.setFactory(() => lastGoodProgramRef.current!);
-        logStore.warn('renderer', 'Using last good compiled program');
-      } else {
-        logStore.warn('renderer', 'No compiled program available');
-      }
-    } else {
-      const program = PROOF_PROGRAMS[programSource as ProofProgramName] ?? PROOF_PROGRAMS.lineDrawing;
-      player.setFactory(() => program);
-      logStore.info('renderer', `Switched to: ${programSource}`);
-    }
-
-    // Re-render at current time
-    player.scrubTo(currentTime);
-  }, [programSource, compilerService]);
-
-  // Watch for compiler service program changes
-  useEffect(() => {
-    if (programSource !== 'compiled' || !compilerService) return;
+    if (!compilerService) return;
 
     // Poll for changes (in future, use MobX reaction)
     const interval = setInterval(() => {
+      // Check for program changes
       const compiled = compilerService.getProgram();
       if (compiled && compiled !== lastGoodProgramRef.current) {
         const player = playerRef.current;
@@ -152,10 +133,17 @@ export const PreviewPanel = observer(({ width = 800, height = 600, compilerServi
           logStore.debug('renderer', 'Hot swapped to new compiled program');
         }
       }
+
+      // Check for viewport changes
+      const newViewport = compilerService.getViewport();
+      if (newViewport.width !== viewport.width || newViewport.height !== viewport.height) {
+        setViewport(newViewport);
+        logStore.debug('renderer', `Viewport changed to ${newViewport.width}x${newViewport.height}`);
+      }
     }, 500);
 
     return () => clearInterval(interval);
-  }, [programSource, compilerService]);
+  }, [compilerService, viewport.width, viewport.height]);
 
   const handlePlayPause = useCallback(() => {
     playerRef.current?.toggle();
@@ -170,9 +158,13 @@ export const PreviewPanel = observer(({ width = 800, height = 600, compilerServi
     playerRef.current?.scrubTo(tMs);
   }, []);
 
-  const handleProgramChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setProgramSource(e.target.value as ProgramSource);
-  }, []);
+  const handleLoopModeToggle = useCallback(() => {
+    const modes: LoopMode[] = ['loop', 'pingpong', 'none'];
+    const currentIndex = modes.indexOf(loopMode);
+    const nextMode = modes[(currentIndex + 1) % modes.length];
+    setLoopMode(nextMode);
+    playerRef.current?.setLoopMode(nextMode);
+  }, [loopMode]);
 
   const formatTime = (ms: number): string => {
     const seconds = (ms / 1000).toFixed(2);
@@ -183,24 +175,9 @@ export const PreviewPanel = observer(({ width = 800, height = 600, compilerServi
     <div className="preview-panel">
       <div className="preview-header">
         <span className="preview-title">Preview</span>
-        <select
-          className="preview-program-select"
-          value={programSource}
-          onChange={handleProgramChange}
-        >
-          {compilerService && (
-            <option value="compiled">
-              Compiled {hasCompiledProgram ? '✓' : '(no program)'}
-            </option>
-          )}
-          <optgroup label="Proof Programs">
-            {Object.keys(PROOF_PROGRAMS).map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </optgroup>
-        </select>
+        <span className="preview-status">
+          {hasCompiledProgram ? '● Live' : '○ No program'}
+        </span>
       </div>
 
       <div className="preview-canvas" style={{ width, height }}>
@@ -228,6 +205,14 @@ export const PreviewPanel = observer(({ width = 800, height = 600, compilerServi
           title="Reset"
         >
           ⏮
+        </button>
+
+        <button
+          className={`preview-btn ${loopMode !== 'none' ? 'active' : ''}`}
+          onClick={handleLoopModeToggle}
+          title={`Loop: ${loopMode}`}
+        >
+          {loopMode === 'loop' ? '🔁' : loopMode === 'pingpong' ? '🔀' : '➡️'}
         </button>
 
         <span className="preview-time">{formatTime(currentTime)}</span>

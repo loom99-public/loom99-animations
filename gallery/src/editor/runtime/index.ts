@@ -54,6 +54,7 @@ export type {
   ProgramFactory,
   Scene,
   PlayState,
+  LoopMode,
   PlayerOptions,
 } from './player';
 

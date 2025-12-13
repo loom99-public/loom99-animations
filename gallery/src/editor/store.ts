@@ -27,6 +27,8 @@ import {
   mapLaneToLayout,
   PRESET_LAYOUTS,
 } from './laneLayouts';
+import { getMacroKey, getMacroExpansion, type MacroExpansion } from './macros';
+import { computeAutoWire, findPrevBlockInLane, type AutoWireContext } from './autowire';
 
 /**
  * EditorStore manages the patch bay graph state.
@@ -61,7 +63,7 @@ export class EditorStore {
     // Lane mode settings
     advancedLaneMode: false, // Advanced mode unlocks lane customization
     // Connection settings
-    autoConnect: false, // Auto-wire obvious connections (disabled for now)
+    autoConnect: true, // Auto-wire obvious connections when blocks are added
     showTypeHints: true, // Show port types on hover
     highlightCompatible: true, // Highlight compatible ports when dragging
     warnBeforeDisconnect: true, // Show confirmation before disconnecting
@@ -108,6 +110,7 @@ export class EditorStore {
       uiState: observable,
       previewedDefinition: observable,
       addBlock: action,
+      expandMacro: action,
       removeBlock: action,
       updateBlockParams: action,
       connect: action,
@@ -197,12 +200,27 @@ export class EditorStore {
 
   /**
    * Add a new block to the patch.
+   * If the block type is a macro (like demoProgram), it expands into multiple
+   * primitive blocks with connections - the user sees all individual blocks.
+   *
+   * After adding, auto-wire to compatible ports if unambiguous.
+   *
    * @param type Block type (e.g., 'RadialOrigin')
    * @param laneId Lane ID to add block to
    * @param params Optional initial parameters
-   * @returns Created block ID
+   * @returns Created block ID (or first block ID if macro expanded)
    */
   addBlock(type: BlockType, laneId: LaneId, params?: Record<string, unknown>): BlockId {
+    // Check if this is a macro that should expand
+    const macroKey = getMacroKey(type, params);
+    if (macroKey) {
+      const expansion = getMacroExpansion(macroKey);
+      if (expansion) {
+        return this.expandMacro(expansion);
+      }
+    }
+
+    // Regular block addition
     const id = `block-${this.nextId++}`;
 
     // Look up block definition from registry
@@ -229,7 +247,105 @@ export class EditorStore {
       laneObj.blockIds = [...laneObj.blockIds, id];
     }
 
+    // Auto-wire if enabled and definition exists
+    if (this.settings.autoConnect && definition && laneObj) {
+      this.autoWireNewBlock(id, definition, laneObj);
+    }
+
     return id;
+  }
+
+  /**
+   * Auto-wire a newly added block to compatible ports.
+   * Uses the previous block in the same lane as the wiring source.
+   */
+  private autoWireNewBlock(
+    newBlockId: BlockId,
+    newBlockDef: import('./blocks').BlockDefinition,
+    lane: Lane
+  ): void {
+    // Find the index of the new block in the lane
+    const newBlockIndex = lane.blockIds.indexOf(newBlockId);
+
+    // Find the previous block in the lane
+    const prevBlockInLane = findPrevBlockInLane(
+      lane.blockIds,
+      newBlockIndex,
+      this.blocks,
+      getBlockDefinition
+    );
+
+    // Build autowire context
+    const ctx: AutoWireContext = {
+      blocks: this.blocks,
+      connections: this.connections,
+      newBlockId,
+      newBlockDef,
+      getDefinition: getBlockDefinition,
+      prevBlockInLane,
+    };
+
+    // Compute autowire connections
+    const result = computeAutoWire(ctx);
+
+    // Create the connections
+    for (const conn of result.connections) {
+      this.connect(conn.fromBlockId, conn.fromSlotId, conn.toBlockId, conn.toSlotId);
+    }
+  }
+
+  /**
+   * Expand a macro into multiple visible primitive blocks with connections.
+   * This is the "recipe starter" - users see all the individual modules and cables.
+   * REPLACES the current patch (clears everything first).
+   *
+   * @param expansion The macro expansion definition
+   * @returns The ID of the first block created
+   */
+  expandMacro(expansion: MacroExpansion): BlockId {
+    // Clear the patch first - macros replace everything
+    this.clearPatch();
+
+    // Map from macro ref IDs to actual block IDs
+    const refToId = new Map<string, BlockId>();
+
+    // Create all blocks
+    for (const macroBlock of expansion.blocks) {
+      // Find the appropriate lane for this block's kind
+      const lane = this.lanes.find((l) => l.kind === macroBlock.laneKind);
+      if (!lane) continue;
+
+      const id = `block-${this.nextId++}`;
+      const definition = getBlockDefinition(macroBlock.type);
+
+      const block: Block = {
+        id,
+        type: macroBlock.type,
+        label: macroBlock.label ?? definition?.label ?? macroBlock.type,
+        inputs: definition?.inputs ?? [],
+        outputs: definition?.outputs ?? [],
+        params: { ...(definition?.defaultParams ?? {}), ...(macroBlock.params ?? {}) },
+        category: definition?.category ?? this.inferCategory(lane.kind),
+        description: definition?.description ?? `${macroBlock.type} block`,
+      };
+
+      this.blocks.push(block);
+      lane.blockIds = [...lane.blockIds, id];
+      refToId.set(macroBlock.ref, id);
+    }
+
+    // Create all connections
+    for (const conn of expansion.connections) {
+      const fromId = refToId.get(conn.fromRef);
+      const toId = refToId.get(conn.toRef);
+      if (fromId && toId) {
+        this.connect(fromId, conn.fromSlot, toId, conn.toSlot);
+      }
+    }
+
+    // Return the first block ID (for selection purposes)
+    const firstRef = expansion.blocks[0]?.ref;
+    return firstRef ? refToId.get(firstRef) ?? '' : '';
   }
 
   /**
@@ -477,6 +593,7 @@ export class EditorStore {
 
   /**
    * Deserialize from JSON (for load).
+   * NOTE: Preserves playback state for live updates.
    */
   loadPatch(patch: Patch): void {
     this.blocks = patch.blocks;
@@ -484,7 +601,7 @@ export class EditorStore {
     this.lanes = patch.lanes;
     this.settings = patch.settings;
     this.uiState.selectedBlockId = null;
-    this.uiState.currentTime = 0;
+    // NOTE: Do NOT reset currentTime or isPlaying - preserve playback state
 
     // Update ID counter to avoid collisions
     const maxId = Math.max(
@@ -496,12 +613,13 @@ export class EditorStore {
 
   /**
    * Clear all blocks and connections.
+   * NOTE: Preserves playback state (currentTime, isPlaying) for live updates.
    */
   clearPatch(): void {
     this.blocks = [];
     this.connections = [];
     this.uiState.selectedBlockId = null;
-    this.uiState.currentTime = 0;
+    // NOTE: Do NOT reset currentTime or isPlaying - preserve playback state
     this.previewedDefinition = null;
 
     // Reset lane block assignments
@@ -514,48 +632,94 @@ export class EditorStore {
    * Load a demo animation with pre-wired blocks.
    * @param variant Which demo to load
    */
-  loadDemoAnimation(variant: 'lineDrawing' | 'particles' | 'oscillator' | 'math'): void {
+  loadDemoAnimation(variant: 'lineDrawing' | 'particles' | 'oscillator' | 'math' | 'fullPipeline'): void {
     // Clear existing patch
     this.clearPatch();
 
     // Find appropriate lanes
+    const sceneLane = this.lanes.find((l) => l.kind === 'Scene') ?? this.lanes[0];
+    const phaseLane = this.lanes.find((l) => l.kind === 'Phase') ?? this.lanes[1];
+    const fieldsLane = this.lanes.find((l) => l.kind === 'Fields') ?? this.lanes[2];
     const specLane = this.lanes.find((l) => l.kind === 'Spec') ?? this.lanes[3];
     const programLane = this.lanes.find((l) => l.kind === 'Program') ?? this.lanes[4];
     const scalarLane = this.lanes.find((l) => l.kind === 'Scalars') ?? this.lanes[2];
 
-    if (variant === 'math') {
-      // Math demo: constants → math ops → oscillator
-      // Create blocks
-      const speedConstId = this.addBlock('math.constNumber', scalarLane?.id ?? 'fields', { value: 2 });
-      const ampConstId = this.addBlock('math.constNumber', scalarLane?.id ?? 'fields', { value: 50 });
-      const demoId = this.addBlock('demoProgram', specLane?.id ?? 'spec', { variant: 'oscillator' });
+    if (variant === 'fullPipeline') {
+      // Full Pipeline demo: SVGPathSource → Fields → Phase → PerElementTransport → Output
+      // This demonstrates the complete modular animation system
+
+      // Scene: Load SVG paths
+      const sceneId = this.addBlock('SVGPathSource', sceneLane?.id ?? 'scene', { target: 'logo' });
+
+      // Fields: Start positions (radial) and delays (staggered)
+      const positionsId = this.addBlock('RadialOrigin', fieldsLane?.id ?? 'fields', {
+        centerX: 300,
+        centerY: 100,
+        minRadius: 150,
+        maxRadius: 350,
+        spread: 1.0,
+      });
+      const delaysId = this.addBlock('LinearStagger', fieldsLane?.id ?? 'fields', {
+        baseStagger: 0.03,
+        jitter: 0.15,
+      });
+
+      // Phase: Animation timing
+      const phaseId = this.addBlock('PhaseMachine', phaseLane?.id ?? 'phase', {
+        entranceDuration: 2.5,
+        holdDuration: 1.5,
+        exitDuration: 0.8,
+      });
+
+      // Compose: Per-element transport animation
+      const transportId = this.addBlock('PerElementTransport', specLane?.id ?? 'spec', {});
+
+      // Output: Mark as patch output
       const outputId = this.addBlock('outputProgram', programLane?.id ?? 'program', {});
+
+      // Wire everything together:
+      // scene.scene → transport.targets
+      this.connect(sceneId, 'scene', transportId, 'targets');
+      // positions.positions → transport.positions
+      this.connect(positionsId, 'positions', transportId, 'positions');
+      // delays.delays → transport.delays
+      this.connect(delaysId, 'delays', transportId, 'delays');
+      // phase.phase → transport.phase
+      this.connect(phaseId, 'phase', transportId, 'phase');
+      // transport.program → output.program
+      this.connect(transportId, 'program', outputId, 'program');
 
       // Update labels for clarity
-      const speedBlock = this.blocks.find((b) => b.id === speedConstId);
-      if (speedBlock) speedBlock.label = 'Speed (2)';
-      const ampBlock = this.blocks.find((b) => b.id === ampConstId);
-      if (ampBlock) ampBlock.label = 'Amplitude (50)';
+      const sceneBlock = this.blocks.find((b) => b.id === sceneId);
+      if (sceneBlock) sceneBlock.label = 'Logo Paths';
+      const posBlock = this.blocks.find((b) => b.id === positionsId);
+      if (posBlock) posBlock.label = 'Start Positions';
+      const delayBlock = this.blocks.find((b) => b.id === delaysId);
+      if (delayBlock) delayBlock.label = 'Stagger Delays';
+      const phaseBlock = this.blocks.find((b) => b.id === phaseId);
+      if (phaseBlock) phaseBlock.label = 'Animation Phases';
+      const transportBlock = this.blocks.find((b) => b.id === transportId);
+      if (transportBlock) transportBlock.label = 'Particle Transport';
 
-      // Connect: speedConst.out → demo.speed
-      this.connect(speedConstId, 'out', demoId, 'speed');
-      // Connect: ampConst.out → demo.amp
-      this.connect(ampConstId, 'out', demoId, 'amp');
-      // Connect: demo.program → output.program
-      this.connect(demoId, 'program', outputId, 'program');
-
-      // Select the demo block
-      this.selectBlock(demoId);
+      // Select the transport block
+      this.selectBlock(transportId);
+    } else if (variant === 'math') {
+      // Math demo: use oscillator macro expansion
+      const macroKey = `macro:oscillator`;
+      const expansion = getMacroExpansion(macroKey);
+      if (expansion) {
+        const firstBlockId = this.expandMacro(expansion);
+        this.selectBlock(firstBlockId);
+      }
     } else {
-      // Simple demo: DemoProgram → OutputProgram
-      const demoId = this.addBlock('demoProgram', specLane?.id ?? 'spec', { variant });
-      const outputId = this.addBlock('outputProgram', programLane?.id ?? 'program', {});
-
-      // Connect them
-      this.connect(demoId, 'program', outputId, 'program');
-
-      // Select the demo block
-      this.selectBlock(demoId);
+      // Simple demos: use macro expansion for full visibility
+      // When the macro expands, user sees all primitive blocks + connections
+      const macroKey = `macro:${variant}`;
+      const expansion = getMacroExpansion(macroKey);
+      if (expansion) {
+        const firstBlockId = this.expandMacro(expansion);
+        this.selectBlock(firstBlockId);
+      }
     }
   }
 

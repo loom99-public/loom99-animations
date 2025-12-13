@@ -27,11 +27,16 @@ export type SlotType =
   | 'Signal<Point>'     // Time-varying position
   | 'Signal<number>'    // Time-varying scalar
   | 'Signal<Unit>'      // Time-varying progress [0,1]
+  | 'Signal<Time>'      // Time-varying time value (for local time)
   | 'Signal<PhaseSample>' // Phase machine output
   | 'Event<string>'     // Discrete text events (typewriter)
   | 'Event<any>'        // Generic events
   | 'Program'           // Compiled animation program
-  | 'RenderTree';       // Final render output
+  | 'RenderTree'        // Final render output
+  | 'RenderNode'        // Single render node
+  | 'RenderNode[]'      // Array of render nodes
+  | 'FilterDef'         // SVG filter definition
+  | 'ElementCount';     // Number of elements (from scene)
 
 // =============================================================================
 // Block Definitions
@@ -49,20 +54,28 @@ export type BlockId = string;
 export type BlockType = string; // e.g., 'RadialOrigin', 'PhaseMachine', 'ParticleRenderer'
 
 /**
+ * All block categories in display order.
+ * Single source of truth - used by both type and UI.
+ */
+export const ALL_CATEGORIES = [
+  'Macros',     // Recipe starters - expand into multiple blocks
+  'Scene',
+  'Derivers',
+  'Fields',
+  'Math',       // Scalar math blocks
+  'Time',
+  'Events',
+  'Dynamics',
+  'Compose',
+  'Render',
+  'FX',
+  'Adapters',
+] as const;
+
+/**
  * Block category for library organization.
  */
-export type BlockCategory =
-  | 'Scene'
-  | 'Derivers'
-  | 'Fields'
-  | 'Math'       // Slice 2.5: Scalar math blocks
-  | 'Time'
-  | 'Events'
-  | 'Dynamics'
-  | 'Compose'
-  | 'Render'
-  | 'FX'
-  | 'Adapters';
+export type BlockCategory = (typeof ALL_CATEGORIES)[number];
 
 /**
  * A Slot is a typed connection point on a block.

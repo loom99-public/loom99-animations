@@ -41,6 +41,14 @@ export function compilePatch(
 ): CompileResult {
   const errors: CompileError[] = [];
 
+  // 0) Handle empty patch gracefully - nothing to compile
+  if (patch.blocks.size === 0) {
+    return {
+      ok: false,
+      errors: [{ code: 'EmptyPatch', message: 'Patch is empty - add some blocks to compile.' }],
+    };
+  }
+
   // 1) Validate block types exist in registry
   for (const [id, b] of patch.blocks.entries()) {
     if (!registry[b.type]) {

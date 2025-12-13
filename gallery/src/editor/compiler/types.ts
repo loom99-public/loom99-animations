@@ -196,6 +196,15 @@ export type Artifact =
   | { kind: 'TargetScene'; value: TargetScene }
   | { kind: 'RenderTreeProgram'; value: Program<RenderTree> }
 
+  // Primitive block artifacts (Phase 2)
+  | { kind: 'ElementCount'; value: number }
+  | { kind: 'Signal:Time'; value: (t: number, ctx: RuntimeCtx) => number }
+  | { kind: 'Signal:Unit'; value: (t: number, ctx: RuntimeCtx) => number }
+  | { kind: 'Signal:vec2'; value: (t: number, ctx: RuntimeCtx) => Vec2 }
+  | { kind: 'RenderNode'; value: DrawNode }
+  | { kind: 'RenderNodeArray'; value: readonly DrawNode[] }
+  | { kind: 'FilterDef'; value: unknown }
+
   | { kind: 'Spec:LineMorph'; value: unknown }
   | { kind: 'Spec:Particles'; value: unknown }
   | { kind: 'Spec:RevealMask'; value: unknown }

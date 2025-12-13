@@ -70,6 +70,12 @@ export function editorToPatch(store: EditorStore): CompilerPatch {
 // Compiler Service
 // =============================================================================
 
+export interface Viewport {
+  width: number;
+  height: number;
+  background?: string;
+}
+
 export interface CompilerService {
   /** Compile the current patch */
   compile(): CompileResult;
@@ -82,6 +88,9 @@ export interface CompilerService {
 
   /** Get error decorations for UI display */
   getDecorations(): DecorationSet;
+
+  /** Get viewport dimensions from Canvas block (or defaults) */
+  getViewport(): Viewport;
 }
 
 /**
@@ -116,16 +125,24 @@ export function createCompilerService(store: EditorStore): CompilerService {
           logStore.info('compiler', `Compiled successfully (${elapsed}ms)`);
           lastDecorations = emptyDecorations();
         } else {
-          // Log each error
-          for (const err of result.errors) {
-            const location = err.where?.blockId
-              ? ` [${err.where.blockId}${err.where.port ? '.' + err.where.port : ''}]`
-              : '';
-            logStore.error('compiler', `${err.code}: ${err.message}${location}`);
+          // EmptyPatch is not an error - it's expected when the patch is cleared
+          const isEmptyPatch = result.errors.length === 1 && result.errors[0].code === 'EmptyPatch';
+
+          if (isEmptyPatch) {
+            // Silently clear state - no error logging for empty patch
+            lastDecorations = emptyDecorations();
+          } else {
+            // Log each error
+            for (const err of result.errors) {
+              const location = err.where?.blockId
+                ? ` [${err.where.blockId}${err.where.port ? '.' + err.where.port : ''}]`
+                : '';
+              logStore.error('compiler', `${err.code}: ${err.message}${location}`);
+            }
+            logStore.warn('compiler', `Compilation failed with ${result.errors.length} error(s)`);
+            // Build decorations for UI display
+            lastDecorations = buildDecorations(result.errors);
           }
-          logStore.warn('compiler', `Compilation failed with ${result.errors.length} error(s)`);
-          // Build decorations for UI display
-          lastDecorations = buildDecorations(result.errors);
         }
 
         lastResult = result;
@@ -156,6 +173,20 @@ export function createCompilerService(store: EditorStore): CompilerService {
 
     getDecorations(): DecorationSet {
       return lastDecorations;
+    },
+
+    getViewport(): Viewport {
+      // Find Canvas block in the store and extract its viewport params
+      const canvasBlock = store.blocks.find((b) => b.type === 'canvas');
+      if (canvasBlock) {
+        return {
+          width: (canvasBlock.params.width as number) ?? 800,
+          height: (canvasBlock.params.height as number) ?? 600,
+          background: canvasBlock.params.background as string | undefined,
+        };
+      }
+      // Default viewport if no Canvas block
+      return { width: 800, height: 600 };
     },
   };
 }

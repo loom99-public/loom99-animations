@@ -276,6 +276,11 @@ export const SettingsToolbar = observer(({ store }: SettingsToolbarProps) => {
         <Dropdown icon={<DemoIcon />} label="Demos">
           <MenuHeader>Load Demo</MenuHeader>
           <MenuItem
+            label="Full Pipeline"
+            description="Scene → Fields → Phase → Transport"
+            onClick={() => store.loadDemoAnimation('fullPipeline')}
+          />
+          <MenuItem
             label="Line Drawing"
             description="Animated stroke paths"
             onClick={() => store.loadDemoAnimation('lineDrawing')}
@@ -301,6 +306,13 @@ export const SettingsToolbar = observer(({ store }: SettingsToolbarProps) => {
       </div>
 
       <div className="toolbar-right">
+        <button
+          className="toolbar-clear-btn"
+          onClick={() => store.clearPatch()}
+          title="Clear all blocks and connections"
+        >
+          Clear All
+        </button>
         <span className="toolbar-status">
           {store.blocks.length} blocks · {store.connections.length} connections
         </span>

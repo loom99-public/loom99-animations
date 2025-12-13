@@ -9,7 +9,7 @@ import { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useDraggable } from '@dnd-kit/core';
 import type { EditorStore } from './store';
-import type { BlockCategory } from './types';
+import { ALL_CATEGORIES, type BlockCategory } from './types';
 import {
   BLOCK_DEFINITIONS,
   getBlocksByCategory,
@@ -88,20 +88,6 @@ function DraggableBlockItem({ definition, isSelected, onSelect, onDoubleClickAdd
   );
 }
 
-/** All categories in display order */
-const ALL_CATEGORIES: BlockCategory[] = [
-  'Scene',
-  'Derivers',
-  'Fields',
-  'Math',
-  'Time',
-  'Events',
-  'Dynamics',
-  'Compose',
-  'Render',
-  'FX',
-  'Adapters',
-];
 
 /**
  * BlockLibrary displays available blocks by category with search.

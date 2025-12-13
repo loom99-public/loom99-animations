@@ -103,7 +103,7 @@ export const Editor = observer(() => {
   // Set up auto-compile on patch changes
   useEffect(() => {
     const dispose = setupAutoCompile(store, compilerService, {
-      debounce: 300,
+      debounce: 30,
     });
     return dispose;
   }, [store, compilerService]);
@@ -208,7 +208,7 @@ export const Editor = observer(() => {
           </div>
 
           <div className="editor-preview">
-            <PreviewPanel width={400} height={300} compilerService={compilerService} />
+            <PreviewPanel compilerService={compilerService} />
           </div>
 
           <div className="editor-inspector">

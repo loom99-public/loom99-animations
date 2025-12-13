@@ -42,12 +42,15 @@ export interface Scene {
 
 export type PlayState = 'playing' | 'paused';
 
+export type LoopMode = 'none' | 'loop' | 'pingpong';
+
 export interface PlayerOptions {
   compileCtx: CompileCtx;
   runtimeCtx: RuntimeCtx;
   onFrame: (tree: RenderTree, tMs: number) => void;
   onStateChange?: (state: PlayState) => void;
   onTimeChange?: (tMs: number) => void;
+  onLoopModeChange?: (mode: LoopMode) => void;
 }
 
 // =============================================================================
@@ -70,10 +73,14 @@ export class Player {
   private rafId: number | null = null;
 
   private speed = 1.0;
+  private loopMode: LoopMode = 'loop'; // Default to looping
+  private maxTime = 10000; // 10 seconds default
+  private playDirection = 1; // 1 = forward, -1 = backward (for pingpong)
 
   private onFrame: (tree: RenderTree, tMs: number) => void;
   private onStateChange?: (state: PlayState) => void;
   private onTimeChange?: (tMs: number) => void;
+  private onLoopModeChange?: (mode: LoopMode) => void;
 
   constructor(opts: PlayerOptions) {
     this.compileCtx = opts.compileCtx;
@@ -81,6 +88,7 @@ export class Player {
     this.onFrame = opts.onFrame;
     this.onStateChange = opts.onStateChange;
     this.onTimeChange = opts.onTimeChange;
+    this.onLoopModeChange = opts.onLoopModeChange;
   }
 
   // ===========================================================================
@@ -119,6 +127,36 @@ export class Player {
    */
   setSpeed(speed: number): void {
     this.speed = Math.max(0.1, Math.min(4, speed));
+  }
+
+  /**
+   * Set loop mode.
+   */
+  setLoopMode(mode: LoopMode): void {
+    this.loopMode = mode;
+    this.playDirection = 1; // Reset direction when changing mode
+    this.onLoopModeChange?.(mode);
+  }
+
+  /**
+   * Get current loop mode.
+   */
+  getLoopMode(): LoopMode {
+    return this.loopMode;
+  }
+
+  /**
+   * Set max time for looping.
+   */
+  setMaxTime(maxTime: number): void {
+    this.maxTime = maxTime;
+  }
+
+  /**
+   * Get max time.
+   */
+  getMaxTime(): number {
+    return this.maxTime;
   }
 
   /**
@@ -227,9 +265,32 @@ export class Player {
     if (this.playState !== 'playing') return;
 
     const now = performance.now();
-    const dt = (now - this.lastFrameMs) * this.speed;
+    const dt = (now - this.lastFrameMs) * this.speed * this.playDirection;
     this.lastFrameMs = now;
     this.tMs += dt;
+
+    // Handle looping
+    if (this.loopMode === 'loop') {
+      if (this.tMs >= this.maxTime) {
+        this.tMs = 0;
+      } else if (this.tMs < 0) {
+        this.tMs = this.maxTime;
+      }
+    } else if (this.loopMode === 'pingpong') {
+      if (this.tMs >= this.maxTime) {
+        this.tMs = this.maxTime;
+        this.playDirection = -1;
+      } else if (this.tMs <= 0) {
+        this.tMs = 0;
+        this.playDirection = 1;
+      }
+    } else {
+      // No loop - clamp at max
+      if (this.tMs >= this.maxTime) {
+        this.tMs = this.maxTime;
+        this.pause();
+      }
+    }
 
     this.onTimeChange?.(this.tMs);
     this.renderOnce();
@@ -259,6 +320,7 @@ export function createPlayer(
     height?: number;
     onStateChange?: (state: PlayState) => void;
     onTimeChange?: (tMs: number) => void;
+    onLoopModeChange?: (mode: LoopMode) => void;
   }
 ): Player {
   const compileCtx: CompileCtx = {
@@ -283,5 +345,6 @@ export function createPlayer(
     onFrame,
     onStateChange: opts?.onStateChange,
     onTimeChange: opts?.onTimeChange,
+    onLoopModeChange: opts?.onLoopModeChange,
   });
 }

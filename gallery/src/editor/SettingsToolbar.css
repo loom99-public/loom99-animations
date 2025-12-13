@@ -42,6 +42,24 @@
   color: #666;
 }
 
+.toolbar-clear-btn {
+  padding: 5px 10px;
+  margin-right: 12px;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #888;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.toolbar-clear-btn:hover {
+  background: #2a2020;
+  border-color: #a44;
+  color: #faa;
+}
+
 /* Dropdown */
 .toolbar-dropdown {
   position: relative;

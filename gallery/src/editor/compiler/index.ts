@@ -95,6 +95,7 @@ export {
   setupAutoCompile,
   type CompilerService,
   type AutoCompileOptions,
+  type Viewport,
 } from './integration';
 
 // Error decorations (Slice 2.5)

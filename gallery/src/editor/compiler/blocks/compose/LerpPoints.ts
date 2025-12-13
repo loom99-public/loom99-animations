@@ -22,8 +22,8 @@ function lerpVec2(a: Vec2, b: Vec2, t: number): Vec2 {
 export const LerpPointsBlock: BlockCompiler = {
   type: 'lerpPoints',
   inputs: [
-    { name: 'from', type: { kind: 'Field:vec2' }, required: true },
-    { name: 'to', type: { kind: 'Field:vec2' }, required: true },
+    { name: 'starts', type: { kind: 'Field:vec2' }, required: true },
+    { name: 'ends', type: { kind: 'Field:vec2' }, required: true }, // Also accepts TargetScene
     { name: 'progress', type: { kind: 'Signal:Unit' }, required: true }, // Actually Signal<number[]>
   ],
   outputs: [
@@ -31,25 +31,48 @@ export const LerpPointsBlock: BlockCompiler = {
   ],
 
   compile({ inputs, ctx }) {
-    // Validate inputs
-    if (inputs.from?.kind !== 'Field:vec2') {
+    // Validate starts - accept Field:vec2 or Field:Point
+    const startsKind = inputs.starts?.kind;
+    if (startsKind !== 'Field:vec2' && startsKind !== 'Field:Point') {
       return {
-        positions: { kind: 'Error', message: 'LerpPoints: from must be Field:vec2' },
+        positions: { kind: 'Error', message: 'LerpPoints: starts must be Field:vec2 or Field:Point' },
       };
     }
-    if (inputs.to?.kind !== 'Field:vec2') {
+
+    // Validate ends - accept Field:vec2, Field:Point, or TargetScene
+    const endsKind = inputs.ends?.kind;
+    if (endsKind !== 'Field:vec2' && endsKind !== 'Field:Point' && endsKind !== 'TargetScene') {
       return {
-        positions: { kind: 'Error', message: 'LerpPoints: to must be Field:vec2' },
+        positions: { kind: 'Error', message: 'LerpPoints: ends must be Field:vec2, Field:Point, or TargetScene' },
       };
     }
+
     if (inputs.progress?.kind !== 'Signal:Unit') {
       return {
         positions: { kind: 'Error', message: 'LerpPoints: progress must be Signal:Unit' },
       };
     }
 
-    const fromField: Field<Vec2> = inputs.from.value;
-    const toField: Field<Vec2> = inputs.to.value;
+    const fromField: Field<Vec2> = inputs.starts.value;
+
+    // Handle ends - either a Field or extract from TargetScene
+    let toField: Field<Vec2>;
+    if (endsKind === 'TargetScene') {
+      // Extract target positions from TargetScene as a field
+      // TargetScene.targets is Vec2[] directly (not {position: Vec2}[])
+      const targetScene = inputs.ends.value as { targets?: Vec2[] };
+      const targetPositions = targetScene.targets ?? [];
+      toField = (_seed: number, n: number) => {
+        // Return target positions, cycling if n > targets.length
+        const result: Vec2[] = new Array(n);
+        for (let i = 0; i < n; i++) {
+          result[i] = targetPositions[i % targetPositions.length] ?? { x: 0, y: 0 };
+        }
+        return result;
+      };
+    } else {
+      toField = inputs.ends.value;
+    }
     const progressSignal = inputs.progress.value as (tMs: number, ctx: RuntimeCtx) => readonly number[];
 
     const seed = 42;

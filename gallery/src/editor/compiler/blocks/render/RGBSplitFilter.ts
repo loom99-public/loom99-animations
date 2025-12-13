@@ -1,48 +1,27 @@
 /**
  * RGBSplitFilter Block Compiler
  *
- * Creates RGB channel separation filter for glitch effects.
- * Splits color channels with offset for chromatic aberration.
+ * Creates RGB channel separation effect for glitch animations.
+ * Uses CSS drop-shadow to simulate chromatic aberration.
  *
- * Outputs: FilterDef for SVG rendering.
+ * Note: True RGB split requires SVG filters or canvas. This is a CSS approximation.
  */
 
 import type { BlockCompiler } from '../../types';
-
-interface RGBSplitConfig {
-  id: string;
-  redOffsetX: number;
-  redOffsetY: number;
-  greenOffsetX: number;
-  greenOffsetY: number;
-  blueOffsetX: number;
-  blueOffsetY: number;
-}
 
 export const RGBSplitFilterBlock: BlockCompiler = {
   type: 'RGBSplitFilter',
   inputs: [],
   outputs: [{ name: 'filter', type: { kind: 'FilterDef' } }],
 
-  compile({ params, id }) {
-    const config: RGBSplitConfig = {
-      id: `rgb-split-${id}`,
-      redOffsetX: Number(params.redOffsetX ?? 3),
-      redOffsetY: Number(params.redOffsetY ?? 0),
-      greenOffsetX: Number(params.greenOffsetX ?? 0),
-      greenOffsetY: Number(params.greenOffsetY ?? 0),
-      blueOffsetX: Number(params.blueOffsetX ?? -3),
-      blueOffsetY: Number(params.blueOffsetY ?? 0),
-    };
+  compile({ params }) {
+    const redX = Number(params.redOffsetX ?? 3);
+    const blueX = Number(params.blueOffsetX ?? -3);
 
-    return {
-      filter: {
-        kind: 'FilterDef' as const,
-        value: {
-          type: 'rgbSplit',
-          ...config,
-        },
-      },
-    };
+    // CSS drop-shadow approximation of RGB split effect
+    // Creates colored shadows offset in different directions
+    const filter = `drop-shadow(${redX}px 0 0 rgba(255,0,0,0.5)) drop-shadow(${blueX}px 0 0 rgba(0,0,255,0.5))`;
+
+    return { filter: { kind: 'FilterDef', value: filter } };
   },
 };

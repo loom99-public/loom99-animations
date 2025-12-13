@@ -275,10 +275,10 @@ function applyGeometry(el: SVGElement, geom: Geometry): void {
 }
 
 function applyStyle(el: SVGElement, style: Style | undefined, ctxOpacity: number): void {
-  // Default style
+  // Default style - no stroke unless explicitly set
   const fill = style?.fill ?? 'none';
-  const stroke = style?.stroke ?? 'white';
-  const strokeWidth = style?.strokeWidth ?? 2;
+  const stroke = style?.stroke ?? 'none';
+  const strokeWidth = style?.strokeWidth ?? 0;
   const opacity = (style?.opacity ?? 1) * ctxOpacity;
 
   el.setAttribute('fill', fill);

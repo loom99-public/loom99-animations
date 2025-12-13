@@ -29,6 +29,12 @@
   color: #fff;
 }
 
+.library-total-count {
+  font-weight: 400;
+  color: #888;
+  font-size: 12px;
+}
+
 .library-search {
   width: 100%;
   padding: 6px 10px;

@@ -30,113 +30,192 @@ export interface LineData {
   foldDuration?: number;
 }
 
-// Color constants
-export const CYAN = '#00d4ff';
-export const PURPLE = '#7b2ff7';
-export const PINK = '#ff2d75';
+// Color constants - vibrant neon palette
+export const ELECTRIC_BLUE = '#00f0ff';
+export const NEON_PURPLE = '#bf00ff';
+export const HOT_PINK = '#ff0080';
+export const NEON_GREEN = '#00ff88';
+export const SUNSET_ORANGE = '#ff6b00';
+export const GOLDEN = '#ffcc00';
+
+// Legacy aliases
+export const CYAN = ELECTRIC_BLUE;
+export const PURPLE = NEON_PURPLE;
+export const PINK = HOT_PINK;
 export const RED = '#ff2d75';
-export const ORANGE = '#ff8c42';
-export const YELLOW = '#ffd93d';
+export const ORANGE = SUNSET_ORANGE;
+export const YELLOW = GOLDEN;
 
 /**
  * Logo path data - loom99 logo
+ * Vertical stacked layout: "loom" on top, "99" below
+ * Designed for ~400x300 viewport, centered
+ * Stylistic flowing letterforms with neon colors
  */
 export const LOGO_PATHS: LineData[] = [
-  // L - from top left, shoots in
+  // ========================================
+  // TOP ROW: "loom" centered around y=80
+  // ========================================
+
+  // ===== L - Stylized with curved foot =====
   {
     startX: -100,
-    startY: 100,
+    startY: 50,
     points: [
-      { x: 40, y: 40 },
-      { x: 40, y: 160 },
-      { x: 100, y: 160 },
+      { x: 80, y: 30 },
+      { x: 80, y: 110 },
+      { type: 'Q', cx: 80, cy: 130, x: 100, y: 130 },
+      { x: 130, y: 130 },
     ],
-    color: CYAN,
+    color: '#00f0ff', // Electric blue
     delay: 0,
-    duration: 400,
-    foldDuration: 180,
+    duration: 500,
   },
-  // O (first) - from left, swoops into circle
+
+  // ===== O (first) - Smooth oval =====
   {
-    startX: -100,
-    startY: 100,
+    startX: -80,
+    startY: 80,
     points: [
-      { x: 150, y: 60 },
-      { type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 150, y: 140 },
-      { type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 150, y: 60 },
+      { x: 155, y: 80 },
+      { type: 'Q', cx: 155, cy: 30, x: 185, y: 30 },
+      { type: 'Q', cx: 215, cy: 30, x: 215, y: 80 },
+      { type: 'Q', cx: 215, cy: 130, x: 185, y: 130 },
+      { type: 'Q', cx: 155, cy: 130, x: 155, y: 80 },
     ],
-    color: PURPLE,
+    color: '#bf00ff', // Neon purple
     delay: 80,
-    duration: 400,
-    foldDuration: 180,
+    duration: 500,
   },
-  // O (second) - from top, drops and curves
+
+  // ===== O (second) - Smooth oval =====
   {
-    startX: 240,
-    startY: -50,
+    startX: 500,
+    startY: 80,
     points: [
-      { x: 240, y: 60 },
-      { type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 240, y: 140 },
-      { type: 'A', rx: 40, ry: 40, rotation: 0, largeArc: 1, sweep: 1, x: 240, y: 60 },
+      { x: 240, y: 80 },
+      { type: 'Q', cx: 240, cy: 30, x: 270, y: 30 },
+      { type: 'Q', cx: 300, cy: 30, x: 300, y: 80 },
+      { type: 'Q', cx: 300, cy: 130, x: 270, y: 130 },
+      { type: 'Q', cx: 240, cy: 130, x: 240, y: 80 },
     ],
-    color: PURPLE,
+    color: '#ff0080', // Hot pink
     delay: 160,
-    duration: 400,
-    foldDuration: 180,
+    duration: 500,
   },
-  // M - from top right, sweeps down
+
+  // ===== M - Stylized with pointed peaks =====
+  // Left leg
   {
-    startX: 350,
-    startY: -50,
+    startX: 500,
+    startY: 130,
     points: [
-      { x: 300, y: 160 },
-      { x: 300, y: 40 },
-      { x: 350, y: 100 },
-      { x: 400, y: 40 },
-      { x: 400, y: 160 },
+      { x: 325, y: 130 },
+      { x: 325, y: 35 },
     ],
-    color: PINK,
+    color: '#00ff88', // Neon green
     delay: 240,
     duration: 400,
-    foldDuration: 180,
   },
-  // 9 (first) - from right, spirals in - curved flowing design
+  // Left peak
   {
-    startX: 700,
-    startY: 100,
+    startX: 480,
+    startY: 30,
     points: [
-      { x: 460, y: 70 },
-      { type: 'Q', cx: 460, cy: 45, x: 480, y: 45 },
-      { type: 'Q', cx: 500, cy: 45, x: 500, y: 70 },
-      { type: 'Q', cx: 500, cy: 95, x: 480, y: 95 },
-      { type: 'Q', cx: 460, cy: 95, x: 460, y: 70 },
-      { x: 500, y: 70 },
-      { type: 'Q', cx: 500, cy: 110, x: 485, y: 135 },
-      { type: 'Q', cx: 470, cy: 160, x: 445, y: 165 },
+      { x: 325, y: 35 },
+      { type: 'Q', cx: 340, cy: 30, x: 355, y: 80 },
     ],
-    color: CYAN,
+    color: '#00ff88',
+    delay: 280,
+    duration: 400,
+  },
+  // Right peak
+  {
+    startX: 520,
+    startY: 30,
+    points: [
+      { x: 355, y: 80 },
+      { type: 'Q', cx: 370, cy: 30, x: 385, y: 35 },
+    ],
+    color: '#00ff88',
     delay: 320,
     duration: 400,
-    foldDuration: 180,
   },
-  // 9 (second) - from bottom right, shoots up - curved flowing design
+  // Right leg
   {
-    startX: 650,
-    startY: 250,
+    startX: 550,
+    startY: 130,
     points: [
-      { x: 540, y: 70 },
-      { type: 'Q', cx: 540, cy: 45, x: 560, y: 45 },
-      { type: 'Q', cx: 580, cy: 45, x: 580, y: 70 },
-      { type: 'Q', cx: 580, cy: 95, x: 560, y: 95 },
-      { type: 'Q', cx: 540, cy: 95, x: 540, y: 70 },
-      { x: 580, y: 70 },
-      { type: 'Q', cx: 580, cy: 110, x: 565, y: 135 },
-      { type: 'Q', cx: 550, cy: 160, x: 525, y: 165 },
+      { x: 385, y: 35 },
+      { x: 385, y: 130 },
     ],
-    color: CYAN,
-    delay: 400,
+    color: '#00ff88',
+    delay: 360,
     duration: 400,
-    foldDuration: 180,
+  },
+
+  // ========================================
+  // BOTTOM ROW: "99" centered around y=220
+  // ========================================
+
+  // ===== 9 (first) - Large stylized =====
+  // Circle head
+  {
+    startX: -100,
+    startY: 200,
+    points: [
+      { x: 140, y: 185 },
+      { type: 'Q', cx: 140, cy: 155, x: 175, y: 155 },
+      { type: 'Q', cx: 210, cy: 155, x: 210, y: 185 },
+      { type: 'Q', cx: 210, cy: 215, x: 175, y: 215 },
+      { type: 'Q', cx: 140, cy: 215, x: 140, y: 185 },
+    ],
+    color: '#ff6b00', // Sunset orange
+    delay: 450,
+    duration: 500,
+  },
+  // Flowing tail
+  {
+    startX: -80,
+    startY: 260,
+    points: [
+      { x: 210, y: 195 },
+      { type: 'Q', cx: 215, cy: 240, x: 195, y: 260 },
+      { type: 'Q', cx: 170, cy: 285, x: 135, y: 280 },
+    ],
+    color: '#ff6b00',
+    delay: 520,
+    duration: 500,
+  },
+
+  // ===== 9 (second) - Large stylized =====
+  // Circle head
+  {
+    startX: 500,
+    startY: 200,
+    points: [
+      { x: 225, y: 185 },
+      { type: 'Q', cx: 225, cy: 155, x: 260, y: 155 },
+      { type: 'Q', cx: 295, cy: 155, x: 295, y: 185 },
+      { type: 'Q', cx: 295, cy: 215, x: 260, y: 215 },
+      { type: 'Q', cx: 225, cy: 215, x: 225, y: 185 },
+    ],
+    color: '#ffcc00', // Golden
+    delay: 600,
+    duration: 500,
+  },
+  // Flowing tail
+  {
+    startX: 520,
+    startY: 260,
+    points: [
+      { x: 295, y: 195 },
+      { type: 'Q', cx: 300, cy: 240, x: 280, y: 260 },
+      { type: 'Q', cx: 255, cy: 285, x: 220, y: 280 },
+    ],
+    color: '#ffcc00',
+    delay: 670,
+    duration: 500,
   },
 ];
 
@@ -507,6 +586,168 @@ export const TEXT_PATHS: LineData[] = [
     delay: 1110,
     duration: 400,
     foldDuration: 180,
+  },
+];
+
+/**
+ * Heart path data - concentric heart shapes, all red tones
+ */
+export const HEART_PATHS: LineData[] = [
+  // Outermost heart - left
+  {
+    startX: 200,
+    startY: 70,
+    points: [
+      { type: 'Q', cx: 110, cy: 0, x: 60, y: 80 },
+      { type: 'Q', cx: 10, cy: 160, x: 70, y: 200 },
+      { type: 'Q', cx: 130, cy: 250, x: 200, y: 300 },
+    ],
+    color: '#cc0000',
+    delay: 0,
+    duration: 500,
+  },
+  // Outermost heart - right
+  {
+    startX: 200,
+    startY: 70,
+    points: [
+      { type: 'Q', cx: 290, cy: 0, x: 340, y: 80 },
+      { type: 'Q', cx: 390, cy: 160, x: 330, y: 200 },
+      { type: 'Q', cx: 270, cy: 250, x: 200, y: 300 },
+    ],
+    color: '#dd0000',
+    delay: 30,
+    duration: 500,
+  },
+  // Second heart - left
+  {
+    startX: 200,
+    startY: 85,
+    points: [
+      { type: 'Q', cx: 125, cy: 25, x: 85, y: 90 },
+      { type: 'Q', cx: 45, cy: 155, x: 90, y: 190 },
+      { type: 'Q', cx: 140, cy: 235, x: 200, y: 275 },
+    ],
+    color: '#ee0000',
+    delay: 60,
+    duration: 500,
+  },
+  // Second heart - right
+  {
+    startX: 200,
+    startY: 85,
+    points: [
+      { type: 'Q', cx: 275, cy: 25, x: 315, y: 90 },
+      { type: 'Q', cx: 355, cy: 155, x: 310, y: 190 },
+      { type: 'Q', cx: 260, cy: 235, x: 200, y: 275 },
+    ],
+    color: '#ff0000',
+    delay: 90,
+    duration: 500,
+  },
+  // Third heart - left
+  {
+    startX: 200,
+    startY: 100,
+    points: [
+      { type: 'Q', cx: 140, cy: 50, x: 110, y: 100 },
+      { type: 'Q', cx: 80, cy: 150, x: 110, y: 180 },
+      { type: 'Q', cx: 150, cy: 220, x: 200, y: 250 },
+    ],
+    color: '#ff1111',
+    delay: 120,
+    duration: 500,
+  },
+  // Third heart - right
+  {
+    startX: 200,
+    startY: 100,
+    points: [
+      { type: 'Q', cx: 260, cy: 50, x: 290, y: 100 },
+      { type: 'Q', cx: 320, cy: 150, x: 290, y: 180 },
+      { type: 'Q', cx: 250, cy: 220, x: 200, y: 250 },
+    ],
+    color: '#ff2222',
+    delay: 150,
+    duration: 500,
+  },
+  // Fourth heart - left
+  {
+    startX: 200,
+    startY: 115,
+    points: [
+      { type: 'Q', cx: 155, cy: 75, x: 135, y: 115 },
+      { type: 'Q', cx: 115, cy: 155, x: 135, y: 175 },
+      { type: 'Q', cx: 165, cy: 205, x: 200, y: 225 },
+    ],
+    color: '#ff3333',
+    delay: 180,
+    duration: 500,
+  },
+  // Fourth heart - right
+  {
+    startX: 200,
+    startY: 115,
+    points: [
+      { type: 'Q', cx: 245, cy: 75, x: 265, y: 115 },
+      { type: 'Q', cx: 285, cy: 155, x: 265, y: 175 },
+      { type: 'Q', cx: 235, cy: 205, x: 200, y: 225 },
+    ],
+    color: '#ff4444',
+    delay: 210,
+    duration: 500,
+  },
+  // Fifth heart (inner) - left
+  {
+    startX: 200,
+    startY: 130,
+    points: [
+      { type: 'Q', cx: 170, cy: 100, x: 160, y: 130 },
+      { type: 'Q', cx: 150, cy: 160, x: 165, y: 175 },
+      { type: 'Q', cx: 180, cy: 190, x: 200, y: 200 },
+    ],
+    color: '#ff5555',
+    delay: 240,
+    duration: 500,
+  },
+  // Fifth heart (inner) - right
+  {
+    startX: 200,
+    startY: 130,
+    points: [
+      { type: 'Q', cx: 230, cy: 100, x: 240, y: 130 },
+      { type: 'Q', cx: 250, cy: 160, x: 235, y: 175 },
+      { type: 'Q', cx: 220, cy: 190, x: 200, y: 200 },
+    ],
+    color: '#ff6666',
+    delay: 270,
+    duration: 500,
+  },
+  // Innermost heart - left
+  {
+    startX: 200,
+    startY: 145,
+    points: [
+      { type: 'Q', cx: 185, cy: 130, x: 180, y: 145 },
+      { type: 'Q', cx: 175, cy: 160, x: 185, y: 168 },
+      { type: 'Q', cx: 192, cy: 175, x: 200, y: 180 },
+    ],
+    color: '#ff7777',
+    delay: 300,
+    duration: 500,
+  },
+  // Innermost heart - right
+  {
+    startX: 200,
+    startY: 145,
+    points: [
+      { type: 'Q', cx: 215, cy: 130, x: 220, y: 145 },
+      { type: 'Q', cx: 225, cy: 160, x: 215, y: 168 },
+      { type: 'Q', cx: 208, cy: 175, x: 200, y: 180 },
+    ],
+    color: '#ff8888',
+    delay: 330,
+    duration: 500,
   },
 ];
 

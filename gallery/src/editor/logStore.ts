@@ -39,6 +39,9 @@ export class LogStore {
   /** Auto-scroll to newest entry */
   autoScroll: boolean = true;
 
+  /** Auto-clear logs when a macro is loaded */
+  autoClearOnMacro: boolean = true;
+
   /** ID counter */
   private nextId = 1;
 
@@ -52,6 +55,7 @@ export class LogStore {
       enabledLevels: observable,
       enabledComponents: observable,
       autoScroll: observable,
+      autoClearOnMacro: observable,
       log: action,
       debug: action,
       info: action,
@@ -63,6 +67,7 @@ export class LogStore {
       toggleComponent: action,
       setComponents: action,
       setAutoScroll: action,
+      setAutoClearOnMacro: action,
       filteredEntries: computed,
       status: computed,
       errorCount: computed,
@@ -238,6 +243,13 @@ export class LogStore {
    */
   setAutoScroll(enabled: boolean): void {
     this.autoScroll = enabled;
+  }
+
+  /**
+   * Toggle auto-clear on macro load.
+   */
+  setAutoClearOnMacro(enabled: boolean): void {
+    this.autoClearOnMacro = enabled;
   }
 }
 

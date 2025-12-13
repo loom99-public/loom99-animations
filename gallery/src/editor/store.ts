@@ -29,6 +29,7 @@ import {
 } from './laneLayouts';
 import { getMacroKey, getMacroExpansion, type MacroExpansion } from './macros';
 import { computeAutoWire, findPrevBlockInLane, type AutoWireContext } from './autowire';
+import { logStore } from './logStore';
 
 /**
  * EditorStore manages the patch bay graph state.
@@ -86,7 +87,7 @@ export class EditorStore {
       y: 0,
       portRef: null,
     },
-    isPlaying: false,
+    isPlaying: true,
     currentTime: 0,
   };
 
@@ -341,6 +342,17 @@ export class EditorStore {
       if (fromId && toId) {
         this.connect(fromId, conn.fromSlot, toId, conn.toSlot);
       }
+    }
+
+    // Auto-start playback if not already playing
+    if (!this.uiState.isPlaying) {
+      this.uiState.isPlaying = true;
+      this.uiState.currentTime = 0;
+    }
+
+    // Auto-clear logs if enabled
+    if (logStore.autoClearOnMacro) {
+      logStore.clear();
     }
 
     // Return the first block ID (for selection purposes)

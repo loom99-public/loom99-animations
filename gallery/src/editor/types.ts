@@ -24,6 +24,12 @@ export type SlotType =
   | 'Field<Duration>'   // Per-element delays/durations
   | 'Field<number>'     // Per-element scalars (radius, opacity)
   | 'Field<HSL>'        // Per-element colors
+  | 'Field<string>'     // Per-element strings (colors, easing names)
+  | 'Field<Path>'       // Per-element path data
+  | 'Field<Wobble>'     // Per-element wobble parameters
+  | 'Field<Spiral>'     // Per-element spiral parameters
+  | 'Field<Wave>'       // Per-element wave parameters
+  | 'Field<Jitter>'     // Per-element jitter parameters
   | 'Signal<Point>'     // Time-varying position
   | 'Signal<number>'    // Time-varying scalar
   | 'Signal<Unit>'      // Time-varying progress [0,1]
@@ -36,6 +42,7 @@ export type SlotType =
   | 'RenderNode'        // Single render node
   | 'RenderNode[]'      // Array of render nodes
   | 'FilterDef'         // SVG filter definition
+  | 'StrokeStyle'       // Stroke styling configuration
   | 'ElementCount';     // Number of elements (from scene)
 
 // =============================================================================

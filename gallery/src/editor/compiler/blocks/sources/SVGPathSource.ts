@@ -6,24 +6,49 @@
  */
 
 import type { BlockCompiler, TargetScene, Vec2 } from '../../types';
-import { LOGO_PATHS, TEXT_PATHS, type LineData } from '../../../../data/pathData';
+import { LOGO_PATHS, TEXT_PATHS, HEART_PATHS, type LineData } from '../../../../data/pathData';
 
 /**
  * Sample points along a path defined by LineData.
  * Returns approximate points along the path for particle targets.
+ *
+ * Logic:
+ * - If first point is a curve (Q, A), use startX/startY as actual start
+ * - If first point is a line point, use it as start (startX/startY is spawn origin)
  */
 function samplePathPoints(line: LineData, density: number = 1.0): Vec2[] {
   const points: Vec2[] = [];
   const { startX, startY, points: pathPoints } = line;
 
-  // Start point
-  let lastX = startX;
-  let lastY = startY;
+  if (pathPoints.length === 0) return points;
 
-  for (const point of pathPoints) {
+  const firstPoint = pathPoints[0]!;
+  const firstIsCurve = firstPoint.type === 'Q' || firstPoint.type === 'A';
+
+  // Determine starting point
+  let lastX: number;
+  let lastY: number;
+  let startIndex: number;
+
+  if (firstIsCurve) {
+    // First point is a curve - startX/startY is the actual shape start
+    lastX = startX;
+    lastY = startY;
+    startIndex = 0;
+  } else {
+    // First point is a line point - use it as start
+    lastX = firstPoint.x;
+    lastY = firstPoint.y;
+    startIndex = 1;
+  }
+
+  points.push({ x: lastX, y: lastY });
+
+  for (let pi = startIndex; pi < pathPoints.length; pi++) {
+    const point = pathPoints[pi]!;
     const steps = Math.max(1, Math.floor(10 * density));
 
-    for (let i = 0; i <= steps; i++) {
+    for (let i = 1; i <= steps; i++) {
       const t = i / steps;
 
       if (point.type === 'Q' && point.cx !== undefined && point.cy !== undefined) {
@@ -37,10 +62,24 @@ function samplePathPoints(line: LineData, density: number = 1.0): Vec2[] {
           2 * (1 - t) * t * point.cy +
           t * t * point.y;
         points.push({ x, y });
-      } else if (point.type === 'A') {
-        // Arc - approximate with linear interpolation for now
-        const x = lastX + (point.x - lastX) * t;
-        const y = lastY + (point.y - lastY) * t;
+      } else if (point.type === 'A' && point.rx !== undefined && point.ry !== undefined) {
+        // Arc - sample actual arc curve
+        const cx = (lastX + point.x) / 2;
+        const cy = (lastY + point.y) / 2;
+        const rx = point.rx;
+        const ry = point.ry;
+        const startAngle = Math.atan2(lastY - cy, lastX - cx);
+        const endAngle = Math.atan2(point.y - cy, point.x - cx);
+        const sweep = point.sweep === 1 ? 1 : -1;
+        let deltaAngle = endAngle - startAngle;
+        if (point.largeArc === 1) {
+          if (Math.abs(deltaAngle) < Math.PI) {
+            deltaAngle += sweep * 2 * Math.PI;
+          }
+        }
+        const angle = startAngle + deltaAngle * t;
+        const x = cx + rx * Math.cos(angle);
+        const y = cy + ry * Math.sin(angle);
         points.push({ x, y });
       } else {
         // Line segment
@@ -80,7 +119,7 @@ export const SVGPathSourceBlock: BlockCompiler = {
     const target = String(params.target ?? 'logo');
     const density = Number(params.density ?? 1.0);
 
-    const paths = target === 'text' ? TEXT_PATHS : LOGO_PATHS;
+    const paths = target === 'text' ? TEXT_PATHS : target === 'heart' ? HEART_PATHS : LOGO_PATHS;
 
     // Sample points from all paths
     const allPoints: Vec2[] = [];

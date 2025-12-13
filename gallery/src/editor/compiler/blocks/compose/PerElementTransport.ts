@@ -15,7 +15,7 @@ import type {
 } from '../../types';
 import type { RenderTree, DrawNode } from '../../../runtime/renderTree';
 import { circle, group, withOpacity } from '../../../runtime/renderTree';
-import { clamp01, easeOutCubic, easeInCubic, lerp } from '../helpers';
+import { clamp01, easeOutCubic, easeInCubic, easeInOutCubic, lerp } from '../helpers';
 
 /**
  * Linear interpolation between two Vec2 points.
@@ -70,7 +70,11 @@ export const PerElementTransportBlock: BlockCompiler = {
 
     // Evaluate fields at compile time (BULK form)
     const startPositions = positionsField(seed, n, ctx);
-    const delays = delaysField(seed, n, ctx);
+    const rawDelays = delaysField(seed, n, ctx);
+
+    // Normalize delays to [0, 1] range
+    const maxDelay = Math.max(...rawDelays, 0.001);
+    const delays = rawDelays.map(d => d / maxDelay);
 
     // Get colors from scene metadata if available
     const colors: string[] = (scene.meta?.colors as string[]) ?? [];
@@ -94,7 +98,6 @@ export const PerElementTransportBlock: BlockCompiler = {
 
         const particles: DrawNode[] = scene.targets.map((target, i) => {
           const startPos = startPositions[i] ?? { x: 0, y: 0 };
-          const delay = (delays[i] ?? 0) * 1000; // Convert to ms
           const exitTarget = exitTargets[i] ?? target;
           const color = colors[i] ?? '#00d4ff';
 
@@ -102,15 +105,19 @@ export const PerElementTransportBlock: BlockCompiler = {
           let opacity = 1;
 
           if (phaseSample.phase === 'entrance') {
-            // Local time for this particle
-            const localT = phaseSample.tLocal - delay;
-            const duration = 2000; // 2 second duration per particle
-            const uRaw = duration <= 0 ? 1 : localT / duration;
-            const u = clamp01(uRaw);
-            const uEased = easeOutCubic(u);
+            // Use phase's normalized progress, with staggered delays
+            // Delays are normalized [0, 1], scale to use 20% of entrance for stagger
+            const staggerWindow = 0.2;
+            const delayNorm = (delays[i] ?? 0) * staggerWindow;
+
+            // Each particle animates from its delay point to u=1
+            // This ensures all particles finish exactly at phase end
+            const localU = (phaseSample.u - delayNorm) / (1 - delayNorm);
+            const u = clamp01(localU);
+            const uEased = easeInOutCubic(u); // Smooth start and end
 
             position = lerpVec2(startPos, target, uEased);
-            opacity = clamp01(u * 2); // Fade in during first half
+            opacity = clamp01(u * 4); // Fade in quickly
           } else if (phaseSample.phase === 'hold') {
             position = target;
             opacity = 1;

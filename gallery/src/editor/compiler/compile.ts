@@ -276,13 +276,44 @@ export function compilePatch(
 // =============================================================================
 
 export function isPortTypeAssignable(from: PortType, to: PortType): boolean {
-  // Exact match for now (maximal purity).
-  // Later: add widening rules (Scalar:number -> Field:number via lifting)
-  return from.kind === to.kind;
+  // Exact match
+  if (from.kind === to.kind) return true;
+
+  // Compatible type sets - types within a set can be connected
+  const compatibleSets: string[][] = [
+    ['Field:Point', 'Field:vec2'],
+    ['ElementCount', 'Scalar:number'],
+    ['RenderTree', 'RenderTreeProgram'],
+  ];
+
+  for (const set of compatibleSets) {
+    if (set.includes(from.kind) && set.includes(to.kind)) return true;
+  }
+
+  // One-way compatibility: TargetScene can feed into Field:vec2 or Field:Point
+  // (the receiving block handles extraction)
+  if (from.kind === 'TargetScene' && (to.kind === 'Field:vec2' || to.kind === 'Field:Point')) {
+    return true;
+  }
+
+  return false;
 }
 
 function isKindAssignable(fromKind: Artifact['kind'], toKind: ValueKind): boolean {
-  return fromKind === toKind;
+  if (fromKind === toKind) return true;
+
+  // Same compatible sets as port types
+  const compatibleSets: string[][] = [
+    ['Field:Point', 'Field:vec2'],
+    ['ElementCount', 'Scalar:number'],
+    ['RenderTree', 'RenderTreeProgram'],
+  ];
+
+  for (const set of compatibleSets) {
+    if (set.includes(fromKind) && set.includes(toKind)) return true;
+  }
+
+  return false;
 }
 
 // =============================================================================

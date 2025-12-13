@@ -67,7 +67,7 @@ export const Transport = observer(({ store }: TransportProps) => {
           type="range"
           className="scrubber-slider"
           min="0"
-          max="10"
+          max="6"
           step="0.01"
           value={uiState.currentTime}
           onChange={handleScrub}

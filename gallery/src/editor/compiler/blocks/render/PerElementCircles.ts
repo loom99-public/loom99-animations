@@ -13,40 +13,45 @@ export const PerElementCirclesBlock: BlockCompiler = {
   type: 'perElementCircles',
   inputs: [
     { name: 'positions', type: { kind: 'Signal:vec2' }, required: true }, // Actually Signal<Vec2[]>
-    { name: 'progress', type: { kind: 'Signal:Unit' }, required: false }, // For opacity, Signal<number[]>
+    { name: 'count', type: { kind: 'Scalar:number' }, required: false }, // Element count (optional)
+    { name: 'filter', type: { kind: 'FilterDef' }, required: false }, // Filter definition (optional)
   ],
-  outputs: [{ name: 'program', type: { kind: 'RenderTreeProgram' } }],
+  outputs: [{ name: 'tree', type: { kind: 'RenderTreeProgram' } }],
 
   compile({ id, inputs, params }) {
     if (inputs.positions?.kind !== 'Signal:vec2') {
       return {
-        program: { kind: 'Error', message: 'PerElementCircles: positions must be Signal:vec2' },
+        tree: { kind: 'Error', message: 'PerElementCircles: positions must be Signal:vec2' },
       };
     }
 
     const positionsSignal = inputs.positions.value as (tMs: number, ctx: RuntimeCtx) => readonly Vec2[];
-    const progressSignal = inputs.progress?.kind === 'Signal:Unit'
-      ? inputs.progress.value as (tMs: number, ctx: RuntimeCtx) => readonly number[]
-      : null;
+
+    // Get element count if provided (accepts Scalar:number or ElementCount)
+    const countInput = inputs.count;
+    const _elementCount = countInput?.kind === 'Scalar:number' || countInput?.kind === 'ElementCount'
+      ? Number(countInput.value)
+      : undefined;
+
+    // Get filter if provided (CSS filter string like "blur(8px)")
+    const filterString = inputs.filter?.kind === 'FilterDef' ? (inputs.filter.value as string) : null;
 
     const radius = Number(params.radius ?? 2.5);
-    const color = (params.color as string) ?? '#00d4ff';
-    const glow = params.glow !== false;
+    const fill = (params.fill as string) ?? '#ffffff';
+    const baseOpacity = Number(params.opacity ?? 1);
 
     const program: Program<RenderTree> = {
       signal: (tMs: number, rt: RuntimeCtx): RenderTree => {
         const positions = positionsSignal(tMs, rt);
-        const progress = progressSignal ? progressSignal(tMs, rt) : null;
 
         const circles: DrawNode[] = positions.map((pos, i) => {
-          const opacity = progress ? Math.min(1, (progress[i] ?? 1) * 2) : 1; // Fade in
           const circleNode = circle(`${id}-p-${i}`, pos.x, pos.y, radius, {
-            fill: color,
-            filter: glow ? 'blur(4px)' : undefined,
+            fill: fill,
+            filter: filterString ?? undefined,
           });
 
           // Apply opacity via effect wrapper
-          return withOpacity(`${id}-op-${i}`, opacity, circleNode);
+          return withOpacity(`${id}-op-${i}`, baseOpacity, circleNode);
         });
 
         return group(`${id}-root`, circles);
@@ -54,6 +59,6 @@ export const PerElementCirclesBlock: BlockCompiler = {
       event: () => [],
     };
 
-    return { program: { kind: 'RenderTreeProgram', value: program } };
+    return { tree: { kind: 'RenderTreeProgram', value: program } };
   },
 };

@@ -150,7 +150,7 @@ export const BlockLibrary = observer(({ store }: BlockLibraryProps) => {
   return (
     <div className="block-library">
       <div className="library-header">
-        <h2>Blocks</h2>
+        <h2>Blocks <span className="library-total-count">({BLOCK_DEFINITIONS.length})</span></h2>
         {isFiltered && (
           <div className="library-filter-badge" title={`Showing blocks for ${activeLane.label}`}>
             {activeLane.kind}

@@ -108,6 +108,11 @@ export const Editor = observer(() => {
     return dispose;
   }, [store, compilerService]);
 
+  // Load a default macro on startup
+  useEffect(() => {
+    store.addBlock('macro:radialBurst', 'scene');
+  }, [store]);
+
   // Track active drag state
   const [activeDefinition, setActiveDefinition] = useState<BlockDefinition | null>(null);
   const [activePlacedBlock, setActivePlacedBlock] = useState<{
@@ -208,7 +213,7 @@ export const Editor = observer(() => {
           </div>
 
           <div className="editor-preview">
-            <PreviewPanel compilerService={compilerService} />
+            <PreviewPanel compilerService={compilerService} isPlaying={store.uiState.isPlaying} />
           </div>
 
           <div className="editor-inspector">

@@ -144,6 +144,14 @@ export const LogWindow = observer(() => {
                 onToggle={handleToggleComponent}
               />
             </div>
+            <label className="log-auto-clear-option" title="Auto-clear logs when loading a macro">
+              <input
+                type="checkbox"
+                checked={logStore.autoClearOnMacro}
+                onChange={(e) => logStore.setAutoClearOnMacro(e.target.checked)}
+              />
+              <span>Auto-clear</span>
+            </label>
             <button className="log-clear-btn" onClick={handleClear}>
               Clear
             </button>

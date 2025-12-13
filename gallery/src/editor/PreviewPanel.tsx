@@ -28,6 +28,7 @@ import './PreviewPanel.css';
 
 interface PreviewPanelProps {
   compilerService?: CompilerService;
+  isPlaying?: boolean;
 }
 
 /**
@@ -40,7 +41,7 @@ const DEFAULT_SCENE: Scene = {
 
 const DEFAULT_VIEWPORT: Viewport = { width: 800, height: 600 };
 
-export const PreviewPanel = observer(({ compilerService }: PreviewPanelProps) => {
+export const PreviewPanel = observer(({ compilerService, isPlaying }: PreviewPanelProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const playerRef = useRef<Player | null>(null);
   const rendererRef = useRef<SvgRenderer | null>(null);
@@ -48,7 +49,7 @@ export const PreviewPanel = observer(({ compilerService }: PreviewPanelProps) =>
 
   const [playState, setPlayState] = useState<PlayState>('playing');
   const [currentTime, setCurrentTime] = useState(0);
-  const [maxTime, setMaxTime] = useState(10000); // 10 seconds default
+  const [maxTime, setMaxTime] = useState(6000); // 6 seconds default
   const [hasCompiledProgram, setHasCompiledProgram] = useState(false);
   const [viewport, setViewport] = useState<Viewport>(
     compilerService?.getViewport() ?? DEFAULT_VIEWPORT
@@ -115,6 +116,18 @@ export const PreviewPanel = observer(({ compilerService }: PreviewPanelProps) =>
       renderer.clear();
     };
   }, []); // Empty deps - only run once
+
+  // Sync with external isPlaying prop
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player) return;
+
+    if (isPlaying && playState !== 'playing') {
+      player.play();
+    } else if (!isPlaying && playState === 'playing') {
+      player.pause();
+    }
+  }, [isPlaying, playState]);
 
   // Watch for compiler service program and viewport changes
   useEffect(() => {

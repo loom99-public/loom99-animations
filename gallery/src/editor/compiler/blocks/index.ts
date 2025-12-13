@@ -13,10 +13,12 @@ import {
   SVGPathSourceBlock,
   ConstantNumberBlock,
   ConstantVec2Block,
+  TextSourceBlock,
 } from './sources';
 
 // Fields - per-element value generators
 import {
+  // Basic fields
   RadialOriginBlock,
   LinearStaggerBlock,
   AddFieldNumberBlock,
@@ -30,6 +32,27 @@ import {
   WaveStaggerBlock,
   SizeVariationBlock,
   ColorFieldBlock,
+  // Timing/Stagger fields
+  RandomStaggerBlock,
+  IndexStaggerBlock,
+  DurationVariationBlock,
+  DecayEnvelopeBlock,
+  // Position/Spatial fields
+  ExplosionOriginBlock,
+  TopDropOriginBlock,
+  GridPositionsBlock,
+  CenterPointBlock,
+  // Transform fields
+  RotationFieldBlock,
+  ScaleFieldBlock,
+  OpacityFieldBlock,
+  // Behavior/Motion fields
+  WobbleParamsBlock,
+  SpiralParamsBlock,
+  WaveParamsBlock,
+  JitterParamsBlock,
+  // Easing fields
+  EasingFieldBlock,
 } from './fields';
 
 // Time - phase and timing control
@@ -60,6 +83,12 @@ import {
   GroupNodeBlock,
   RenderTreeAssembleBlock,
   PerElementCirclesBlock,
+  // New render blocks
+  PathRendererBlock,
+  StrokeStyleBlock,
+  GooFilterBlock,
+  RGBSplitFilterBlock,
+  MaskRevealBlock,
 } from './render';
 
 // Adapters - type conversions
@@ -87,8 +116,9 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   SVGPathSource: SVGPathSourceBlock,
   constNumber: ConstantNumberBlock,
   constVec2: ConstantVec2Block,
+  TextSource: TextSourceBlock,
 
-  // Fields
+  // Fields - Basic
   RadialOrigin: RadialOriginBlock,
   LinearStagger: LinearStaggerBlock,
   addFieldNumber: AddFieldNumberBlock,
@@ -102,6 +132,32 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   WaveStagger: WaveStaggerBlock,
   SizeVariation: SizeVariationBlock,
   ColorField: ColorFieldBlock,
+
+  // Fields - Timing/Stagger
+  RandomStagger: RandomStaggerBlock,
+  IndexStagger: IndexStaggerBlock,
+  DurationVariation: DurationVariationBlock,
+  DecayEnvelope: DecayEnvelopeBlock,
+
+  // Fields - Position/Spatial
+  ExplosionOrigin: ExplosionOriginBlock,
+  TopDropOrigin: TopDropOriginBlock,
+  GridPositions: GridPositionsBlock,
+  CenterPoint: CenterPointBlock,
+
+  // Fields - Transform
+  RotationField: RotationFieldBlock,
+  ScaleField: ScaleFieldBlock,
+  OpacityField: OpacityFieldBlock,
+
+  // Fields - Behavior/Motion
+  WobbleParams: WobbleParamsBlock,
+  SpiralParams: SpiralParamsBlock,
+  WaveParams: WaveParamsBlock,
+  JitterParams: JitterParamsBlock,
+
+  // Fields - Easing
+  EasingField: EasingFieldBlock,
 
   // Time
   PhaseMachine: PhaseMachineBlock,
@@ -128,6 +184,11 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   groupNode: GroupNodeBlock,
   renderTreeAssemble: RenderTreeAssembleBlock,
   perElementCircles: PerElementCirclesBlock,
+  PathRenderer: PathRendererBlock,
+  StrokeStyle: StrokeStyleBlock,
+  GooFilter: GooFilterBlock,
+  RGBSplitFilter: RGBSplitFilterBlock,
+  MaskReveal: MaskRevealBlock,
 
   // Adapters
   SamplePoints: SamplePointsBlock,

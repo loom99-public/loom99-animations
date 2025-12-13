@@ -215,6 +215,62 @@ export const MacroSwarm: BlockDefinition = {
   priority: -92,
 };
 
+export const MacroLoveYouBaby: BlockDefinition = {
+  type: 'macro:loveYouBaby',
+  label: '💖 Love You Baby',
+  category: 'Macros',
+  description: 'Macro: Particles swarm into a big heart shape.',
+  inputs: [],
+  outputs: [],
+  defaultParams: {},
+  paramSchema: [],
+  color: '#ff2d75',
+  laneKind: 'Program',
+  priority: -91,
+};
+
+export const MacroNebula: BlockDefinition = {
+  type: 'macro:nebula',
+  label: '🌌 Nebula',
+  category: 'Macros',
+  description: 'Macro: Cosmic particles with rainbow colors, varied sizes, and dreamy motion. Uses 16 blocks!',
+  inputs: [],
+  outputs: [],
+  defaultParams: {},
+  paramSchema: [],
+  color: '#a855f7',
+  laneKind: 'Program',
+  priority: -90,
+};
+
+export const MacroGlitchStorm: BlockDefinition = {
+  type: 'macro:glitchStorm',
+  label: '⚡ Glitch Storm',
+  category: 'Macros',
+  description: 'Macro: Digital chaos with grid positions, scan-line timing, and RGB chromatic aberration.',
+  inputs: [],
+  outputs: [],
+  defaultParams: {},
+  paramSchema: [],
+  color: '#22c55e',
+  laneKind: 'Program',
+  priority: -89,
+};
+
+export const MacroAurora: BlockDefinition = {
+  type: 'macro:aurora',
+  label: '🌊 Aurora',
+  category: 'Macros',
+  description: 'Macro: Ethereal curtain of light descending with wave-based flow and gradient colors.',
+  inputs: [],
+  outputs: [],
+  defaultParams: {},
+  paramSchema: [],
+  color: '#06b6d4',
+  laneKind: 'Program',
+  priority: -88,
+};
+
 // =============================================================================
 // Scene Blocks
 // =============================================================================
@@ -223,7 +279,7 @@ export const SVGPathSource: BlockDefinition = {
   type: 'SVGPathSource',
   label: 'SVG Paths',
   category: 'Scene',
-  description: 'Load SVG path data from target (logo or text)',
+  description: 'Load SVG path data from target (logo, text, or heart)',
   inputs: [],
   outputs: [output('scene', 'Scene', 'Scene')],
   defaultParams: {
@@ -237,6 +293,7 @@ export const SVGPathSource: BlockDefinition = {
       options: [
         { value: 'logo', label: 'Logo' },
         { value: 'text', label: 'Text' },
+        { value: 'heart', label: 'Heart' },
       ],
       defaultValue: 'logo',
     },
@@ -491,6 +548,353 @@ export const ColorField: BlockDefinition = {
   laneKind: 'Fields',
   laneFlavor: 'Style',
   priority: 6,
+};
+
+// --- Timing/Stagger Fields ---
+
+export const RandomStagger: BlockDefinition = {
+  type: 'RandomStagger',
+  label: 'Random Stagger',
+  category: 'Fields',
+  description: 'Random delays within a range (for particles, liquid)',
+  inputs: [],
+  outputs: [output('delays', 'Delays', 'Field<Duration>')],
+  defaultParams: { minDelay: 0, maxDelay: 0.5, distribution: 'uniform' },
+  paramSchema: [
+    { key: 'minDelay', label: 'Min Delay (s)', type: 'number', min: 0, max: 2, step: 0.05, defaultValue: 0 },
+    { key: 'maxDelay', label: 'Max Delay (s)', type: 'number', min: 0, max: 2, step: 0.05, defaultValue: 0.5 },
+    { key: 'distribution', label: 'Distribution', type: 'select', options: [
+      { value: 'uniform', label: 'Uniform' },
+      { value: 'easeIn', label: 'Ease In' },
+      { value: 'easeOut', label: 'Ease Out' },
+      { value: 'gaussian', label: 'Gaussian' },
+    ], defaultValue: 'uniform' },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  laneFlavor: 'Timing',
+  priority: 7,
+};
+
+export const IndexStagger: BlockDefinition = {
+  type: 'IndexStagger',
+  label: 'Index Stagger',
+  category: 'Fields',
+  description: 'Sequential delays by element index (typewriter, line drawing)',
+  inputs: [],
+  outputs: [output('delays', 'Delays', 'Field<Duration>')],
+  defaultParams: { delayPerElement: 0.1, startDelay: 0, reverse: false },
+  paramSchema: [
+    { key: 'delayPerElement', label: 'Delay/Element (s)', type: 'number', min: 0.01, max: 0.5, step: 0.01, defaultValue: 0.1 },
+    { key: 'startDelay', label: 'Start Delay (s)', type: 'number', min: 0, max: 2, step: 0.1, defaultValue: 0 },
+    { key: 'reverse', label: 'Reverse', type: 'boolean', defaultValue: false },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  laneFlavor: 'Timing',
+  priority: 8,
+};
+
+export const DurationVariation: BlockDefinition = {
+  type: 'DurationVariation',
+  label: 'Duration Variation',
+  category: 'Fields',
+  description: 'Per-element duration with random variation',
+  inputs: [],
+  outputs: [output('durations', 'Durations', 'Field<Duration>')],
+  defaultParams: { baseDuration: 1.0, variation: 0.2, minDuration: 0.1 },
+  paramSchema: [
+    { key: 'baseDuration', label: 'Base (s)', type: 'number', min: 0.1, max: 5, step: 0.1, defaultValue: 1.0 },
+    { key: 'variation', label: 'Variation', type: 'number', min: 0, max: 1, step: 0.05, defaultValue: 0.2 },
+    { key: 'minDuration', label: 'Min (s)', type: 'number', min: 0.1, max: 1, step: 0.1, defaultValue: 0.1 },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  laneFlavor: 'Timing',
+  priority: 9,
+};
+
+export const DecayEnvelope: BlockDefinition = {
+  type: 'DecayEnvelope',
+  label: 'Decay Envelope',
+  category: 'Fields',
+  description: 'Amplitude decay rates for damping effects',
+  inputs: [],
+  outputs: [output('decay', 'Decay', 'Field<number>')],
+  defaultParams: { curve: 'exponential', rate: 1.0, variation: 0.1 },
+  paramSchema: [
+    { key: 'curve', label: 'Curve', type: 'select', options: [
+      { value: 'linear', label: 'Linear' },
+      { value: 'exponential', label: 'Exponential' },
+      { value: 'easeOut', label: 'Ease Out' },
+      { value: 'sudden', label: 'Sudden' },
+    ], defaultValue: 'exponential' },
+    { key: 'rate', label: 'Rate', type: 'number', min: 0.1, max: 5, step: 0.1, defaultValue: 1.0 },
+    { key: 'variation', label: 'Variation', type: 'number', min: 0, max: 0.5, step: 0.05, defaultValue: 0.1 },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  priority: 10,
+};
+
+// --- Position/Spatial Fields ---
+
+export const ExplosionOrigin: BlockDefinition = {
+  type: 'ExplosionOrigin',
+  label: 'Explosion Origin',
+  category: 'Fields',
+  description: 'Random positions radiating from center (particle explosion)',
+  inputs: [],
+  outputs: [output('positions', 'Positions', 'Field<Point>')],
+  defaultParams: { centerX: 400, centerY: 300, minDistance: 200, maxDistance: 600, angleSpread: 360 },
+  paramSchema: [
+    { key: 'centerX', label: 'Center X', type: 'number', min: 0, max: 800, step: 10, defaultValue: 400 },
+    { key: 'centerY', label: 'Center Y', type: 'number', min: 0, max: 600, step: 10, defaultValue: 300 },
+    { key: 'minDistance', label: 'Min Dist', type: 'number', min: 0, max: 500, step: 10, defaultValue: 200 },
+    { key: 'maxDistance', label: 'Max Dist', type: 'number', min: 100, max: 1000, step: 10, defaultValue: 600 },
+    { key: 'angleSpread', label: 'Angle Spread', type: 'number', min: 0, max: 360, step: 10, defaultValue: 360 },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  laneFlavor: 'Motion',
+  priority: 11,
+};
+
+export const TopDropOrigin: BlockDefinition = {
+  type: 'TopDropOrigin',
+  label: 'Top Drop Origin',
+  category: 'Fields',
+  description: 'Positions above scene for drop/fall effects (liquid)',
+  inputs: [],
+  outputs: [output('positions', 'Positions', 'Field<Point>')],
+  defaultParams: { sceneWidth: 800, dropHeight: -100, xSpread: 1.0, heightVariation: 50 },
+  paramSchema: [
+    { key: 'sceneWidth', label: 'Scene Width', type: 'number', min: 100, max: 1920, step: 10, defaultValue: 800 },
+    { key: 'dropHeight', label: 'Drop Height', type: 'number', min: -500, max: 0, step: 10, defaultValue: -100 },
+    { key: 'xSpread', label: 'X Spread', type: 'number', min: 0.1, max: 2, step: 0.1, defaultValue: 1.0 },
+    { key: 'heightVariation', label: 'Height Var', type: 'number', min: 0, max: 200, step: 10, defaultValue: 50 },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  laneFlavor: 'Motion',
+  priority: 12,
+};
+
+export const GridPositions: BlockDefinition = {
+  type: 'GridPositions',
+  label: 'Grid Positions',
+  category: 'Fields',
+  description: 'Positions arranged in a grid pattern',
+  inputs: [],
+  outputs: [output('positions', 'Positions', 'Field<Point>')],
+  defaultParams: { startX: 100, startY: 100, cellWidth: 50, cellHeight: 50, columns: 10, jitter: 0 },
+  paramSchema: [
+    { key: 'startX', label: 'Start X', type: 'number', min: 0, max: 500, step: 10, defaultValue: 100 },
+    { key: 'startY', label: 'Start Y', type: 'number', min: 0, max: 500, step: 10, defaultValue: 100 },
+    { key: 'cellWidth', label: 'Cell Width', type: 'number', min: 10, max: 200, step: 5, defaultValue: 50 },
+    { key: 'cellHeight', label: 'Cell Height', type: 'number', min: 10, max: 200, step: 5, defaultValue: 50 },
+    { key: 'columns', label: 'Columns', type: 'number', min: 1, max: 20, step: 1, defaultValue: 10 },
+    { key: 'jitter', label: 'Jitter', type: 'number', min: 0, max: 50, step: 1, defaultValue: 0 },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  laneFlavor: 'Motion',
+  priority: 13,
+};
+
+export const CenterPoint: BlockDefinition = {
+  type: 'CenterPoint',
+  label: 'Center Point',
+  category: 'Fields',
+  description: 'Same center position for all elements',
+  inputs: [],
+  outputs: [output('position', 'Position', 'Field<Point>')],
+  defaultParams: { x: 400, y: 300 },
+  paramSchema: [
+    { key: 'x', label: 'X', type: 'number', min: 0, max: 800, step: 10, defaultValue: 400 },
+    { key: 'y', label: 'Y', type: 'number', min: 0, max: 600, step: 10, defaultValue: 300 },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  laneFlavor: 'Motion',
+  priority: 14,
+};
+
+// --- Transform Fields ---
+
+export const RotationField: BlockDefinition = {
+  type: 'RotationField',
+  label: 'Rotation Field',
+  category: 'Fields',
+  description: 'Per-element rotation angles',
+  inputs: [],
+  outputs: [output('rotations', 'Rotations', 'Field<number>')],
+  defaultParams: { mode: 'random', baseRotation: 0, range: 360, direction: 1 },
+  paramSchema: [
+    { key: 'mode', label: 'Mode', type: 'select', options: [
+      { value: 'constant', label: 'Constant' },
+      { value: 'random', label: 'Random' },
+      { value: 'sequential', label: 'Sequential' },
+      { value: 'radial', label: 'Radial' },
+    ], defaultValue: 'random' },
+    { key: 'baseRotation', label: 'Base (deg)', type: 'number', min: -360, max: 360, step: 15, defaultValue: 0 },
+    { key: 'range', label: 'Range (deg)', type: 'number', min: 0, max: 720, step: 15, defaultValue: 360 },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  priority: 15,
+};
+
+export const ScaleField: BlockDefinition = {
+  type: 'ScaleField',
+  label: 'Scale Field',
+  category: 'Fields',
+  description: 'Per-element scale values',
+  inputs: [],
+  outputs: [output('scales', 'Scales', 'Field<number>')],
+  defaultParams: { mode: 'constant', baseScale: 1.0, variation: 0.3, minScale: 0.1, maxScale: 2.0 },
+  paramSchema: [
+    { key: 'mode', label: 'Mode', type: 'select', options: [
+      { value: 'constant', label: 'Constant' },
+      { value: 'random', label: 'Random' },
+      { value: 'progressive', label: 'Progressive' },
+      { value: 'alternating', label: 'Alternating' },
+    ], defaultValue: 'constant' },
+    { key: 'baseScale', label: 'Base Scale', type: 'number', min: 0.1, max: 3, step: 0.1, defaultValue: 1.0 },
+    { key: 'variation', label: 'Variation', type: 'number', min: 0, max: 1, step: 0.1, defaultValue: 0.3 },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  priority: 16,
+};
+
+export const OpacityField: BlockDefinition = {
+  type: 'OpacityField',
+  label: 'Opacity Field',
+  category: 'Fields',
+  description: 'Per-element opacity values',
+  inputs: [],
+  outputs: [output('opacities', 'Opacities', 'Field<number>')],
+  defaultParams: { mode: 'constant', baseOpacity: 1.0, variation: 0.3, minOpacity: 0.1 },
+  paramSchema: [
+    { key: 'mode', label: 'Mode', type: 'select', options: [
+      { value: 'constant', label: 'Constant' },
+      { value: 'random', label: 'Random' },
+      { value: 'fadeByIndex', label: 'Fade by Index' },
+      { value: 'pulse', label: 'Pulse' },
+    ], defaultValue: 'constant' },
+    { key: 'baseOpacity', label: 'Base', type: 'number', min: 0, max: 1, step: 0.1, defaultValue: 1.0 },
+    { key: 'variation', label: 'Variation', type: 'number', min: 0, max: 1, step: 0.1, defaultValue: 0.3 },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  priority: 17,
+};
+
+// --- Behavior/Motion Parameter Fields ---
+
+export const WobbleParams: BlockDefinition = {
+  type: 'WobbleParams',
+  label: 'Wobble Params',
+  category: 'Fields',
+  description: 'Per-element wobble behavior (liquid animations)',
+  inputs: [],
+  outputs: [output('wobble', 'Wobble', 'Field<Wobble>')],
+  defaultParams: { baseAmplitude: 5, amplitudeVariation: 2, baseFrequency: 3, frequencyVariation: 1, decayRate: 2 },
+  paramSchema: [
+    { key: 'baseAmplitude', label: 'Amplitude', type: 'number', min: 0, max: 20, step: 1, defaultValue: 5 },
+    { key: 'amplitudeVariation', label: 'Amp Var', type: 'number', min: 0, max: 10, step: 1, defaultValue: 2 },
+    { key: 'baseFrequency', label: 'Frequency', type: 'number', min: 0.5, max: 10, step: 0.5, defaultValue: 3 },
+    { key: 'decayRate', label: 'Decay Rate', type: 'number', min: 0, max: 5, step: 0.5, defaultValue: 2 },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  priority: 18,
+};
+
+export const SpiralParams: BlockDefinition = {
+  type: 'SpiralParams',
+  label: 'Spiral Params',
+  category: 'Fields',
+  description: 'Per-element spiral motion (particle effects)',
+  inputs: [],
+  outputs: [output('spiral', 'Spiral', 'Field<Spiral>')],
+  defaultParams: { baseRadius: 10, radiusVariation: 5, baseFrequency: 2, decayRate: 1.5 },
+  paramSchema: [
+    { key: 'baseRadius', label: 'Radius', type: 'number', min: 1, max: 50, step: 1, defaultValue: 10 },
+    { key: 'radiusVariation', label: 'Radius Var', type: 'number', min: 0, max: 25, step: 1, defaultValue: 5 },
+    { key: 'baseFrequency', label: 'Frequency', type: 'number', min: 0.5, max: 5, step: 0.5, defaultValue: 2 },
+    { key: 'decayRate', label: 'Decay Rate', type: 'number', min: 0, max: 5, step: 0.5, defaultValue: 1.5 },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  priority: 19,
+};
+
+export const WaveParams: BlockDefinition = {
+  type: 'WaveParams',
+  label: 'Wave Params',
+  category: 'Fields',
+  description: 'Per-element wave motion (wave ripple effects)',
+  inputs: [],
+  outputs: [output('wave', 'Wave', 'Field<Wave>')],
+  defaultParams: { amplitudeY: 35, amplitudeScale: 0.25, amplitudeRotation: 15, waveCycles: 3, decayRate: 1 },
+  paramSchema: [
+    { key: 'amplitudeY', label: 'Y Amplitude', type: 'number', min: 0, max: 100, step: 5, defaultValue: 35 },
+    { key: 'amplitudeScale', label: 'Scale Amp', type: 'number', min: 0, max: 1, step: 0.05, defaultValue: 0.25 },
+    { key: 'amplitudeRotation', label: 'Rotation Amp', type: 'number', min: 0, max: 45, step: 5, defaultValue: 15 },
+    { key: 'waveCycles', label: 'Wave Cycles', type: 'number', min: 1, max: 10, step: 1, defaultValue: 3 },
+    { key: 'decayRate', label: 'Decay Rate', type: 'number', min: 0, max: 5, step: 0.5, defaultValue: 1 },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  priority: 20,
+};
+
+export const JitterParams: BlockDefinition = {
+  type: 'JitterParams',
+  label: 'Jitter Params',
+  category: 'Fields',
+  description: 'Per-element jitter/shake (glitch effects)',
+  inputs: [],
+  outputs: [output('jitter', 'Jitter', 'Field<Jitter>')],
+  defaultParams: { baseAmplitudeX: 5, baseAmplitudeY: 5, variation: 0.3, frequency: 10, bounded: true },
+  paramSchema: [
+    { key: 'baseAmplitudeX', label: 'X Amplitude', type: 'number', min: 0, max: 50, step: 1, defaultValue: 5 },
+    { key: 'baseAmplitudeY', label: 'Y Amplitude', type: 'number', min: 0, max: 50, step: 1, defaultValue: 5 },
+    { key: 'frequency', label: 'Frequency', type: 'number', min: 1, max: 30, step: 1, defaultValue: 10 },
+    { key: 'bounded', label: 'Bounded', type: 'boolean', defaultValue: true },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  priority: 21,
+};
+
+export const EasingField: BlockDefinition = {
+  type: 'EasingField',
+  label: 'Easing Field',
+  category: 'Fields',
+  description: 'Per-element easing function selection',
+  inputs: [],
+  outputs: [output('easings', 'Easings', 'Field<string>')],
+  defaultParams: { mode: 'constant', baseEasing: 'easeOutCubic', altEasing: 'easeInCubic' },
+  paramSchema: [
+    { key: 'mode', label: 'Mode', type: 'select', options: [
+      { value: 'constant', label: 'Constant' },
+      { value: 'random', label: 'Random' },
+      { value: 'alternating', label: 'Alternating' },
+    ], defaultValue: 'constant' },
+    { key: 'baseEasing', label: 'Base Easing', type: 'select', options: [
+      { value: 'linear', label: 'Linear' },
+      { value: 'easeOutCubic', label: 'Ease Out Cubic' },
+      { value: 'easeInCubic', label: 'Ease In Cubic' },
+      { value: 'easeInOutCubic', label: 'Ease In Out Cubic' },
+      { value: 'easeOutBack', label: 'Ease Out Back' },
+    ], defaultValue: 'easeOutCubic' },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  priority: 22,
 };
 
 // =============================================================================
@@ -774,6 +1178,145 @@ export const PerElementCircles: BlockDefinition = {
   priority: 2,
 };
 
+// --- New Render Blocks ---
+
+export const PathRenderer: BlockDefinition = {
+  type: 'PathRenderer',
+  label: 'Path Renderer',
+  category: 'Render',
+  description: 'Render SVG paths with stroke styling',
+  inputs: [
+    input('paths', 'Paths', 'Field<Path>'),
+    input('progress', 'Progress', 'Signal<Unit>'),
+  ],
+  outputs: [output('tree', 'Tree', 'RenderTree')],
+  defaultParams: { strokeWidth: 4, strokeColor: '#ffffff', strokeLinecap: 'round', strokeLinejoin: 'round', fillColor: 'none' },
+  paramSchema: [
+    { key: 'strokeWidth', label: 'Stroke Width', type: 'number', min: 1, max: 20, step: 1, defaultValue: 4 },
+    { key: 'strokeColor', label: 'Stroke Color', type: 'color', defaultValue: '#ffffff' },
+    { key: 'strokeLinecap', label: 'Line Cap', type: 'select', options: [
+      { value: 'butt', label: 'Butt' },
+      { value: 'round', label: 'Round' },
+      { value: 'square', label: 'Square' },
+    ], defaultValue: 'round' },
+    { key: 'fillColor', label: 'Fill Color', type: 'color', defaultValue: 'none' },
+  ],
+  color: '#ef4444',
+  laneKind: 'Program',
+  priority: 6,
+};
+
+export const StrokeStyle: BlockDefinition = {
+  type: 'StrokeStyle',
+  label: 'Stroke Style',
+  category: 'FX',
+  description: 'Configure stroke appearance for paths',
+  inputs: [],
+  outputs: [output('style', 'Style', 'StrokeStyle')],
+  defaultParams: { width: 4, color: '#ffffff', linecap: 'round', linejoin: 'round' },
+  paramSchema: [
+    { key: 'width', label: 'Width', type: 'number', min: 1, max: 20, step: 1, defaultValue: 4 },
+    { key: 'color', label: 'Color', type: 'color', defaultValue: '#ffffff' },
+    { key: 'linecap', label: 'Line Cap', type: 'select', options: [
+      { value: 'butt', label: 'Butt' },
+      { value: 'round', label: 'Round' },
+      { value: 'square', label: 'Square' },
+    ], defaultValue: 'round' },
+    { key: 'dasharray', label: 'Dash Array', type: 'string', defaultValue: '' },
+  ],
+  color: '#ec4899',
+  laneKind: 'Program',
+  laneFlavor: 'Style',
+  priority: 6,
+};
+
+export const GooFilter: BlockDefinition = {
+  type: 'GooFilter',
+  label: 'Goo Filter',
+  category: 'FX',
+  description: 'Metaball/liquid blob merging effect',
+  inputs: [],
+  outputs: [output('filter', 'Filter', 'FilterDef')],
+  defaultParams: { blur: 10, threshold: 20, contrast: 35 },
+  paramSchema: [
+    { key: 'blur', label: 'Blur', type: 'number', min: 1, max: 30, step: 1, defaultValue: 10 },
+    { key: 'threshold', label: 'Threshold', type: 'number', min: 1, max: 50, step: 1, defaultValue: 20 },
+    { key: 'contrast', label: 'Contrast', type: 'number', min: 10, max: 100, step: 5, defaultValue: 35 },
+  ],
+  color: '#ec4899',
+  laneKind: 'Program',
+  laneFlavor: 'Style',
+  priority: 7,
+};
+
+export const RGBSplitFilter: BlockDefinition = {
+  type: 'RGBSplitFilter',
+  label: 'RGB Split',
+  category: 'FX',
+  description: 'Chromatic aberration / RGB channel separation',
+  inputs: [],
+  outputs: [output('filter', 'Filter', 'FilterDef')],
+  defaultParams: { redOffsetX: 3, redOffsetY: 0, blueOffsetX: -3, blueOffsetY: 0 },
+  paramSchema: [
+    { key: 'redOffsetX', label: 'Red X', type: 'number', min: -20, max: 20, step: 1, defaultValue: 3 },
+    { key: 'redOffsetY', label: 'Red Y', type: 'number', min: -20, max: 20, step: 1, defaultValue: 0 },
+    { key: 'blueOffsetX', label: 'Blue X', type: 'number', min: -20, max: 20, step: 1, defaultValue: -3 },
+    { key: 'blueOffsetY', label: 'Blue Y', type: 'number', min: -20, max: 20, step: 1, defaultValue: 0 },
+  ],
+  color: '#ec4899',
+  laneKind: 'Program',
+  laneFlavor: 'Style',
+  priority: 8,
+};
+
+export const MaskReveal: BlockDefinition = {
+  type: 'MaskReveal',
+  label: 'Mask Reveal',
+  category: 'Render',
+  description: 'Wipe/reveal mask transition',
+  inputs: [
+    input('content', 'Content', 'RenderTree'),
+    input('progress', 'Progress', 'Signal<Unit>'),
+  ],
+  outputs: [output('tree', 'Tree', 'RenderTree')],
+  defaultParams: { direction: 'left-to-right', softEdge: 20, sceneWidth: 800, sceneHeight: 600 },
+  paramSchema: [
+    { key: 'direction', label: 'Direction', type: 'select', options: [
+      { value: 'left-to-right', label: 'Left → Right' },
+      { value: 'right-to-left', label: 'Right → Left' },
+      { value: 'top-to-bottom', label: 'Top → Bottom' },
+      { value: 'bottom-to-top', label: 'Bottom → Top' },
+      { value: 'radial', label: 'Radial' },
+    ], defaultValue: 'left-to-right' },
+    { key: 'softEdge', label: 'Soft Edge', type: 'number', min: 0, max: 100, step: 5, defaultValue: 20 },
+  ],
+  color: '#ef4444',
+  laneKind: 'Program',
+  priority: 9,
+};
+
+// --- Text Source ---
+
+export const TextSource: BlockDefinition = {
+  type: 'TextSource',
+  label: 'Text Source',
+  category: 'Scene',
+  description: 'Create scene from text (per-character elements)',
+  inputs: [],
+  outputs: [output('scene', 'Scene', 'Scene')],
+  defaultParams: { text: 'LOOM99', fontSize: 48, letterSpacing: 4, startX: 100, startY: 200 },
+  paramSchema: [
+    { key: 'text', label: 'Text', type: 'string', defaultValue: 'LOOM99' },
+    { key: 'fontSize', label: 'Font Size', type: 'number', min: 12, max: 200, step: 4, defaultValue: 48 },
+    { key: 'letterSpacing', label: 'Letter Spacing', type: 'number', min: 0, max: 20, step: 1, defaultValue: 4 },
+    { key: 'startX', label: 'Start X', type: 'number', min: 0, max: 500, step: 10, defaultValue: 100 },
+    { key: 'startY', label: 'Start Y', type: 'number', min: 0, max: 500, step: 10, defaultValue: 200 },
+  ],
+  color: '#4a9eff',
+  laneKind: 'Scene',
+  priority: 2,
+};
+
 // =============================================================================
 // Math Blocks (Slice 2.5)
 // =============================================================================
@@ -1004,10 +1547,15 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   MacroScatter,
   MacroImplosion,
   MacroSwarm,
+  MacroLoveYouBaby,
+  MacroNebula,
+  MacroGlitchStorm,
+  MacroAurora,
   // Scene
   SVGPathSource,
   SamplePoints,
-  // Fields
+  TextSource,
+  // Fields - Basic
   RadialOrigin,
   LinearStagger,
   RegionField,
@@ -1016,6 +1564,27 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   SizeVariation,
   NoiseField,
   ColorField,
+  // Fields - Timing/Stagger
+  RandomStagger,
+  IndexStagger,
+  DurationVariation,
+  DecayEnvelope,
+  // Fields - Position/Spatial
+  ExplosionOrigin,
+  TopDropOrigin,
+  GridPositions,
+  CenterPoint,
+  // Fields - Transform
+  RotationField,
+  ScaleField,
+  OpacityField,
+  // Fields - Behavior/Motion
+  WobbleParams,
+  SpiralParams,
+  WaveParams,
+  JitterParams,
+  // Fields - Easing
+  EasingField,
   // Math (Slice 2.5)
   MathConstNumber,
   MathAddScalar,
@@ -1037,7 +1606,13 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   GroupNode,
   RenderTreeAssemble,
   PerElementCircles,
+  PathRenderer,
+  MaskReveal,
   Canvas,
+  // FX (Filters and Styles)
+  StrokeStyle,
+  GooFilter,
+  RGBSplitFilter,
   // Adapters
   SceneToTargets,
   FieldToSignal,

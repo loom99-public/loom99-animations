@@ -41,6 +41,9 @@
         <div class="reduced-motion-text">loom99</div>
     </div>
 
+    <!-- Controls + seeded randomness -->
+    <script src="../shared/controls.js"></script>
+
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -216,7 +219,6 @@
 
             let animationState = 'entrance'; // 'entrance', 'hold', 'exit'
             let exitStartTime = null;
-            let holdTimeout = null;
             const HOLD_DURATION = 2000;
             const EXIT_DURATION = 250;
 
@@ -225,8 +227,14 @@
             }
 
             function animate(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const elapsed = timestamp - startTime;
+                // Pause support
+                if (window.AnimControls && AnimControls.isPaused) return;
+
+                const adjustedTime = window.AnimControls ?
+                    AnimControls.adjustedTimestamp(timestamp) : timestamp;
+
+                if (!startTime) startTime = adjustedTime;
+                const elapsed = adjustedTime - startTime;
 
                 ctx.fillStyle = '#1a1a2e';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -243,7 +251,11 @@
                         requestAnimationFrame(animate);
                     } else {
                         animationState = 'hold';
-                    holdTimeout = setTimeout(startExit, HOLD_DURATION);
+                        if (window.AnimControls) {
+                            AnimControls.setHoldTimeout(startExit, HOLD_DURATION);
+                        } else {
+                            setTimeout(startExit, HOLD_DURATION);
+                        }
                         requestAnimationFrame(animate);
                     }
                 } else if (animationState === 'hold') {
@@ -252,7 +264,9 @@
                         particle.draw();
                     });
                 } else if (animationState === 'exit') {
-                    const exitElapsed = timestamp - exitStartTime;
+                    const exitAdjustedTime = window.AnimControls ?
+                        AnimControls.adjustedTimestamp(timestamp) : timestamp;
+                    const exitElapsed = exitAdjustedTime - exitStartTime;
                     const progress = Math.min(1, exitElapsed / EXIT_DURATION);
                     const eased = easeInCubic(progress);
 
@@ -275,18 +289,103 @@
             }
 
             function startExit() {
-            if (holdTimeout) clearTimeout(holdTimeout);
-            animationState = 'exit';
-                exitStartTime = performance.now();
+                if (window.AnimControls) {
+                    AnimControls.clearHoldTimeout();
+                }
+                animationState = 'exit';
+                exitStartTime = window.AnimControls ?
+                    AnimControls.adjustedTimestamp(performance.now()) : performance.now();
                 requestAnimationFrame(animate);
             }
 
             function restart() {
-            if (holdTimeout) clearTimeout(holdTimeout);
+                if (window.AnimControls) {
+                    AnimControls.clearHoldTimeout();
+                    AnimControls.resetPausedDuration();
+                    AnimControls.resetSeed();  // Reset RNG to reproduce same animation
+                }
                 initializeParameters();  // Regenerate all random parameters
                 startTime = null;
                 animationState = 'entrance';
                 requestAnimationFrame(animate);
+            }
+
+            // Animation control callbacks
+            if (window.AnimControls) {
+                AnimControls.onResume = () => {
+                    if (animationState !== 'hold') {
+                        requestAnimationFrame(animate);
+                    }
+                };
+
+                AnimControls.onJumpToTime = (targetMs) => {
+                    // Reinitialize with same seed (already reset by controls.js)
+                    initializeParameters();
+                    startTime = null;
+                    animationState = 'entrance';
+
+                    // Render one frame at targetMs
+                    const fakeTimestamp = performance.now();
+                    const adjustedTime = AnimControls.adjustedTimestamp(fakeTimestamp);
+                    startTime = adjustedTime;
+                    const elapsed = targetMs;
+
+                    // Determine which phase we're in
+                    if (elapsed < duration) {
+                        animationState = 'entrance';
+                        const progress = elapsed / duration;
+                        particles.forEach(particle => {
+                            particle.update(progress);
+                        });
+                    } else if (elapsed < duration + HOLD_DURATION) {
+                        animationState = 'hold';
+                        particles.forEach(particle => {
+                            particle.update(1); // Fully complete
+                        });
+                    } else {
+                        animationState = 'exit';
+                        const exitElapsed = elapsed - duration - HOLD_DURATION;
+                        const progress = Math.min(1, exitElapsed / EXIT_DURATION);
+                        const eased = easeInCubic(progress);
+                        particles.forEach(particle => {
+                            particle.update(1);
+                            // Note: exit uses random scatter, so we compute it here
+                            const angle = Math.random() * Math.PI * 2;
+                            const distance = 300 * eased;
+                            particle.x = particle.targetX + Math.cos(angle) * distance * (1 + Math.random());
+                            particle.y = particle.targetY + Math.sin(angle) * distance * (1 + Math.random());
+                            particle.opacity = 1 - eased;
+                        });
+                    }
+
+                    // Draw the frame
+                    ctx.fillStyle = '#1a1a2e';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    particles.forEach(particle => particle.draw());
+                };
+
+                AnimControls.getState = () => {
+                    return {
+                        time: AnimControls.currentTime,
+                        seed: AnimControls.seed,
+                        animationState: animationState,
+                        mode: selectedMode.name,
+                        duration: duration,
+                        config: config,
+                        elements: particles.map((p, i) => ({
+                            index: i,
+                            x: Math.round(p.x * 1000) / 1000,
+                            y: Math.round(p.y * 1000) / 1000,
+                            startX: Math.round(p.startX * 1000) / 1000,
+                            startY: Math.round(p.startY * 1000) / 1000,
+                            targetX: Math.round(p.targetX * 1000) / 1000,
+                            targetY: Math.round(p.targetY * 1000) / 1000,
+                            color: p.color,
+                            size: Math.round(p.size * 1000) / 1000,
+                            opacity: Math.round(p.opacity * 1000) / 1000
+                        }))
+                    };
+                };
             }
 
             initializeParameters();

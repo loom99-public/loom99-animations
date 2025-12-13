@@ -5,13 +5,13 @@
   padding: 16px;
   background: #1a1a2e;
   border-radius: 8px;
-  min-height: 350px;
 }
 
 .animations-container {
   display: flex;
   gap: 16px;
-  flex: 1;
+  cursor: pointer;
+  align-items: flex-start;
 }
 
 .animation-panel {
@@ -21,6 +21,7 @@
   background: rgba(0, 0, 0, 0.3);
   border-radius: 8px;
   overflow: hidden;
+  min-width: 0; /* Allow shrinking */
 }
 
 .panel-label {
@@ -35,15 +36,36 @@
 }
 
 .animation-svg {
-  flex: 1;
   width: 100%;
   height: auto;
-  min-height: 150px;
 }
 
 .animation-svg path {
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.v4-svg-container {
+  display: flex;
+}
+
+.v4-svg-container svg {
+  width: 100%;
+  height: auto;
+}
+
+.animation-canvas {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  background: #1a1a2e;
+}
+
+.animation-iframe {
+  width: 100%;
+  aspect-ratio: 3/1;
+  border: none;
+  background: #1a1a2e;
 }
 
 /* Shared controls */
@@ -169,6 +191,48 @@
   border-color: #00d4ff;
 }
 
+.scrub-seed {
+  color: #00d4ff;
+  font-size: 11px;
+}
+
 .scrub-percent {
   color: #00d4ff;
+}
+
+/* V4 Stub placeholder */
+.v4-stub {
+  width: 100%;
+  aspect-ratio: 3/1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.9), rgba(40, 40, 70, 0.9));
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.v4-stub-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.v4-stub-icon {
+  font-size: 32px;
+}
+
+.v4-stub-text {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.v4-stub-technique {
+  font-size: 12px;
+  color: rgba(123, 47, 247, 0.8);
+  font-family: monospace;
 }

@@ -35,14 +35,43 @@ export interface LineDrawingConfig {
   stagger?: number;
   entranceEasing?: string;
   exitEasing?: string;
+  seed?: number; // Optional seed for deterministic randomness
 }
 
 /**
- * Random utilities for variance
+ * Seeded random number generator (mulberry32)
  */
-const Random = {
+function createSeededRandom(seed: number) {
+  let state = seed;
+  return {
+    next: (): number => {
+      state |= 0;
+      state = (state + 0x6d2b79f5) | 0;
+      let t = Math.imul(state ^ (state >>> 15), 1 | state);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    },
+    range: function(min: number, max: number): number {
+      return min + this.next() * (max - min);
+    },
+    vary: function(base: number, variance: number): number {
+      return base + this.range(-variance, variance);
+    },
+    pick: function<T>(arr: T[]): T {
+      return arr[Math.floor(this.next() * arr.length)];
+    },
+  };
+}
+
+type SeededRandom = ReturnType<typeof createSeededRandom>;
+
+/**
+ * Random utilities for variance (default unseeded)
+ */
+const defaultRandom: SeededRandom = {
+  next: () => Math.random(),
   range: (min: number, max: number) => min + Math.random() * (max - min),
-  vary: (base: number, variance: number) => base + Random.range(-variance, variance),
+  vary: function(base: number, variance: number) { return base + this.range(-variance, variance); },
   pick: <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)],
 };
 
@@ -56,7 +85,11 @@ export function createLineDrawingAnimation(config: LineDrawingConfig): Animation
     duration: baseDuration = 1000,
     stagger: baseStagger = 100,
     entranceEasing: baseEntranceEasing = 'easeOutQuart',
+    seed,
   } = config;
+
+  // Use seeded random if seed provided, otherwise default
+  const random = seed !== undefined ? createSeededRandom(seed) : defaultRandom;
 
   const elements: MorphingLineElement[] = [];
 
@@ -65,7 +98,7 @@ export function createLineDrawingAnimation(config: LineDrawingConfig): Animation
 
   lines.forEach((lineDef, index) => {
     // Calculate per-line parameters based on variance
-    const params = calculateLineParams(varianceParams, baseDuration, baseStagger, baseEntranceEasing, index);
+    const params = calculateLineParams(varianceParams, baseDuration, baseStagger, baseEntranceEasing, index, random);
 
     const element = new MorphingLineElement({
       id: lineDef.id,
@@ -127,7 +160,8 @@ function calculateLineParams(
   baseDuration: number,
   baseStagger: number,
   baseEasing: string,
-  index: number
+  index: number,
+  random: SeededRandom
 ) {
   const easings = ['easeOutCubic', 'easeOutQuart', 'easeOutQuint', 'easeOutBack', 'easeOutElastic'];
 
@@ -137,19 +171,19 @@ function calculateLineParams(
   let easing = baseEasing;
 
   if (params.durationVariance > 0) {
-    duration = Random.vary(baseDuration, baseDuration * params.durationVariance);
+    duration = random.vary(baseDuration, baseDuration * params.durationVariance);
   }
 
   if (params.staggerVariance > 0) {
-    delay = Random.vary(baseStagger * index, baseStagger * params.staggerVariance);
+    delay = random.vary(baseStagger * index, baseStagger * params.staggerVariance);
   }
 
   if (params.strokeVariance > 0) {
-    strokeWidth = Random.vary(12, 12 * params.strokeVariance);
+    strokeWidth = random.vary(12, 12 * params.strokeVariance);
   }
 
   if (params.randomizeEasing) {
-    easing = Random.pick(easings);
+    easing = random.pick(easings);
   }
 
   return {

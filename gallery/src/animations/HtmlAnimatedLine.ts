@@ -50,7 +50,7 @@ export class HtmlAnimatedLine {
   private delay: number;
   private duration: number;
   private foldDuration: number;
-  private color: string;
+  protected color: string;  // protected for subclass access
 
   // State
   private progress: number = 0;

@@ -12,11 +12,12 @@ export default defineConfig({
         isolate: true,
       },
     },
+    exclude: ['**/to-delete/**', '**/node_modules/**', '**/dist/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
-      include: ['src/core/**/*.ts', 'src/compositors/**/*.ts', 'src/elements/**/*.ts'],
-      exclude: ['**/*.test.ts', '**/__tests__/**'],
+      include: ['src/anim-v4/**/*.ts'],
+      exclude: ['**/*.test.ts', '**/__tests__/**', '**/to-delete/**'],
     },
   },
 });

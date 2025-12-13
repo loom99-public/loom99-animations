@@ -12,6 +12,7 @@
 </head>
 <body>
     <div class="container"><svg id="svg" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg"><defs><filter id="goo"><feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/><feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo"/><feComposite in="SourceGraphic" in2="goo" operator="atop"/></filter></defs><g id="blobs"></g></svg></div>
+    <script src="../shared/controls.js"></script>
     <script>
         const svg = document.getElementById('svg'), blobsGroup = document.getElementById('blobs'), prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const Random = { range: (min, max) => min + Math.random() * (max - min), int: (min, max) => Math.floor(Random.range(min, max + 1)), vary: (base, v) => base + Random.range(-v, v), varyPercent: (base, p) => base * Random.range(1 - p, 1 + p) };

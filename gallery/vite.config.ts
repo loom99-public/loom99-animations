@@ -17,6 +17,7 @@ export default defineConfig({
   ],
   server: {
     host: '0.0.0.0',
+    allowedHosts: true,
     fs: {
       // Allow serving files from the parent animations directory
       allow: ['..'],

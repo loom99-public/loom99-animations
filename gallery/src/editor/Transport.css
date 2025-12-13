@@ -1,0 +1,139 @@
+/**
+ * Transport Styles
+ */
+
+.transport {
+  height: 60px;
+  background: #1a1a1a;
+  border-top: 1px solid #333;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 16px;
+}
+
+.transport-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.transport-section.scrubber {
+  flex: 1;
+}
+
+.transport-button {
+  width: 36px;
+  height: 36px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.transport-button:hover:not(:disabled) {
+  background: #333;
+  border-color: #4a9eff;
+}
+
+.transport-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.transport-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.transport-button.playing {
+  background: #4a9eff;
+  border-color: #4a9eff;
+}
+
+.transport-button.secondary {
+  width: auto;
+  padding: 0 16px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.time-display {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  color: #4a9eff;
+  min-width: 60px;
+}
+
+.scrubber-slider {
+  flex: 1;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.scrubber-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #4a9eff;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.scrubber-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: #4a9eff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.setting-label {
+  font-size: 12px;
+  color: #999;
+  min-width: 40px;
+}
+
+.setting-input {
+  width: 60px;
+  padding: 4px 8px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.setting-input:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+/* Remove number input spinners */
+.setting-input::-webkit-inner-spin-button,
+.setting-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.setting-input[type='number'] {
+  -moz-appearance: textfield;
+}

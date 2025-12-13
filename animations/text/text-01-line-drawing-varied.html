@@ -50,6 +50,7 @@
         </svg>
     </div>
 
+    <script src="../shared/controls.js"></script>
     <script>
         // Random utilities
         const Random = {
@@ -441,66 +442,66 @@
             const nowY = 220;
 
             // N - left vertical
-            const start7 = getStart(7);
-            addLine(start7.x, start7.y, [
+            const start17 = getStart(17);
+            addLine(start17.x, start17.y, [
                 {x: 80, y: nowY},
                 {x: 80, y: nowY + 60}
             ], YELLOW, nowStart, nowDur);
 
             // N - diagonal
-            const start8 = getStart(8);
-            addLine(start8.x, start8.y, [
+            const start18 = getStart(18);
+            addLine(start18.x, start18.y, [
                 {x: 80, y: nowY},
                 {x: 140, y: nowY + 60}
             ], YELLOW, nowStart + Random.vary(10, 3), nowDur);
 
             // N - right vertical
-            const start9 = getStart(9);
-            addLine(start9.x, start9.y, [
+            const start19 = getStart(19);
+            addLine(start19.x, start19.y, [
                 {x: 140, y: nowY},
                 {x: 140, y: nowY + 60}
             ], YELLOW, nowStart + Random.vary(20, 5), nowDur);
 
             // O - left arc
-            const start10 = getStart(10);
-            addLine(start10.x, start10.y, [
+            const start20 = getStart(20);
+            addLine(start20.x, start20.y, [
                 {x: 180, y: nowY + 30},
                 {type: 'Q', cx: 180, cy: nowY, x: 215, y: nowY},
                 {type: 'Q', cx: 250, cy: nowY, x: 250, y: nowY + 30}
             ], YELLOW, nowStart + Random.vary(30, 6), nowDur);
 
             // O - right arc
-            const start11 = getStart(11);
-            addLine(start11.x, start11.y, [
+            const start21 = getStart(21);
+            addLine(start21.x, start21.y, [
                 {x: 250, y: nowY + 30},
                 {type: 'Q', cx: 250, cy: nowY + 60, x: 215, y: nowY + 60},
                 {type: 'Q', cx: 180, cy: nowY + 60, x: 180, y: nowY + 30}
             ], YELLOW, nowStart + Random.vary(40, 8), nowDur);
 
             // W - first stroke
-            const start12 = getStart(12);
-            addLine(start12.x, start12.y, [
+            const start22 = getStart(22);
+            addLine(start22.x, start22.y, [
                 {x: 280, y: nowY},
                 {x: 300, y: nowY + 60}
             ], YELLOW, nowStart + Random.vary(50, 10), nowDur);
 
             // W - second stroke
-            const start13 = getStart(13);
-            addLine(start13.x, start13.y, [
+            const start23 = getStart(23);
+            addLine(start23.x, start23.y, [
                 {x: 300, y: nowY + 60},
                 {x: 320, y: nowY + 30}
             ], YELLOW, nowStart + Random.vary(60, 12), nowDur);
 
             // W - third stroke
-            const start14 = getStart(14);
-            addLine(start14.x, start14.y, [
+            const start24 = getStart(24);
+            addLine(start24.x, start24.y, [
                 {x: 320, y: nowY + 30},
                 {x: 340, y: nowY + 60}
             ], YELLOW, nowStart + Random.vary(70, 14), nowDur);
 
             // W - fourth stroke
-            const start15 = getStart(15);
-            addLine(start15.x, start15.y, [
+            const start25 = getStart(25);
+            addLine(start25.x, start25.y, [
                 {x: 340, y: nowY + 60},
                 {x: 360, y: nowY}
             ], YELLOW, nowStart + Random.vary(80, 16), nowDur);

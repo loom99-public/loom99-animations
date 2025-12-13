@@ -20,6 +20,7 @@ export class Animation {
   private state: AnimationState = 'idle';
   private startTime: number = 0;
   private animationFrame: number | null = null;
+  private timeoutId: number | null = null;
   private onEntranceComplete?: () => void;
   private onExitComplete?: () => void;
 
@@ -101,8 +102,21 @@ export class Animation {
       cancelAnimationFrame(this.animationFrame);
       this.animationFrame = null;
     }
+    if (this.timeoutId !== null) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
+    }
     this.state = 'idle';
     this.startTime = 0;
+  }
+
+  /**
+   * Dispose of animation and clean up all resources
+   * Should be called when animation is no longer needed
+   */
+  dispose(): void {
+    this.reset();
+    this.elements = [];
   }
 
   /**
@@ -127,9 +141,10 @@ export class Animation {
   hold(duration: number): Promise<void> {
     return new Promise((resolve) => {
       this.state = 'hold';
-      setTimeout(() => {
+      this.timeoutId = setTimeout(() => {
+        this.timeoutId = null;
         resolve();
-      }, duration);
+      }, duration) as any;
     });
   }
 

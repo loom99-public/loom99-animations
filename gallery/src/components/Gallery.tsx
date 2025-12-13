@@ -31,6 +31,9 @@ export const Gallery = observer(() => {
           <button className="btn btn-secondary" onClick={handleCollapseAll}>
             Collapse All
           </button>
+          <a href="#/editor" className="btn btn-secondary">
+            Editor
+          </a>
         </div>
       </header>
 

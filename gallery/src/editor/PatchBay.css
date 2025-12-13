@@ -1,0 +1,142 @@
+/**
+ * PatchBay Styles
+ */
+
+.patch-bay {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  height: 100%;
+  overflow-y: auto;
+  background: #1a1a1a;
+}
+
+.lane {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: #222;
+  border-radius: 8px;
+  min-height: 80px;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.lane.drop-target {
+  background: #2a2a2a;
+  box-shadow: inset 0 0 0 2px var(--lane-color, #666);
+}
+
+.lane-header {
+  flex-shrink: 0;
+  width: 160px;
+  display: flex;
+  gap: 10px;
+}
+
+.lane-color-bar {
+  width: 4px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.lane-info {
+  flex: 1;
+}
+
+.lane-label {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.lane-description {
+  margin: 0;
+  font-size: 10px;
+  color: #777;
+  line-height: 1.3;
+}
+
+.lane-content {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+  align-content: flex-start;
+  padding: 8px;
+  background: #1a1a1a;
+  border-radius: 6px;
+  min-height: 56px;
+}
+
+.lane-empty {
+  color: #555;
+  font-size: 12px;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 8px;
+}
+
+.lane.drop-target .lane-empty {
+  color: var(--lane-color);
+  font-style: normal;
+  font-weight: 500;
+}
+
+/* Block rendering */
+.block {
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 100px;
+}
+
+.block:hover {
+  border-color: #555;
+  background: #333;
+}
+
+.block.selected {
+  border-color: var(--block-color, #4a9eff);
+  background: #333;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--block-color, #4a9eff) 30%, transparent);
+}
+
+.block-color-bar {
+  width: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.block-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.block-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.block-type {
+  font-size: 9px;
+  color: #888;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

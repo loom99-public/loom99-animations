@@ -17,6 +17,7 @@
 </head>
 <body>
     <div class="container"><div class="text-container"><div class="word word1" id="word1"></div><div class="word word2" id="word2"></div><div class="word word3" id="word3"></div></div></div>
+    <script src="../shared/controls.js"></script>
     <script>
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const Random = { range: (min, max) => min + Math.random() * (max - min), int: (min, max) => Math.floor(Random.range(min, max + 1)), pick: (arr) => arr[Random.int(0, arr.length - 1)], vary: (base, v) => base + Random.range(-v, v), varyPercent: (base, p) => base * Random.range(1 - p, 1 + p) };

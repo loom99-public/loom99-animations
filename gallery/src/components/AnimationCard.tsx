@@ -4,22 +4,19 @@
 
 import { useState } from 'react';
 import type { AnimationMeta } from '../data/types';
-import { LineDrawingViewer } from './animations/LineDrawingViewer';
-import { ParticleViewer } from './animations/ParticleViewer';
-import { SideBySideViewer } from './animations/SideBySideViewer';
+import { V4Viewer } from './animations/V4Viewer';
+import { IframeSideBySideViewer } from './animations/IframeSideBySideViewer';
 
 interface AnimationCardProps {
   animation: AnimationMeta;
   cardIndex?: number; // Index within its section for POC limiting
 }
 
-export function AnimationCard({ animation, cardIndex = 0 }: AnimationCardProps) {
-  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
-  const [showComparison, setShowComparison] = useState(false);
+type PreviewMode = 'none' | 'html' | 'v4' | 'compare';
 
-  const handleTogglePreview = () => {
-    setIsPreviewVisible(!isPreviewVisible);
-  };
+export function AnimationCard({ animation, cardIndex = 0 }: AnimationCardProps) {
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('none');
+  const [v4Key, setV4Key] = useState(0); // Forces remount with new seed
 
   const handleOpenFullscreen = () => {
     const fullPath = `/animations/${animation.filePath}`;
@@ -38,18 +35,27 @@ export function AnimationCard({ animation, cardIndex = 0 }: AnimationCardProps) 
     return null;
   };
 
-  // Check if this animation should use React component instead of iframe
-  const useLineDrawingViewer = animation.technique === '01'; // Line drawing
-  const useParticleViewer = animation.technique === '02'; // Particles
+  // V4 implementations exist for techniques 01, 02, 03, and 04
+  const hasV4 = animation.technique === '01' || animation.technique === '02' || animation.technique === '03' || animation.technique === '04';
 
-  // POC: Only show comparison button for first 3 line drawing animations (logo target)
-  const showCompareButton = animation.technique === '01' && animation.target === 'logo' && cardIndex < 3;
+  // Compare is available for all techniques
+  const hasCompare = true;
 
-  const handleToggleComparison = () => {
-    setShowComparison(!showComparison);
-    if (!showComparison) {
-      setIsPreviewVisible(false); // Hide regular preview when showing comparison
+  const handleHtmlClick = () => {
+    setPreviewMode(previewMode === 'html' ? 'none' : 'html');
+  };
+
+  const handleV4Click = () => {
+    if (previewMode === 'v4') {
+      setPreviewMode('none');
+    } else {
+      setV4Key(k => k + 1); // New seed on each show
+      setPreviewMode('v4');
     }
+  };
+
+  const handleCompareClick = () => {
+    setPreviewMode(previewMode === 'compare' ? 'none' : 'compare');
   };
 
   return (
@@ -71,12 +77,26 @@ export function AnimationCard({ animation, cardIndex = 0 }: AnimationCardProps) 
       <div className="card-description">{animation.description}</div>
 
       <div className="card-actions">
-        <button className="btn btn-preview" onClick={handleTogglePreview}>
-          {isPreviewVisible ? 'Hide Preview' : 'Preview'}
+        <button
+          className={`btn btn-preview ${previewMode === 'html' ? 'active' : ''}`}
+          onClick={handleHtmlClick}
+        >
+          {previewMode === 'html' ? 'Hide HTML' : 'HTML'}
         </button>
-        {showCompareButton && (
-          <button className="btn btn-compare" onClick={handleToggleComparison}>
-            {showComparison ? 'Hide Compare' : 'Compare'}
+        {hasV4 && (
+          <button
+            className={`btn btn-v4 ${previewMode === 'v4' ? 'active' : ''}`}
+            onClick={handleV4Click}
+          >
+            {previewMode === 'v4' ? 'Hide V4' : 'V4'}
+          </button>
+        )}
+        {hasCompare && (
+          <button
+            className={`btn btn-compare ${previewMode === 'compare' ? 'active' : ''}`}
+            onClick={handleCompareClick}
+          >
+            {previewMode === 'compare' ? 'Hide Compare' : 'Compare'}
           </button>
         )}
         <button className="btn btn-open" onClick={handleOpenFullscreen}>
@@ -84,35 +104,32 @@ export function AnimationCard({ animation, cardIndex = 0 }: AnimationCardProps) 
         </button>
       </div>
 
-      {isPreviewVisible && (
+      {previewMode === 'html' && (
         <div className="preview-container">
-          {useLineDrawingViewer ? (
-            <LineDrawingViewer
-              target={animation.target}
-              variant={animation.variant}
-              holdDuration={2000}
-              enableScrubbing={true}
-            />
-          ) : useParticleViewer ? (
-            <ParticleViewer
-              target={animation.target}
-              variant={animation.variant}
-              holdDuration={2000}
-            />
-          ) : (
-            <iframe
-              className="preview-frame"
-              src={`/animations/${animation.filePath}`}
-              loading="lazy"
-              title={`${animation.title} - ${animation.technique}`}
-            />
-          )}
+          <iframe
+            className="preview-frame"
+            src={`/animations/${animation.filePath}`}
+            loading="lazy"
+            title={`${animation.title} - HTML`}
+          />
         </div>
       )}
 
-      {showComparison && (
+      {previewMode === 'v4' && (
+        <div className="preview-container">
+          <V4Viewer
+            key={v4Key}
+            technique={animation.technique}
+            target={animation.target}
+            variant={animation.variant}
+          />
+        </div>
+      )}
+
+      {previewMode === 'compare' && (
         <div className="comparison-container">
-          <SideBySideViewer
+          <IframeSideBySideViewer
+            technique={animation.technique}
             target={animation.target}
             variant={animation.variant}
           />

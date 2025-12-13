@@ -2,6 +2,20 @@
 
 A visual programming environment for building SVG animations using a node-based patch bay interface.
 
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Interface Overview](#interface-overview)
+- [Basic Workflow](#basic-workflow)
+- [Lanes](#lanes)
+- [Block Categories](#block-categories)
+- [Port Types](#port-types)
+- [Example: Simple Particle Animation](#example-simple-particle-animation)
+- [Keyboard Shortcuts](#keyboard-shortcuts)
+- [Settings](#settings)
+- [Concepts](#concepts)
+- [Troubleshooting](#troubleshooting)
+
 ## Quick Start
 
 ```bash

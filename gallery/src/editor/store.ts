@@ -119,6 +119,8 @@ export class EditorStore {
       setSeed: action,
       setSpeed: action,
       loadPatch: action,
+      loadDemoAnimation: action,
+      clearPatch: action,
       toggleLaneCollapsed: action,
       toggleLanePinned: action,
       renameLane: action,
@@ -490,6 +492,71 @@ export class EditorStore {
       ...this.connections.map((c) => parseInt(c.id.split('-')[1]) || 0)
     );
     this.nextId = maxId + 1;
+  }
+
+  /**
+   * Clear all blocks and connections.
+   */
+  clearPatch(): void {
+    this.blocks = [];
+    this.connections = [];
+    this.uiState.selectedBlockId = null;
+    this.uiState.currentTime = 0;
+    this.previewedDefinition = null;
+
+    // Reset lane block assignments
+    for (const lane of this.lanes) {
+      lane.blockIds = [];
+    }
+  }
+
+  /**
+   * Load a demo animation with pre-wired blocks.
+   * @param variant Which demo to load
+   */
+  loadDemoAnimation(variant: 'lineDrawing' | 'particles' | 'oscillator' | 'math'): void {
+    // Clear existing patch
+    this.clearPatch();
+
+    // Find appropriate lanes
+    const specLane = this.lanes.find((l) => l.kind === 'Spec') ?? this.lanes[3];
+    const programLane = this.lanes.find((l) => l.kind === 'Program') ?? this.lanes[4];
+    const scalarLane = this.lanes.find((l) => l.kind === 'Scalars') ?? this.lanes[2];
+
+    if (variant === 'math') {
+      // Math demo: constants → math ops → oscillator
+      // Create blocks
+      const speedConstId = this.addBlock('math.constNumber', scalarLane?.id ?? 'fields', { value: 2 });
+      const ampConstId = this.addBlock('math.constNumber', scalarLane?.id ?? 'fields', { value: 50 });
+      const demoId = this.addBlock('demoProgram', specLane?.id ?? 'spec', { variant: 'oscillator' });
+      const outputId = this.addBlock('outputProgram', programLane?.id ?? 'program', {});
+
+      // Update labels for clarity
+      const speedBlock = this.blocks.find((b) => b.id === speedConstId);
+      if (speedBlock) speedBlock.label = 'Speed (2)';
+      const ampBlock = this.blocks.find((b) => b.id === ampConstId);
+      if (ampBlock) ampBlock.label = 'Amplitude (50)';
+
+      // Connect: speedConst.out → demo.speed
+      this.connect(speedConstId, 'out', demoId, 'speed');
+      // Connect: ampConst.out → demo.amp
+      this.connect(ampConstId, 'out', demoId, 'amp');
+      // Connect: demo.program → output.program
+      this.connect(demoId, 'program', outputId, 'program');
+
+      // Select the demo block
+      this.selectBlock(demoId);
+    } else {
+      // Simple demo: DemoProgram → OutputProgram
+      const demoId = this.addBlock('demoProgram', specLane?.id ?? 'spec', { variant });
+      const outputId = this.addBlock('outputProgram', programLane?.id ?? 'program', {});
+
+      // Connect them
+      this.connect(demoId, 'program', outputId, 'program');
+
+      // Select the demo block
+      this.selectBlock(demoId);
+    }
   }
 
   // =============================================================================

@@ -157,6 +157,20 @@ function FilterIcon() {
 }
 
 /**
+ * Play/Demo icon.
+ */
+function DemoIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path
+        d="M4 3L13 8L4 13V3Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+/**
  * Settings Toolbar component.
  */
 export const SettingsToolbar = observer(({ store }: SettingsToolbarProps) => {
@@ -255,6 +269,33 @@ export const SettingsToolbar = observer(({ store }: SettingsToolbarProps) => {
               store.setFilterByLane(false);
               store.setFilterByConnection(false);
             }}
+          />
+        </Dropdown>
+
+        {/* Demos Dropdown */}
+        <Dropdown icon={<DemoIcon />} label="Demos">
+          <MenuHeader>Load Demo</MenuHeader>
+          <MenuItem
+            label="Line Drawing"
+            description="Animated stroke paths"
+            onClick={() => store.loadDemoAnimation('lineDrawing')}
+          />
+          <MenuItem
+            label="Particles"
+            description="Orbiting particle system"
+            onClick={() => store.loadDemoAnimation('particles')}
+          />
+          <MenuItem
+            label="Math + Oscillator"
+            description="Constants wired to oscillating dot"
+            onClick={() => store.loadDemoAnimation('math')}
+          />
+          <MenuDivider />
+          <MenuHeader>Patch</MenuHeader>
+          <MenuItem
+            label="Clear All"
+            description="Remove all blocks and connections"
+            onClick={() => store.clearPatch()}
           />
         </Dropdown>
       </div>

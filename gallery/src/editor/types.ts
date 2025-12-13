@@ -18,6 +18,8 @@ export type SlotType =
   | 'Scene'
   | 'SceneTargets'      // Sampled points from scene
   | 'SceneStrokes'      // Path segments for line drawing
+  | 'Scalar:number'     // Compile-time constant number
+  | 'Scalar:vec2'       // Compile-time constant vec2
   | 'Field<Point>'      // Per-element positions
   | 'Field<Duration>'   // Per-element delays/durations
   | 'Field<number>'     // Per-element scalars (radius, opacity)
@@ -53,6 +55,7 @@ export type BlockCategory =
   | 'Scene'
   | 'Derivers'
   | 'Fields'
+  | 'Math'       // Slice 2.5: Scalar math blocks
   | 'Time'
   | 'Events'
   | 'Dynamics'
@@ -143,28 +146,123 @@ export interface Connection {
 // =============================================================================
 
 /**
- * Lane names in the patch bay.
- * Fixed set of 7 lanes (per design doc).
+ * Canonical lane kinds (structural types).
+ * These define what kind of values live in a lane.
+ * Per lanes-overview.md: lanes represent value domains.
  */
-export type LaneName =
-  | 'Scene'
-  | 'Fields'
-  | 'Time'
-  | 'Events'
-  | 'Dynamics'
-  | 'Composition'
-  | 'Render';
+export type LaneKind =
+  | 'Scene'      // Scene / Targets / selections
+  | 'Phase'      // PhaseMachine
+  | 'Fields'     // Field<T> (bulk per-element values)
+  | 'Scalars'    // Scalar<T> (constants, params)
+  | 'Spec'       // Spec:* (intent declarations)
+  | 'Program'    // Program<RenderTree>
+  | 'Output';    // Export / render output
+
+/**
+ * Lane flavor - optional UI hints for organization.
+ * Does NOT affect type validity, only palette suggestions.
+ */
+export type LaneFlavor =
+  | 'Timing'     // Delays, durations, easing
+  | 'Style'      // Colors, sizes, opacity
+  | 'Motion'     // Positions, trajectories
+  | 'General';   // Default, no specific flavor
+
+/**
+ * Lane flow style - how blocks relate within the lane.
+ * Per lanes-overview.md: chain vs patch-bay.
+ */
+export type LaneFlowStyle =
+  | 'chain'      // Pipeline: blocks flow left-to-right
+  | 'patchbay';  // Fan-out: blocks are sources for other lanes
+
+/**
+ * Lane identifier - unique string for each lane instance.
+ * Allows multiple lanes of the same kind.
+ */
+export type LaneId = string;
+
+/**
+ * Legacy lane name type for compatibility.
+ * @deprecated Use LaneId instead
+ */
+export type LaneName = LaneId;
 
 /**
  * A Lane is a horizontal track in the patch bay.
  * Blocks are assigned to lanes for organization.
+ *
+ * Key principles (from lanes-overview.md):
+ * - Lanes are UI affordances, not semantic truth
+ * - Port types determine connection validity
+ * - Multiple lanes of same kind allowed
+ * - Lanes guide users into sane structure
  */
 export interface Lane {
-  readonly name: LaneName;
-  readonly label: string;
-  readonly description: string;
+  /** Unique identifier for this lane */
+  readonly id: LaneId;
+
+  /** Structural kind (what type of values live here) */
+  readonly kind: LaneKind;
+
+  /** Human-readable label (user can rename) */
+  label: string;
+
+  /** Description shown in UI */
+  description: string;
+
+  /** Optional flavor hint for palette filtering */
+  flavor?: LaneFlavor;
+
+  /** Flow style: chain (pipeline) or patchbay (fan-out sources) */
+  flowStyle: LaneFlowStyle;
+
   /** Blocks in this lane (by ID) */
   blockIds: BlockId[];
+
+  /** UI state: is lane collapsed? */
+  collapsed: boolean;
+
+  /** UI state: is lane pinned (always visible)? */
+  pinned: boolean;
+
+  // Legacy compatibility
+  /** @deprecated Use id instead */
+  readonly name: LaneId;
+}
+
+/**
+ * Lane template for defining layouts (without runtime state like blockIds).
+ */
+export interface LaneTemplate {
+  readonly id: LaneId;
+  readonly kind: LaneKind;
+  readonly label: string;
+  readonly description: string;
+  readonly flavor?: LaneFlavor;
+  readonly flowStyle: LaneFlowStyle;
+}
+
+/**
+ * A lane layout defines a preset arrangement of lanes.
+ * Users can switch between layouts; blocks are migrated based on lane kind.
+ */
+export interface LaneLayout {
+  /** Unique identifier */
+  readonly id: string;
+
+  /** Display name */
+  readonly name: string;
+
+  /** Description of when to use this layout */
+  readonly description: string;
+
+  /** Lane templates in order */
+  readonly lanes: readonly LaneTemplate[];
+
+  /** Is this a built-in preset or user-created? */
+  readonly isPreset: boolean;
 }
 
 // =============================================================================
@@ -229,12 +327,49 @@ export type BlockRegistry = Map<BlockType, BlockBehavior>;
  * Editor UI state (selection, drag, etc.).
  * Not part of Patch (UI-only state).
  */
+/**
+ * Identifies a specific port on a specific block.
+ */
+export interface PortRef {
+  readonly blockId: BlockId;
+  readonly slotId: string;
+  readonly direction: 'input' | 'output';
+}
+
+/**
+ * Context menu state for right-click actions.
+ */
+export interface ContextMenuState {
+  /** Is the context menu open? */
+  isOpen: boolean;
+  /** Screen position */
+  x: number;
+  y: number;
+  /** The port this context menu is for */
+  portRef: PortRef | null;
+}
+
 export interface EditorUIState {
   /** Currently selected block (for inspector) */
   selectedBlockId: BlockId | null;
 
   /** Currently dragging block type (from library) */
   draggingBlockType: BlockType | null;
+
+  /** Lane kind of the block being dragged (for highlighting suggested lanes) */
+  draggingLaneKind: LaneKind | null;
+
+  /** Active lane for palette filtering (lane user is working in) */
+  activeLaneId: LaneId | null;
+
+  /** Currently hovered port (for compatible highlighting) */
+  hoveredPort: PortRef | null;
+
+  /** Currently selected port (for wiring via inspector) */
+  selectedPort: PortRef | null;
+
+  /** Context menu state */
+  contextMenu: ContextMenuState;
 
   /** Playback state */
   isPlaying: boolean;

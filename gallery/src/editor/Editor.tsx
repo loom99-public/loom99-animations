@@ -9,10 +9,11 @@
  */
 
 import { observer } from 'mobx-react-lite';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   DndContext,
   DragOverlay,
+  useDroppable,
   type DragStartEvent,
   type DragEndEvent,
   pointerWithin,
@@ -22,21 +23,59 @@ import { BlockLibrary } from './BlockLibrary';
 import { PatchBay } from './PatchBay';
 import { Inspector } from './Inspector';
 import { Transport } from './Transport';
+import { LogWindow } from './LogWindow';
+import { PreviewPanel } from './PreviewPanel';
+import { SettingsToolbar } from './SettingsToolbar';
+import { ContextMenu } from './ContextMenu';
+import { createCompilerService, setupAutoCompile } from './compiler';
 import type { BlockDefinition } from './blocks';
-import type { LaneName } from './types';
+import type { LaneId } from './types';
 import './Editor.css';
+
+/**
+ * Trash zone that appears when dragging placed blocks.
+ */
+function TrashZone({ isVisible }: { isVisible: boolean }) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: 'trash-zone',
+    data: { type: 'trash' },
+  });
+
+  if (!isVisible) return null;
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`trash-zone ${isOver ? 'trash-zone-active' : ''}`}
+    >
+      <span className="trash-icon">🗑️</span>
+      <span className="trash-label">{isOver ? 'Release to delete' : 'Drop to delete'}</span>
+    </div>
+  );
+}
 
 /**
  * Drag overlay that shows the block being dragged.
  */
-function DragOverlayContent({ definition }: { definition: BlockDefinition | null }) {
-  if (!definition) return null;
+function DragOverlayContent({
+  definition,
+  placedBlockLabel,
+  placedBlockColor,
+}: {
+  definition: BlockDefinition | null;
+  placedBlockLabel: string | null;
+  placedBlockColor: string | null;
+}) {
+  const label = definition?.label ?? placedBlockLabel;
+  const color = definition?.color ?? placedBlockColor ?? '#666';
+
+  if (!label) return null;
 
   return (
     <div
       className="drag-overlay-block"
       style={{
-        backgroundColor: definition.color,
+        backgroundColor: color,
         padding: '8px 12px',
         borderRadius: '6px',
         color: '#fff',
@@ -46,7 +85,7 @@ function DragOverlayContent({ definition }: { definition: BlockDefinition | null
         whiteSpace: 'nowrap',
       }}
     >
-      {definition.label}
+      {label}
     </div>
   );
 }
@@ -58,8 +97,26 @@ export const Editor = observer(() => {
   // Create store once (memo to avoid recreating on re-renders)
   const store = useMemo(() => new EditorStore(), []);
 
-  // Track active drag
+  // Create compiler service
+  const compilerService = useMemo(() => createCompilerService(store), [store]);
+
+  // Set up auto-compile on patch changes
+  useEffect(() => {
+    const dispose = setupAutoCompile(store, compilerService, {
+      debounce: 300,
+    });
+    return dispose;
+  }, [store, compilerService]);
+
+  // Track active drag state
   const [activeDefinition, setActiveDefinition] = useState<BlockDefinition | null>(null);
+  const [activePlacedBlock, setActivePlacedBlock] = useState<{
+    label: string;
+    color: string;
+    blockId: string;
+  } | null>(null);
+
+  const isDraggingPlacedBlock = activePlacedBlock !== null;
 
   function handleDragStart(event: DragStartEvent) {
     const { active } = event;
@@ -67,12 +124,40 @@ export const Editor = observer(() => {
 
     if (data?.type === 'library-block') {
       setActiveDefinition(data.definition);
+      // Set dragging lane kind for highlighting suggested lanes
+      store.setDraggingLaneKind(data.definition?.laneKind ?? null);
+    } else if (data?.type === 'patch-block') {
+      // Dragging a placed block
+      const block = store.blocks.find((b) => b.id === data.blockId);
+      if (block) {
+        setActivePlacedBlock({
+          label: block.label,
+          color: getBlockColor(block.type),
+          blockId: block.id,
+        });
+      }
     }
+  }
+
+  function getBlockColor(blockType: string): string {
+    // Import would create circular dep, so inline the lookup
+    const colors: Record<string, string> = {
+      Scene: '#4a9eff',
+      Fields: '#a855f7',
+      Time: '#22c55e',
+      Math: '#f59e0b',
+      Compose: '#ec4899',
+      Render: '#ef4444',
+    };
+    const block = store.blocks.find((b) => b.type === blockType);
+    return colors[block?.category ?? 'Compose'] ?? '#666';
   }
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     setActiveDefinition(null);
+    setActivePlacedBlock(null);
+    store.setDraggingLaneKind(null);
 
     if (!over) return;
 
@@ -82,10 +167,28 @@ export const Editor = observer(() => {
     // Dropping library block onto a lane
     if (activeData?.type === 'library-block' && overData?.type === 'lane') {
       const blockType = activeData.blockType as string;
-      const laneName = overData.laneName as LaneName;
+      const laneId = (overData.laneId ?? overData.laneName) as LaneId;
+      store.addBlock(blockType, laneId);
+    }
 
-      // Add block to the store
-      store.addBlock(blockType, laneName);
+    // Dropping placed block onto trash
+    if (activeData?.type === 'patch-block' && overData?.type === 'trash') {
+      const blockId = activeData.blockId as string;
+      store.removeBlock(blockId);
+    }
+
+    // Dropping placed block onto a lane (move/reorder)
+    if (activeData?.type === 'patch-block' && overData?.type === 'lane') {
+      const blockId = activeData.blockId as string;
+      const sourceLaneId = activeData.sourceLaneId as string;
+      const targetLaneId = (overData.laneId ?? overData.laneName) as LaneId;
+
+      if (sourceLaneId !== targetLaneId) {
+        // Move to different lane
+        store.moveBlockToLane(blockId, targetLaneId);
+      }
+      // Note: reordering within same lane would need drop position info
+      // For now, moving to same lane just keeps it in place
     }
   }
 
@@ -96,6 +199,7 @@ export const Editor = observer(() => {
       collisionDetection={pointerWithin}
     >
       <div className="editor">
+        <SettingsToolbar store={store} />
         <div className="editor-main">
           <BlockLibrary store={store} />
 
@@ -103,14 +207,32 @@ export const Editor = observer(() => {
             <PatchBay store={store} />
           </div>
 
-          <Inspector store={store} />
+          <div className="editor-preview">
+            <PreviewPanel width={400} height={300} compilerService={compilerService} />
+          </div>
+
+          <div className="editor-inspector">
+            <Inspector store={store} />
+          </div>
         </div>
 
+        <LogWindow />
+
         <Transport store={store} />
+
+        {/* Trash zone appears when dragging placed blocks */}
+        <TrashZone isVisible={isDraggingPlacedBlock} />
+
+        {/* Context menu for right-click actions */}
+        <ContextMenu store={store} />
       </div>
 
       <DragOverlay dropAnimation={null}>
-        <DragOverlayContent definition={activeDefinition} />
+        <DragOverlayContent
+          definition={activeDefinition}
+          placedBlockLabel={activePlacedBlock?.label ?? null}
+          placedBlockColor={activePlacedBlock?.color ?? null}
+        />
       </DragOverlay>
     </DndContext>
   );

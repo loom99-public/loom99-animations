@@ -35,6 +35,39 @@
   flex-direction: column;
 }
 
+.editor-preview {
+  display: flex;
+  flex-direction: column;
+  width: 420px;
+  min-width: 300px;
+  background: #111;
+  border-left: 1px solid #333;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.editor-preview > .preview-panel {
+  flex-shrink: 0;
+  border-radius: 0;
+  border: none;
+}
+
+.editor-inspector {
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  min-width: 220px;
+  background: #111;
+  border-left: 1px solid #333;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.editor-inspector > .inspector {
+  flex: 1;
+  overflow-y: auto;
+}
+
 /* Global scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
@@ -52,4 +85,59 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Trash zone - full-width bar at bottom when dragging placed blocks */
+.trash-zone {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(239, 68, 68, 0.1);
+  border-top: 2px dashed #ef4444;
+  color: #ef4444;
+  font-size: 14px;
+  font-weight: 500;
+  animation: trash-zone-appear 0.15s ease-out;
+  z-index: 1000;
+}
+
+.trash-zone-active {
+  background: rgba(239, 68, 68, 0.25);
+  border-top-style: solid;
+  border-top-width: 3px;
+}
+
+.trash-zone-active .trash-icon {
+  transform: scale(1.2);
+}
+
+.trash-zone-active .trash-label {
+  font-weight: 600;
+}
+
+.trash-icon {
+  font-size: 24px;
+  transition: transform 0.15s;
+}
+
+.trash-label {
+  white-space: nowrap;
+  transition: font-weight 0.1s;
+}
+
+@keyframes trash-zone-appear {
+  from {
+    opacity: 0;
+    height: 0;
+  }
+  to {
+    opacity: 1;
+    height: 60px;
+  }
 }

@@ -1,142 +1,166 @@
-# Unified Animation Editor
+# Animation Editor
 
-Visual programming environment for the V4 animation framework.
+A visual programming environment for building SVG animations using a node-based patch bay interface.
 
-## Getting Started
-
-### Access the Editor
-
-Navigate to `http://localhost:5173/#/editor` (dev server) or `http://0.0.0.0:5173/#/editor` (network access).
-
-### Current State (Phase 1)
-
-The editor shell is complete with:
-
-- ✅ 7-lane patch bay layout (Scene, Fields, Time, Events, Dynamics, Composition, Render)
-- ✅ Block library panel (empty, categories visible)
-- ✅ Inspector panel (shows selected block info)
-- ✅ Transport bar (playback controls, seed/speed settings)
-- ✅ MobX store for graph state
-- ✅ TypeScript type definitions
-
-### What Works
-
-- Navigate between gallery (`/`) and editor (`/#/editor`) via URL
-- See empty patch bay with 7 labeled lanes
-- See block library categories (Scene, Fields, Time, etc.)
-- Inspector shows "No block selected" placeholder
-- Transport controls render (non-functional)
-
-### What's Next (Phase 2)
-
-- Populate block library with 5-10 example blocks
-- Implement drag-and-drop (dnd-kit integration)
-- Render blocks in patch bay as colored rectangles
-- Enable block selection (click to select, inspector shows details)
-
-## Architecture
-
-```
-Editor/
-├── types.ts          - Core type definitions (Block, Slot, Lane, Patch)
-├── store.ts          - MobX observable store
-├── Editor.tsx        - Root layout component
-├── PatchBay.tsx      - 7-lane patch bay
-├── BlockLibrary.tsx  - Left panel block catalog
-├── Inspector.tsx     - Right panel property editor
-├── Transport.tsx     - Bottom bar playback controls
-└── index.ts          - Public exports
-```
-
-## Testing the Editor
+## Quick Start
 
 ```bash
-# Run dev server
-pnpm dev
+# Start the dev server
+cd gallery && pnpm dev
 
-# Open editor
+# Open the editor
 open http://localhost:5173/#/editor
-
-# Check TypeScript compilation
-pnpm exec tsc --noEmit
 ```
 
-## Design Documents
+## Interface Overview
 
-- **PROJECT_SPEC.md**: `../.agent_planning/PROJECT_SPEC.md`
-- **UI Design (High-Level)**: `../../ui_example_docs/full_ui/ui_high_level_unified_iface.md`
-- **UI Design (Specifics)**: `../../ui_example_docs/full_ui/ui_specifics.md`
+The editor has five main areas:
 
-## Development Notes
-
-### Adding Blocks (Phase 2)
-
-Create block definitions in a `blocks/` directory:
-
-```typescript
-// blocks/RadialOrigin.ts
-export const RadialOriginBlock: BlockBehavior = {
-  type: 'RadialOrigin',
-  defaultParams: {
-    centerX: 0.5,
-    centerY: 0.5,
-    radius: 0.3,
-  },
-  compile: (block, inputs) => {
-    // TODO Phase 4: Compile to V4 Field<Point>
-  },
-};
+```
++------------------+------------------------+----------+----------+
+|                  |                        |          |          |
+|  Block Library   |       Patch Bay        | Preview  | Inspector|
+|                  |     (Lane Layout)      |          |          |
+|                  |                        |          |          |
++------------------+------------------------+----------+----------+
+|                         Transport                               |
++-----------------------------------------------------------------+
 ```
 
-Register in block registry (to be created in Phase 2).
+- **Block Library** (left): Drag blocks from here into lanes
+- **Patch Bay** (center): Where you build the animation graph
+- **Preview** (right): Live animation preview
+- **Inspector** (far right): Edit parameters of selected blocks
+- **Transport** (bottom): Playback controls, seed, speed
 
-### Testing Strategy
+## Basic Workflow
 
-**Unit Tests** (store, graph logic):
-```typescript
-// store.test.ts
-test('addBlock creates block and adds to lane', () => {
-  const store = new EditorStore();
-  const id = store.addBlock('RadialOrigin', 'Fields');
-  expect(store.blocks).toHaveLength(1);
-  expect(store.lanes.find(l => l.name === 'Fields')?.blockIds).toContain(id);
-});
-```
+### 1. Add Blocks
 
-**Integration Tests** (React components):
-```typescript
-// Editor.test.tsx
-test('clicking block selects it in inspector', () => {
-  render(<Editor />);
-  const block = screen.getByText('RadialOrigin');
-  fireEvent.click(block);
-  expect(screen.getByText(/Selected/)).toBeInTheDocument();
-});
-```
+Drag blocks from the library onto lanes in the patch bay. The library filters to show relevant blocks based on which lane you're targeting.
 
-## Contributing
+### 2. Connect Blocks
 
-When implementing phases, follow this workflow:
+Blocks have **ports** (connection points):
+- **Inputs** on the left side
+- **Outputs** on the right side
 
-1. **Read PROJECT_SPEC.md** - Understand phase goals and acceptance criteria
-2. **Write tests first** - Define expected behavior
-3. **Implement feature** - Keep it simple, match spec
-4. **Run tests** - `pnpm test`
-5. **Manual testing** - Load editor, verify UX
-6. **Update docs** - Keep this README in sync with features
+To connect blocks:
+1. Click an output port (it gets selected)
+2. Click a compatible input port on another block
+3. A wire appears connecting them
+
+Right-click a port for more options (disconnect, etc.).
+
+### 3. Configure Parameters
+
+Click any block to select it. The Inspector panel shows its parameters. Adjust values using sliders, dropdowns, or text inputs.
+
+### 4. Preview
+
+The preview panel shows your animation in real time. Use the transport bar to:
+- Play/pause the animation
+- Scrub through time
+- Change the random seed
+- Adjust playback speed
+
+## Lanes
+
+Lanes are horizontal tracks that organize blocks by their purpose. The editor offers two layout presets:
+
+**Simple (5 lanes)** - Good for learning:
+- **Scene**: What you're animating (logo, text)
+- **Phases**: Time structure (entrance, hold, exit)
+- **Fields**: Per-element variation (timing, motion, style)
+- **Spec**: Animation type (LineMorph, Particles, etc.)
+- **Program**: Output and rendering
+
+**Detailed (9 lanes)** - More explicit organization:
+- Splits Fields into Motion/Timing/Style
+- Separates compile from compositing stages
+
+Switch layouts using the gear icon in the settings toolbar.
+
+## Block Categories
+
+| Category | Purpose | Examples |
+|----------|---------|----------|
+| Scene | Define what gets animated | SVG Paths, Sample Points |
+| Fields | Per-element data | Radial Origin, Linear Stagger |
+| Math | Scalar computations | Add, Multiply, Sin |
+| Time | Animation timing | Phase Machine, Ease Ramp |
+| Compose | Combine elements | Per-Element Transport, Demo Program |
+| Render | Final output | Particle Renderer, Canvas |
+| Adapters | Type conversion | Scene → Targets, Field → Signal |
+
+## Port Types
+
+Ports have types that determine what can connect to what. Common types:
+
+| Type | Description |
+|------|-------------|
+| `Scene` | Collection of SVG paths |
+| `SceneTargets` | Points sampled from paths |
+| `Field<Point>` | Per-element positions |
+| `Field<Duration>` | Per-element time values |
+| `Field<number>` | Per-element numbers |
+| `Signal<Unit>` | Time-varying 0-1 value |
+| `Signal<PhaseSample>` | Phase machine output |
+| `Program` | Compiled animation |
+| `RenderTree` | Final render output |
+
+Compatible ports highlight when you're making connections.
+
+## Example: Simple Particle Animation
+
+1. Drag **SVG Paths** into the Scene lane
+2. Drag **Sample Points** to Scene, connect it to SVG Paths
+3. Drag **Radial Origin** into Fields
+4. Drag **Linear Stagger** into Fields
+5. Drag **Phase Machine** into Phases
+6. Drag **Demo Program** into Spec
+   - Set variant to "Particles"
+7. Drag **Program Output** into Program, connect to Demo Program
+
+The preview should show particles animating.
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Delete` / `Backspace` | Delete selected block |
+| `Escape` | Deselect / close menus |
+
+## Settings
+
+Click the gear icon to access settings:
+
+- **Layout**: Switch between Simple and Detailed lane layouts
+- **Filter by Lane**: Show only relevant blocks in library
+- **Show Type Hints**: Display port types on hover
+- **Highlight Compatible**: Highlight valid connection targets
+
+## Concepts
+
+For a deeper understanding of the concepts behind this editor, see [CONCEPTS.md](./CONCEPTS.md).
 
 ## Troubleshooting
 
 **Editor shows blank screen:**
 - Check browser console for errors
 - Verify route is `/#/editor` (hash-based routing)
-- Check TypeScript compilation: `pnpm exec tsc --noEmit`
+- Run `pnpm exec tsc --noEmit` to check for TypeScript errors
 
-**MobX warnings about observables:**
-- Ensure all mutations use `action` decorator
-- Check MobX strict mode is enabled in dev
+**Can't connect two ports:**
+- Port types must be compatible
+- Make sure you're connecting output → input (not input → input)
+- Check the log window at the bottom for error messages
+
+**Animation not updating:**
+- Ensure blocks are connected to a Program Output
+- Check that all required inputs are connected
+- Look for error decorations (red highlights) on blocks
 
 **Styles not loading:**
-- Verify CSS imports in components
-- Check Vite dev server is running
-- Hard refresh browser (Cmd+Shift+R)
+- Hard refresh the browser (Cmd+Shift+R / Ctrl+Shift+R)
+- Restart the dev server

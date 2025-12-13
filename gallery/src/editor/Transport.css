@@ -137,3 +137,7 @@
 .setting-input[type='number'] {
   -moz-appearance: textfield;
 }
+
+.transport-section.status {
+  margin-left: auto;
+}

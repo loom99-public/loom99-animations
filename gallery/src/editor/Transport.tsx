@@ -6,6 +6,7 @@
 
 import { observer } from 'mobx-react-lite';
 import type { EditorStore } from './store';
+import { StatusBadge } from './StatusBadge';
 import './Transport.css';
 
 interface TransportProps {
@@ -110,6 +111,11 @@ export const Transport = observer(({ store }: TransportProps) => {
         <button className="transport-button secondary" disabled title="Export (Phase 6)">
           Export
         </button>
+      </div>
+
+      {/* Status */}
+      <div className="transport-section status">
+        <StatusBadge />
       </div>
     </div>
   );

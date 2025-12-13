@@ -35,21 +35,44 @@
   flex-direction: column;
 }
 
-.editor-preview {
+/* Right panel containing Preview and Control Surface */
+.editor-right-panel {
   display: flex;
   flex-direction: column;
   width: 420px;
-  min-width: 300px;
+  min-width: 320px;
   background: #111;
   border-left: 1px solid #333;
   overflow: hidden;
   flex-shrink: 0;
 }
 
+.editor-preview {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-bottom: 1px solid #333;
+}
+
 .editor-preview > .preview-panel {
   flex-shrink: 0;
   border-radius: 0;
   border: none;
+}
+
+.editor-control-surface {
+  flex: 1;
+  min-height: 200px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-control-surface > .control-surface-panel {
+  flex: 1;
+  width: 100%;
+  min-width: unset;
+  max-width: unset;
 }
 
 .editor-inspector {

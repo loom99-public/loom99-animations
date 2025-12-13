@@ -1,10 +1,12 @@
 /**
  * Editor Component
  *
- * Main editor container with 4-panel layout:
+ * Main editor container with 5-panel layout:
  * - Left: BlockLibrary
  * - Center: PatchBay
- * - Right: Inspector
+ * - Right-Top: Preview
+ * - Right-Middle: Inspector
+ * - Right-Bottom: Control Surface
  * - Bottom: Transport
  */
 
@@ -28,6 +30,7 @@ import { PreviewPanel } from './PreviewPanel';
 import { SettingsToolbar } from './SettingsToolbar';
 import { ContextMenu } from './ContextMenu';
 import { createCompilerService, setupAutoCompile } from './compiler';
+import { ControlSurfaceStore, ControlSurfacePanel, generateSurfaceForMacro } from './controlSurface';
 import type { BlockDefinition } from './blocks';
 import type { LaneId } from './types';
 import './Editor.css';
@@ -97,6 +100,9 @@ export const Editor = observer(() => {
   // Create store once (memo to avoid recreating on re-renders)
   const store = useMemo(() => new EditorStore(), []);
 
+  // Create control surface store
+  const controlSurfaceStore = useMemo(() => new ControlSurfaceStore(store), [store]);
+
   // Create compiler service
   const compilerService = useMemo(() => createCompilerService(store), [store]);
 
@@ -108,10 +114,22 @@ export const Editor = observer(() => {
     return dispose;
   }, [store, compilerService]);
 
-  // Load a default macro on startup
+  // Load a default macro on startup and generate its control surface
   useEffect(() => {
     store.addBlock('macro:radialBurst', 'scene');
-  }, [store]);
+    // Generate a default surface for the macro
+    // Use setTimeout to ensure blocks are fully populated after macro expansion
+    setTimeout(() => {
+      const blockIds = new Map<string, string>();
+      store.blocks.forEach((block) => {
+        blockIds.set(block.type, block.id);
+      });
+      const surface = generateSurfaceForMacro('radialBurst', blockIds);
+      if (surface) {
+        controlSurfaceStore.setSurface(surface);
+      }
+    }, 0);
+  }, [store, controlSurfaceStore]);
 
   // Track active drag state
   const [activeDefinition, setActiveDefinition] = useState<BlockDefinition | null>(null);
@@ -212,8 +230,14 @@ export const Editor = observer(() => {
             <PatchBay store={store} />
           </div>
 
-          <div className="editor-preview">
-            <PreviewPanel compilerService={compilerService} isPlaying={store.uiState.isPlaying} />
+          <div className="editor-right-panel">
+            <div className="editor-preview">
+              <PreviewPanel compilerService={compilerService} isPlaying={store.uiState.isPlaying} />
+            </div>
+
+            <div className="editor-control-surface">
+              <ControlSurfacePanel store={controlSurfaceStore} />
+            </div>
           </div>
 
           <div className="editor-inspector">

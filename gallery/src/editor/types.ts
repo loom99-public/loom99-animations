@@ -61,27 +61,27 @@ export type BlockId = string;
 export type BlockType = string; // e.g., 'RadialOrigin', 'PhaseMachine', 'ParticleRenderer'
 
 // =============================================================================
-// Block Tier System (Primitives, Compounds, Macros)
+// Block Form System (Primitives, Compounds, Macros)
 // =============================================================================
 
 /**
- * Block tier defines the fundamental nature of a block.
+ * Block form defines the fundamental nature of a block.
  *
  * - 'primitive': Irreducible atomic operations (implemented in TypeScript)
- * - 'compound': Built from primitives, behaves as single block in UI
- * - 'legacy-compound': Existing blocks to be migrated to compound definitions
+ * - 'composite': Built from primitives, behaves as single block in UI
+ * - 'legacy-composite': Existing blocks to be migrated to composite definitions
  * - 'macro': Expands into visible blocks when added to patch
  */
-export type BlockTier = 'primitive' | 'compound' | 'legacy-compound' | 'macro';
+export type BlockForm = 'primitive' | 'composite' | 'legacy-composite' | 'macro';
 
 /**
- * Top-level block categories (tier groupings).
+ * Top-level block categories (form groupings).
  */
-export const BLOCK_TIERS = ['Macros', 'Compounds', 'Primitives'] as const;
-export type BlockTierCategory = (typeof BLOCK_TIERS)[number];
+export const BLOCK_FORMS = ['Macros', 'Composites', 'Primitives'] as const;
+export type BlockFormCategory = (typeof BLOCK_FORMS)[number];
 
 /**
- * Subcategories within each tier.
+ * Subcategories within each form.
  * These organize blocks by domain/function.
  */
 export const ALL_SUBCATEGORIES = [
@@ -110,7 +110,7 @@ export type BlockSubcategory = (typeof ALL_SUBCATEGORIES)[number];
 
 /**
  * Legacy categories - kept for backwards compatibility during migration.
- * @deprecated Use BlockTier + BlockSubcategory instead
+ * @deprecated Use BlockForm + BlockSubcategory instead
  */
 export const ALL_CATEGORIES = [
   'Macros',     // Recipe starters - expand into multiple blocks

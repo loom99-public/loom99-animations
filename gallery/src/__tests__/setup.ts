@@ -11,6 +11,29 @@ afterEach(() => {
   cleanup();
 });
 
+// Provide a minimal localStorage stub for non-browser test environments
+const needsLocalStorageStub =
+  typeof globalThis.localStorage === 'undefined' ||
+  typeof globalThis.localStorage.getItem !== 'function';
+
+if (needsLocalStorageStub) {
+  const storage = new Map<string, string>();
+  globalThis.localStorage = {
+    get length() {
+      return storage.size;
+    },
+    clear: () => storage.clear(),
+    getItem: (key: string) => (storage.has(key) ? storage.get(key)! : null),
+    key: (index: number) => Array.from(storage.keys())[index] ?? null,
+    removeItem: (key: string) => {
+      storage.delete(key);
+    },
+    setItem: (key: string, value: string) => {
+      storage.set(key, value);
+    },
+  } as Storage;
+}
+
 // Mock time for deterministic testing
 let mockTime = 0;
 const rafCallbacks: Array<(time: number) => void> = [];

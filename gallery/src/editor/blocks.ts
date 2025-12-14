@@ -9,7 +9,7 @@
  * - Parameter schema (for Inspector UI)
  */
 
-import type { BlockCategory, BlockTier, BlockSubcategory, Slot, BlockParams, SlotType, LaneKind, LaneFlavor } from './types';
+import type { BlockCategory, BlockForm, BlockSubcategory, Slot, BlockParams, SlotType, LaneKind, LaneFlavor } from './types';
 import { pathLibrary } from './pathLibrary';
 
 // =============================================================================
@@ -31,7 +31,21 @@ function getPathOptions(): readonly { value: string; label: string }[] {
 // Block Definition Type
 // =============================================================================
 
+export type BlockTagValue =
+  | string
+  | boolean
+  | number
+  | readonly (string | boolean | number)[];
+
+export type BlockTags = Record<string, BlockTagValue>;
+
 export interface BlockDefinition {
+  /**
+   * Flexible map of string tags for organization and filtering.
+   * Example: { role: 'input', domain: 'Scene', legacyCategory: 'Fields' }
+   */
+  tags?: BlockTags;
+
   /** Unique type identifier */
   readonly type: string;
 
@@ -39,23 +53,23 @@ export interface BlockDefinition {
   readonly label: string;
 
   /**
-   * Block tier: primitive, compound, legacy-compound, or macro
+   * Block form: primitive, compound, legacy-composite, or macro
    * - primitive: Irreducible atomic operations
    * - compound: Built from primitives, single unit in UI
-   * - legacy-compound: Existing blocks pending migration
+   * - legacy-composite: Existing blocks pending migration
    * - macro: Expands into visible blocks when added
    */
-  readonly tier: BlockTier;
+  readonly form: BlockForm;
 
   /**
-   * Subcategory within tier for organization.
+   * Subcategory within form for organization.
    * e.g., 'Sources', 'Fields', 'Timing', 'Spatial', 'Math', etc.
    */
   readonly subcategory: BlockSubcategory;
 
   /**
    * Category for library organization.
-   * @deprecated Use tier + subcategory instead
+   * @deprecated Use form + subcategory instead
    */
   readonly category: BlockCategory;
 
@@ -93,7 +107,7 @@ export interface BlockDefinition {
   /**
    * For compounds: the primitive graph that defines this block.
    * For primitives: undefined.
-   * For legacy-compound: undefined (pending migration).
+   * For legacy-composite: undefined (pending migration).
    */
   readonly primitiveGraph?: CompoundGraph;
 }
@@ -165,7 +179,7 @@ function output(id: string, label: string, type: SlotType): Slot {
 export const MacroLineDrawing: BlockDefinition = {
   type: 'macro:lineDrawing',
   label: '✨ Line Drawing',
-  tier: 'macro',
+  form: 'macro',
   subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Particles animate from random positions to form a shape. Expands into ~12 primitive blocks.',
@@ -181,7 +195,7 @@ export const MacroLineDrawing: BlockDefinition = {
 export const MacroParticles: BlockDefinition = {
   type: 'macro:particles',
   label: '✨ Particles',
-  tier: 'macro',
+  form: 'macro',
   subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Glowing particles converge to form a shape. Expands into ~12 primitive blocks.',
@@ -197,7 +211,7 @@ export const MacroParticles: BlockDefinition = {
 export const MacroBouncingCircle: BlockDefinition = {
   type: 'macro:bouncingCircle',
   label: '✨ Bouncing Circle',
-  tier: 'macro',
+  form: 'macro',
   subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Simple oscillating circle animation. Expands into primitive blocks.',
@@ -213,7 +227,7 @@ export const MacroBouncingCircle: BlockDefinition = {
 export const MacroOscillator: BlockDefinition = {
   type: 'macro:oscillator',
   label: '✨ Oscillator',
-  tier: 'macro',
+  form: 'macro',
   subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Math-driven oscillating animation. Expands into primitive blocks.',
@@ -229,7 +243,7 @@ export const MacroOscillator: BlockDefinition = {
 export const MacroRadialBurst: BlockDefinition = {
   type: 'macro:radialBurst',
   label: '✨ Radial Burst',
-  tier: 'macro',
+  form: 'macro',
   subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Particles burst from center, then converge to form shape.',
@@ -245,7 +259,7 @@ export const MacroRadialBurst: BlockDefinition = {
 export const MacroCascade: BlockDefinition = {
   type: 'macro:cascade',
   label: '✨ Cascade',
-  tier: 'macro',
+  form: 'macro',
   subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Particles fall from top like a waterfall.',
@@ -261,7 +275,7 @@ export const MacroCascade: BlockDefinition = {
 export const MacroScatter: BlockDefinition = {
   type: 'macro:scatter',
   label: '✨ Scatter',
-  tier: 'macro',
+  form: 'macro',
   subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Particles start scattered, slowly converge to form shape.',
@@ -277,7 +291,7 @@ export const MacroScatter: BlockDefinition = {
 export const MacroImplosion: BlockDefinition = {
   type: 'macro:implosion',
   label: '✨ Implosion',
-  tier: 'macro',
+  form: 'macro',
   subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Particles rush in from all sides to form shape.',
@@ -293,7 +307,7 @@ export const MacroImplosion: BlockDefinition = {
 export const MacroSwarm: BlockDefinition = {
   type: 'macro:swarm',
   label: '✨ Swarm',
-  tier: 'macro',
+  form: 'macro',
   subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Particles swarm up from bottom to form shape.',
@@ -309,7 +323,7 @@ export const MacroSwarm: BlockDefinition = {
 export const MacroLoveYouBaby: BlockDefinition = {
   type: 'macro:loveYouBaby',
   label: '💖 Love You Baby',
-  tier: 'macro',
+  form: 'macro',
   subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Particles swarm into a big heart shape.',
@@ -325,7 +339,7 @@ export const MacroLoveYouBaby: BlockDefinition = {
 export const MacroNebula: BlockDefinition = {
   type: 'macro:nebula',
   label: '🌌 Nebula',
-  tier: 'macro',
+  form: 'macro',
   subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Cosmic particles with rainbow colors, varied sizes, and dreamy motion. Uses 16 blocks!',
@@ -341,7 +355,7 @@ export const MacroNebula: BlockDefinition = {
 export const MacroGlitchStorm: BlockDefinition = {
   type: 'macro:glitchStorm',
   label: '⚡ Glitch Storm',
-  tier: 'macro',
+  form: 'macro',
   subcategory: 'Effects',
   category: 'Macros',
   description: 'Macro: Digital chaos with grid positions, scan-line timing, and RGB chromatic aberration.',
@@ -357,7 +371,7 @@ export const MacroGlitchStorm: BlockDefinition = {
 export const MacroAurora: BlockDefinition = {
   type: 'macro:aurora',
   label: '🌊 Aurora',
-  tier: 'macro',
+  form: 'macro',
   subcategory: 'Effects',
   category: 'Macros',
   description: 'Macro: Ethereal curtain of light descending with wave-based flow and gradient colors.',
@@ -373,7 +387,7 @@ export const MacroAurora: BlockDefinition = {
 export const MacroRevealMask: BlockDefinition = {
   type: 'macro:revealMask',
   label: '🎭 Reveal Mask',
-  tier: 'macro',
+  form: 'macro',
   subcategory: 'Effects',
   category: 'Macros',
   description: 'Macro: Sliding mask reveal transition. Content is progressively revealed with wipe effect.',
@@ -389,7 +403,7 @@ export const MacroRevealMask: BlockDefinition = {
 export const MacroLiquid: BlockDefinition = {
   type: 'macro:liquid',
   label: '💧 Liquid',
-  tier: 'macro',
+  form: 'macro',
   subcategory: 'Effects',
   category: 'Macros',
   description: 'Macro: Gooey blob circles drop and merge to form shapes. Uses goo filter for liquid effect.',
@@ -409,7 +423,7 @@ export const MacroLiquid: BlockDefinition = {
 export const SVGPathSource: BlockDefinition = {
   type: 'SVGPathSource',
   label: 'SVG Paths',
-  tier: 'legacy-compound',
+  form: 'legacy-composite',
   subcategory: 'Sources',
   category: 'Scene',
   description: 'Load SVG path data from the path library',
@@ -437,7 +451,7 @@ export const SVGPathSource: BlockDefinition = {
 export const SamplePoints: BlockDefinition = {
   type: 'SamplePoints',
   label: 'Sample Points',
-  tier: 'legacy-compound',
+  form: 'legacy-composite',
   subcategory: 'Sources',
   category: 'Derivers',
   description: 'Extract point targets from scene paths',
@@ -469,7 +483,7 @@ export const SamplePoints: BlockDefinition = {
 export const RadialOrigin: BlockDefinition = {
   type: 'RadialOrigin',
   label: 'Radial Origin',
-  tier: 'legacy-compound',
+  form: 'legacy-composite',
   subcategory: 'Spatial',
   category: 'Fields',
   description: 'Generate start positions in a radial pattern around a center point',
@@ -498,7 +512,7 @@ export const RadialOrigin: BlockDefinition = {
 export const LinearStagger: BlockDefinition = {
   type: 'LinearStagger',
   label: 'Linear Stagger',
-  tier: 'legacy-compound',
+  form: 'legacy-composite',
   subcategory: 'Timing',
   category: 'Fields',
   description: 'Generate delays that increase linearly by element index',
@@ -521,7 +535,7 @@ export const LinearStagger: BlockDefinition = {
 export const RegionField: BlockDefinition = {
   type: 'regionField',
   label: 'Region Field',
-  tier: 'legacy-compound',
+  form: 'legacy-composite',
   subcategory: 'Spatial',
   category: 'Fields',
   description: 'Generate random points within a rectangular region',
@@ -548,7 +562,7 @@ export const RegionField: BlockDefinition = {
 export const ConstantFieldDuration: BlockDefinition = {
   type: 'constantFieldDuration',
   label: 'Constant Duration',
-  tier: 'legacy-compound',
+  form: 'legacy-composite',
   subcategory: 'Timing',
   category: 'Fields',
   description: 'Same duration for all elements',
@@ -569,7 +583,7 @@ export const ConstantFieldDuration: BlockDefinition = {
 export const WaveStagger: BlockDefinition = {
   type: 'WaveStagger',
   label: 'Wave Stagger',
-  tier: 'legacy-compound',
+  form: 'legacy-composite',
   subcategory: 'Timing',
   category: 'Fields',
   description: 'Generate wave-based delays for organic staggering effects',
@@ -598,7 +612,7 @@ export const WaveStagger: BlockDefinition = {
 export const SizeVariation: BlockDefinition = {
   type: 'SizeVariation',
   label: 'Size Variation',
-  tier: 'legacy-compound',
+  form: 'legacy-composite',
   subcategory: 'Style',
   category: 'Fields',
   description: 'Generate per-element size multipliers for varied effects',
@@ -638,6 +652,7 @@ export const SizeVariation: BlockDefinition = {
 export const NoiseField: BlockDefinition = {
   type: 'noiseField',
   label: 'Noise Field',
+  form: 'primitive',
   category: 'Fields',
   description: 'Generate noise-based values for procedural effects',
   inputs: [],
@@ -658,6 +673,7 @@ export const NoiseField: BlockDefinition = {
 export const ColorField: BlockDefinition = {
   type: 'ColorField',
   label: 'Color Field',
+  form: 'primitive',
   category: 'Fields',
   description: 'Generate per-element colors for varied effects',
   inputs: [],
@@ -700,6 +716,7 @@ export const ColorField: BlockDefinition = {
 export const RandomStagger: BlockDefinition = {
   type: 'RandomStagger',
   label: 'Random Stagger',
+  form: 'primitive',
   category: 'Fields',
   description: 'Random delays within a range (for particles, liquid)',
   inputs: [],
@@ -724,6 +741,7 @@ export const RandomStagger: BlockDefinition = {
 export const IndexStagger: BlockDefinition = {
   type: 'IndexStagger',
   label: 'Index Stagger',
+  form: 'primitive',
   category: 'Fields',
   description: 'Sequential delays by element index (typewriter, line drawing)',
   inputs: [],
@@ -743,6 +761,7 @@ export const IndexStagger: BlockDefinition = {
 export const DurationVariation: BlockDefinition = {
   type: 'DurationVariation',
   label: 'Duration Variation',
+  form: 'primitive',
   category: 'Fields',
   description: 'Per-element duration with random variation',
   inputs: [],
@@ -762,6 +781,7 @@ export const DurationVariation: BlockDefinition = {
 export const DecayEnvelope: BlockDefinition = {
   type: 'DecayEnvelope',
   label: 'Decay Envelope',
+  form: 'primitive',
   category: 'Fields',
   description: 'Amplitude decay rates for damping effects',
   inputs: [],
@@ -787,6 +807,7 @@ export const DecayEnvelope: BlockDefinition = {
 export const ExplosionOrigin: BlockDefinition = {
   type: 'ExplosionOrigin',
   label: 'Explosion Origin',
+  form: 'primitive',
   category: 'Fields',
   description: 'Random positions radiating from center (particle explosion)',
   inputs: [],
@@ -808,6 +829,7 @@ export const ExplosionOrigin: BlockDefinition = {
 export const TopDropOrigin: BlockDefinition = {
   type: 'TopDropOrigin',
   label: 'Top Drop Origin',
+  form: 'primitive',
   category: 'Fields',
   description: 'Positions above scene for drop/fall effects (liquid)',
   inputs: [],
@@ -828,6 +850,7 @@ export const TopDropOrigin: BlockDefinition = {
 export const GridPositions: BlockDefinition = {
   type: 'GridPositions',
   label: 'Grid Positions',
+  form: 'primitive',
   category: 'Fields',
   description: 'Positions arranged in a grid pattern',
   inputs: [],
@@ -850,6 +873,7 @@ export const GridPositions: BlockDefinition = {
 export const CenterPoint: BlockDefinition = {
   type: 'CenterPoint',
   label: 'Center Point',
+  form: 'primitive',
   category: 'Fields',
   description: 'Same center position for all elements',
   inputs: [],
@@ -870,6 +894,7 @@ export const CenterPoint: BlockDefinition = {
 export const RotationField: BlockDefinition = {
   type: 'RotationField',
   label: 'Rotation Field',
+  form: 'primitive',
   category: 'Fields',
   description: 'Per-element rotation angles',
   inputs: [],
@@ -893,6 +918,7 @@ export const RotationField: BlockDefinition = {
 export const ScaleField: BlockDefinition = {
   type: 'ScaleField',
   label: 'Scale Field',
+  form: 'primitive',
   category: 'Fields',
   description: 'Per-element scale values',
   inputs: [],
@@ -916,6 +942,7 @@ export const ScaleField: BlockDefinition = {
 export const OpacityField: BlockDefinition = {
   type: 'OpacityField',
   label: 'Opacity Field',
+  form: 'primitive',
   category: 'Fields',
   description: 'Per-element opacity values',
   inputs: [],
@@ -941,6 +968,7 @@ export const OpacityField: BlockDefinition = {
 export const WobbleParams: BlockDefinition = {
   type: 'WobbleParams',
   label: 'Wobble Params',
+  form: 'primitive',
   category: 'Fields',
   description: 'Per-element wobble behavior (liquid animations)',
   inputs: [],
@@ -960,6 +988,7 @@ export const WobbleParams: BlockDefinition = {
 export const SpiralParams: BlockDefinition = {
   type: 'SpiralParams',
   label: 'Spiral Params',
+  form: 'primitive',
   category: 'Fields',
   description: 'Per-element spiral motion (particle effects)',
   inputs: [],
@@ -979,6 +1008,7 @@ export const SpiralParams: BlockDefinition = {
 export const WaveParams: BlockDefinition = {
   type: 'WaveParams',
   label: 'Wave Params',
+  form: 'primitive',
   category: 'Fields',
   description: 'Per-element wave motion (wave ripple effects)',
   inputs: [],
@@ -999,6 +1029,7 @@ export const WaveParams: BlockDefinition = {
 export const JitterParams: BlockDefinition = {
   type: 'JitterParams',
   label: 'Jitter Params',
+  form: 'primitive',
   category: 'Fields',
   description: 'Per-element jitter/shake (glitch effects)',
   inputs: [],
@@ -1018,6 +1049,7 @@ export const JitterParams: BlockDefinition = {
 export const EasingField: BlockDefinition = {
   type: 'EasingField',
   label: 'Easing Field',
+  form: 'primitive',
   category: 'Fields',
   description: 'Per-element easing function selection',
   inputs: [],
@@ -1049,6 +1081,7 @@ export const EasingField: BlockDefinition = {
 export const PhaseMachine: BlockDefinition = {
   type: 'PhaseMachine',
   label: 'Phase Machine',
+  form: 'primitive',
   category: 'Time',
   description: 'Three-phase animation: entrance, hold, exit',
   inputs: [],
@@ -1071,6 +1104,7 @@ export const PhaseMachine: BlockDefinition = {
 export const EaseRamp: BlockDefinition = {
   type: 'EaseRamp',
   label: 'Ease Ramp',
+  form: 'primitive',
   category: 'Time',
   description: 'Apply easing function to a 0-1 progress signal',
   inputs: [input('progress', 'Progress', 'Signal<Unit>')],
@@ -1104,6 +1138,7 @@ export const EaseRamp: BlockDefinition = {
 export const PhaseProgress: BlockDefinition = {
   type: 'phaseProgress',
   label: 'Phase Progress',
+  form: 'primitive',
   category: 'Time',
   description: 'Extract eased progress signal from PhaseMachine',
   inputs: [input('phase', 'Phase', 'Signal<PhaseSample>')],
@@ -1122,6 +1157,7 @@ export const PhaseProgress: BlockDefinition = {
 export const PerElementTransport: BlockDefinition = {
   type: 'PerElementTransport',
   label: 'Per-Element Transport',
+  form: 'primitive',
   category: 'Compose',
   description: 'Apply animation to each element with individual delays',
   inputs: [
@@ -1141,6 +1177,7 @@ export const PerElementTransport: BlockDefinition = {
 export const PerElementProgress: BlockDefinition = {
   type: 'perElementProgress',
   label: 'Per-Element Progress',
+  form: 'primitive',
   category: 'Compose',
   description: 'Per-element staggered animation progress (0-1)',
   inputs: [
@@ -1175,6 +1212,7 @@ export const PerElementProgress: BlockDefinition = {
 export const LerpPoints: BlockDefinition = {
   type: 'lerpPoints',
   label: 'Lerp Points',
+  form: 'primitive',
   category: 'Compose',
   description: 'Interpolate per-element from start to end positions based on progress',
   inputs: [
@@ -1198,6 +1236,7 @@ export const LerpPoints: BlockDefinition = {
 export const ParticleRenderer: BlockDefinition = {
   type: 'ParticleRenderer',
   label: 'Particle Renderer',
+  form: 'primitive',
   category: 'Render',
   description: 'Render particles as glowing circles',
   inputs: [input('program', 'Program', 'Program')],
@@ -1221,6 +1260,7 @@ export const ParticleRenderer: BlockDefinition = {
 export const GlowFilter: BlockDefinition = {
   type: 'glowFilter',
   label: 'Glow Filter',
+  form: 'primitive',
   category: 'FX',
   description: 'Create an SVG glow filter definition',
   inputs: [],
@@ -1244,6 +1284,7 @@ export const GlowFilter: BlockDefinition = {
 export const CircleNode: BlockDefinition = {
   type: 'circleNode',
   label: 'Circle Node',
+  form: 'primitive',
   category: 'Render',
   description: 'Create a circle render node',
   inputs: [
@@ -1269,6 +1310,7 @@ export const CircleNode: BlockDefinition = {
 export const GroupNode: BlockDefinition = {
   type: 'groupNode',
   label: 'Group Node',
+  form: 'primitive',
   category: 'Render',
   description: 'Group multiple render nodes',
   inputs: [input('nodes', 'Nodes', 'RenderNode[]')],
@@ -1283,6 +1325,7 @@ export const GroupNode: BlockDefinition = {
 export const RenderTreeAssemble: BlockDefinition = {
   type: 'renderTreeAssemble',
   label: 'Assemble Tree',
+  form: 'primitive',
   category: 'Render',
   description: 'Assemble RenderNode(s) with filters into a RenderTree',
   inputs: [
@@ -1300,6 +1343,7 @@ export const RenderTreeAssemble: BlockDefinition = {
 export const PerElementCircles: BlockDefinition = {
   type: 'perElementCircles',
   label: 'Per-Element Circles',
+  form: 'primitive',
   category: 'Render',
   description: 'Render animated circles for each element position',
   inputs: [
@@ -1328,6 +1372,7 @@ export const PerElementCircles: BlockDefinition = {
 export const PathRenderer: BlockDefinition = {
   type: 'PathRenderer',
   label: 'Path Renderer',
+  form: 'primitive',
   category: 'Render',
   description: 'Render SVG paths with stroke styling',
   inputs: [
@@ -1354,6 +1399,7 @@ export const PathRenderer: BlockDefinition = {
 export const StrokeStyle: BlockDefinition = {
   type: 'StrokeStyle',
   label: 'Stroke Style',
+  form: 'primitive',
   category: 'FX',
   description: 'Configure stroke appearance for paths',
   inputs: [],
@@ -1378,6 +1424,7 @@ export const StrokeStyle: BlockDefinition = {
 export const GooFilter: BlockDefinition = {
   type: 'GooFilter',
   label: 'Goo Filter',
+  form: 'primitive',
   category: 'FX',
   description: 'Metaball/liquid blob merging effect',
   inputs: [],
@@ -1397,6 +1444,7 @@ export const GooFilter: BlockDefinition = {
 export const RGBSplitFilter: BlockDefinition = {
   type: 'RGBSplitFilter',
   label: 'RGB Split',
+  form: 'primitive',
   category: 'FX',
   description: 'Chromatic aberration / RGB channel separation',
   inputs: [],
@@ -1417,6 +1465,7 @@ export const RGBSplitFilter: BlockDefinition = {
 export const MaskReveal: BlockDefinition = {
   type: 'MaskReveal',
   label: 'Mask Reveal',
+  form: 'primitive',
   category: 'Render',
   description: 'Wipe/reveal mask transition - clips content with animated mask',
   inputs: [
@@ -1447,7 +1496,7 @@ export const MaskReveal: BlockDefinition = {
 export const TextSource: BlockDefinition = {
   type: 'TextSource',
   label: 'Text Source',
-  tier: 'legacy-compound',
+  form: 'legacy-composite',
   subcategory: 'Sources',
   category: 'Scene',
   description: 'Create scene from text (per-character elements)',
@@ -1473,6 +1522,7 @@ export const TextSource: BlockDefinition = {
 export const MathConstNumber: BlockDefinition = {
   type: 'math.constNumber',
   label: 'Const Number',
+  form: 'primitive',
   category: 'Math',
   description: 'Constant scalar number',
   inputs: [],
@@ -1491,6 +1541,7 @@ export const MathConstNumber: BlockDefinition = {
 export const MathAddScalar: BlockDefinition = {
   type: 'math.addScalar',
   label: 'Add',
+  form: 'primitive',
   category: 'Math',
   description: 'Add two scalar numbers',
   inputs: [
@@ -1508,6 +1559,7 @@ export const MathAddScalar: BlockDefinition = {
 export const MathMulScalar: BlockDefinition = {
   type: 'math.mulScalar',
   label: 'Multiply',
+  form: 'primitive',
   category: 'Math',
   description: 'Multiply two scalar numbers',
   inputs: [
@@ -1525,6 +1577,7 @@ export const MathMulScalar: BlockDefinition = {
 export const MathSinScalar: BlockDefinition = {
   type: 'math.sinScalar',
   label: 'Sin',
+  form: 'primitive',
   category: 'Math',
   description: 'Sine of a scalar number',
   inputs: [input('x', 'X', 'Scalar:number')],
@@ -1539,6 +1592,7 @@ export const MathSinScalar: BlockDefinition = {
 export const LiftScalarToField: BlockDefinition = {
   type: 'lift.scalarToFieldNumber',
   label: 'Scalar → Field',
+  form: 'primitive',
   category: 'Adapters',
   description: 'Lift Scalar:number to Field<number>',
   inputs: [input('x', 'X', 'Scalar:number')],
@@ -1557,6 +1611,7 @@ export const LiftScalarToField: BlockDefinition = {
 export const DemoProgram: BlockDefinition = {
   type: 'demoProgram',
   label: 'Demo Program',
+  form: 'primitive',
   category: 'Compose',
   description: 'Generate a visual proof program',
   inputs: [
@@ -1602,6 +1657,7 @@ export const DemoProgram: BlockDefinition = {
 export const OutputProgram: BlockDefinition = {
   type: 'outputProgram',
   label: 'Program Output',
+  form: 'primitive',
   category: 'Compose',
   description: 'Mark a Program as the patch output (before rendering)',
   inputs: [input('program', 'Program', 'Program')],
@@ -1616,6 +1672,7 @@ export const OutputProgram: BlockDefinition = {
 export const Canvas: BlockDefinition = {
   type: 'canvas',
   label: 'Canvas',
+  form: 'primitive',
   category: 'Render',
   description: 'Final render output - displays the animation',
   inputs: [input('render', 'Render', 'RenderTree')],
@@ -1642,6 +1699,7 @@ export const Canvas: BlockDefinition = {
 export const SceneToTargets: BlockDefinition = {
   type: 'SceneToTargets',
   label: 'Scene → Targets',
+  form: 'primitive',
   category: 'Adapters',
   description: 'Convert Scene to SceneTargets (sample points from paths)',
   inputs: [input('scene', 'Scene', 'Scene')],
@@ -1656,6 +1714,7 @@ export const SceneToTargets: BlockDefinition = {
 export const FieldToSignal: BlockDefinition = {
   type: 'FieldToSignal',
   label: 'Field → Signal',
+  form: 'primitive',
   category: 'Adapters',
   description: 'Convert Field<A> to Signal<A> by freezing at compilation time',
   inputs: [input('field', 'Field', 'Field<number>')],
@@ -1670,6 +1729,7 @@ export const FieldToSignal: BlockDefinition = {
 export const ElementCount: BlockDefinition = {
   type: 'elementCount',
   label: 'Element Count',
+  form: 'primitive',
   category: 'Adapters',
   description: 'Get the number of elements from scene targets',
   inputs: [input('targets', 'Targets', 'SceneTargets')],
@@ -1685,7 +1745,26 @@ export const ElementCount: BlockDefinition = {
 // Block Registry
 // =============================================================================
 
-export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
+/**
+ * Normalize tags with canonical defaults for form/subcategory/legacy category.
+ */
+export function getBlockTags(definition: BlockDefinition): BlockTags {
+  const tags: BlockTags = { ...(definition.tags ?? {}) };
+
+  // Normalize canonical tags
+  tags.legacyCategory = definition.category;
+  tags.form = definition.form;
+  tags.subcategory = definition.subcategory;
+  tags.laneKind = definition.laneKind;
+
+  if (definition.laneFlavor) {
+    tags.laneFlavor = definition.laneFlavor;
+  }
+
+  return tags;
+}
+
+const RAW_BLOCK_DEFINITIONS: BlockDefinition[] = [
   // Macros (Recipe Starters) - at the top
   MacroLineDrawing,
   MacroParticles,
@@ -1770,6 +1849,15 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   LiftScalarToField,
   ElementCount,
 ];
+
+// Normalize tags on all definitions up-front and ensure missing forms are treated as primitives
+export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = RAW_BLOCK_DEFINITIONS.map(
+  (definition) => {
+    const normalizedDef: BlockDefinition = { ...definition };
+    normalizedDef.tags = getBlockTags(normalizedDef);
+    return normalizedDef;
+  }
+);
 
 /**
  * Get all blocks for a category.

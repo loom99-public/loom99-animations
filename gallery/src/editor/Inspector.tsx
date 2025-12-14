@@ -8,13 +8,47 @@
 import { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import type { EditorStore } from './store';
-import type { PortRef, Block, Slot } from './types';
-import { getBlockDefinition, BLOCK_DEFINITIONS, type BlockDefinition } from './blocks';
+import type { PortRef, Block, Slot, BlockForm } from './types';
+import { getBlockDefinition, getBlockTags, BLOCK_DEFINITIONS, type BlockDefinition, type BlockTags } from './blocks';
 import { findCompatiblePorts, getConnectionsForPort, areTypesCompatible } from './portUtils';
 import './Inspector.css';
 
 interface InspectorProps {
   store: EditorStore;
+}
+
+function formatFormLabel(form: BlockForm): string {
+  if (form === 'legacy-composite') return 'Legacy Composite';
+  return form.charAt(0).toUpperCase() + form.slice(1);
+}
+
+function formatTagKey(key: string): string {
+  if (key === 'legacyCategory') return 'Legacy';
+  if (key === 'laneKind') return 'Lane';
+  if (key === 'laneFlavor') return 'Flavor';
+  if (key === 'subcategory') return 'Subcategory';
+  if (key === 'form') return 'Form';
+  return key.replace(/([A-Z])/g, ' $1').replace(/^\w/, (c) => c.toUpperCase());
+}
+
+function TagPills({ tags, hideKeys = [] }: { tags: BlockTags; hideKeys?: string[] }) {
+  const entries = Object.entries(tags).filter(([key]) => !hideKeys.includes(key));
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="tag-list">
+      {entries.map(([key, value]) => (
+        <span key={key} className="tag-pill">
+          <span className="tag-key">{formatTagKey(key)}</span>
+          {value !== true && (
+            <span className="tag-value">
+              {Array.isArray(value) ? value.join(', ') : String(value)}
+            </span>
+          )}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 /**
@@ -246,12 +280,19 @@ function PortWiringPanel({
  * Preview display for a block definition (not yet placed).
  */
 function DefinitionPreview({ definition }: { definition: BlockDefinition }) {
+  const tags = getBlockTags(definition);
+
   return (
     <div className="inspector">
       <div className="inspector-header inspector-header-preview" style={{ borderLeftColor: definition.color }}>
         <h2>{definition.label}</h2>
         <div className="block-meta">
           <span className="block-preview-badge">Preview</span>
+          <span className="block-tier-badge">{formatFormLabel(definition.form)}</span>
+          <span className="block-subcategory-badge">{definition.subcategory}</span>
+          {tags.legacyCategory && (
+            <span className="block-legacy-badge">{String(tags.legacyCategory)}</span>
+          )}
           <span
             className="block-category"
             style={{ backgroundColor: definition.color }}
@@ -270,6 +311,11 @@ function DefinitionPreview({ definition }: { definition: BlockDefinition }) {
         <div className="inspector-section">
           <h3>Type</h3>
           <code className="block-type-code">{definition.type}</code>
+        </div>
+
+        <div className="inspector-section">
+          <h3>Tags</h3>
+          <TagPills tags={tags} hideKeys={['form', 'subcategory']} />
         </div>
 
         {definition.inputs.length > 0 && (
@@ -361,6 +407,7 @@ export const Inspector = observer(({ store }: InspectorProps) => {
 
   const definition = getBlockDefinition(block.type);
   const blockColor = definition?.color ?? '#666';
+  const tags = definition ? getBlockTags(definition) : null;
 
   return (
     <div className="inspector">
@@ -368,6 +415,15 @@ export const Inspector = observer(({ store }: InspectorProps) => {
         <h2>{block.label}</h2>
         <div className="block-meta">
           <span className="block-id">{block.id}</span>
+          {definition && (
+            <>
+              <span className="block-tier-badge">{formatFormLabel(definition.form)}</span>
+              <span className="block-subcategory-badge">{definition.subcategory}</span>
+            </>
+          )}
+          {tags?.legacyCategory && (
+            <span className="block-legacy-badge">{String(tags.legacyCategory)}</span>
+          )}
           <span
             className="block-category"
             style={{ backgroundColor: blockColor }}
@@ -383,6 +439,13 @@ export const Inspector = observer(({ store }: InspectorProps) => {
           <h3>Type</h3>
           <code className="block-type-code">{block.type}</code>
         </div>
+
+        {tags && (
+          <div className="inspector-section">
+            <h3>Tags</h3>
+            <TagPills tags={tags} hideKeys={['form', 'subcategory']} />
+          </div>
+        )}
 
         {block.description && (
           <div className="inspector-section">

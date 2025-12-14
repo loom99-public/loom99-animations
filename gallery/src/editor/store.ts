@@ -483,6 +483,16 @@ export class EditorStore {
     toBlockId: BlockId,
     toSlotId: string
   ): void {
+    // Prevent duplicate connections between the same ports
+    const exists = this.connections.some(
+      (c) =>
+        c.from.blockId === fromBlockId &&
+        c.from.slotId === fromSlotId &&
+        c.to.blockId === toBlockId &&
+        c.to.slotId === toSlotId
+    );
+    if (exists) return;
+
     const id = `conn-${this.nextId++}`;
 
     const connection: Connection = {

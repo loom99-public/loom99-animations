@@ -1,0 +1,7 @@
+Agent: iterative-implementer | 2025-12-14T21:17:24Z
+Mode: manual
+Completed: [Control surface is always visible, flexible Inspector modes, robust right panel layout]
+Files: 2 | Commits: 1
+Tests: n/a (manual validation, no auto tests yet)
+Cache invalidated: []
+Status: complete

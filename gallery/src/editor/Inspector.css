@@ -7,6 +7,7 @@
   background: #1a1a1a;
   display: flex;
   flex-direction: column;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -48,6 +49,7 @@
   gap: 8px;
   align-items: center;
   font-size: 11px;
+  flex-wrap: wrap;
 }
 
 .block-id {
@@ -61,6 +63,35 @@
   color: #fff;
   font-weight: 500;
   font-size: 10px;
+}
+
+.block-tier-badge,
+.block-subcategory-badge,
+.block-legacy-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 10px;
+  color: #e5e7eb;
+  letter-spacing: 0.3px;
+}
+
+.block-tier-badge {
+  background: #1f2937;
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+
+.block-subcategory-badge {
+  background: #0f172a;
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.block-legacy-badge {
+  background: #312e81;
+  color: #c7d2fe;
+  border: 1px solid rgba(124, 58, 237, 0.4);
 }
 
 .block-preview-badge {
@@ -103,6 +134,35 @@
   color: #a855f7;
   font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
   font-size: 12px;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #1f1f1f;
+  border: 1px solid #2f2f2f;
+  border-radius: 999px;
+  font-size: 10px;
+}
+
+.tag-key {
+  color: #9ca3af;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.tag-value {
+  color: #e5e7eb;
+  font-weight: 600;
 }
 
 .block-description {

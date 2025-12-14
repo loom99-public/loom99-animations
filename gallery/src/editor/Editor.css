@@ -1,60 +1,235 @@
-.editor-inspector {
+.editor-mode {
+  background: #0f0f1e;
+}
+
+body.editor-mode {
+  overflow: hidden;
+}
+
+.editor-mode #root {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+}
+
+.editor {
   display: flex;
   flex-direction: column;
-  width: 280px;
-  min-width: 220px;
-  background: #111;
-  border-left: 1px solid #333;
+  height: 100vh;
+  background: #0f0f1e;
+  color: #fff;
   overflow: hidden;
-  flex-shrink: 0;
-  z-index: 5;
 }
 
-.editor-inspector.floating {
-  position: absolute;
-  top: 60px;
-  right: 18px;
-  width: 340px;
-  min-width: 220px;
-  max-width: 400px;
-  max-height: 80vh;
-  box-shadow: 0 6px 36px #000e, 0 1px 2px #111c;
+.editor.dragging {
+  user-select: none;
+}
+
+.editor-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr) 420px;
+  gap: 12px;
+  padding: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.trash-zone {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 28px 18px;
+  background: linear-gradient(180deg, rgba(255, 99, 132, 0.12), rgba(239, 68, 68, 0.22));
+  border-top: 2px dashed rgba(239, 68, 68, 0.65);
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  color: #fca5a5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.trash-zone .trash-icon {
+  font-size: 18px;
+}
+
+.trash-zone .trash-label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.trash-zone-active {
+  background: linear-gradient(180deg, rgba(248, 113, 113, 0.25), rgba(239, 68, 68, 0.35));
+  border-top-color: rgba(248, 113, 113, 0.95);
+  color: #fecdd3;
+}
+
+.editor-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  background: #111;
+  border: 1px solid #222;
   border-radius: 10px;
-  background: #161616;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.left-panel.collapsed {
+  flex: 0 0 auto !important;
+}
+
+.left-panel.collapsed > *:not(.panel-header) {
+  display: none;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: #151515;
+  border-bottom: 1px solid #222;
+}
+
+.panel-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+}
+
+.panel-toggle-btn {
+  background: #222;
+  color: #ccc;
   border: 1px solid #333;
-  padding-bottom: 0;
-  overflow: auto;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.inspector-close-btn {
-  background: none;
-  border: none;
-  color: #aaa;
-  font-size: 22px;
-  cursor: pointer;
-  transition: color 0.12s;
-}
-.inspector-close-btn:hover {
-  color: #ff7676;
-}
-
-.inspector-open-btn {
-  background: #262a31;
-  color: #b3cbe5;
-  border: 1px solid #444c;
-  border-radius: 8px;
-  font-size: 14px;
-  padding: 3px 10px;
-  cursor: pointer;
-  opacity: 0.95;
-  transition: background 0.1s, color 0.1s;
-}
-.inspector-open-btn:hover {
-  background: #425073;
+.panel-toggle-btn:hover {
+  background: #2d2d2d;
   color: #fff;
 }
 
-.editor-inspector > .inspector {
+.library-panel .block-library {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+}
+
+.inspector-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.inspector-wrapper .inspector {
+  height: 100%;
+  min-height: 0;
+}
+
+.vertical-resizer {
+  height: 10px;
+  border: 1px solid #222;
+  border-radius: 6px;
+  background: #1f1f1f;
+  cursor: row-resize;
+  margin: 4px 2px;
+  width: calc(100% - 4px);
+  align-self: center;
+}
+
+.horizontal-resizer {
+  height: 12px;
+  border: 1px solid #222;
+  border-radius: 6px;
+  background: #1f1f1f;
+  cursor: row-resize;
+  margin: 10px 0;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.editor.dragging .vertical-resizer,
+.editor.dragging .horizontal-resizer {
+  background: #2b4a90;
+  border-color: #345bb5;
+}
+
+.editor-center {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.editor-preview {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-height: 220px;
+  max-height: 520px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+}
+
+.editor-preview .preview-panel {
+  height: 100%;
+}
+
+.editor-patch {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid #222;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #111;
+}
+
+.editor-right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 340px;
+  max-width: 420px;
+  padding-left: 8px;
+  border-left: 1px solid #222;
+  min-height: 0;
+  height: 100%;
+  align-self: stretch;
+}
+
+.editor-control-surface {
+  border: 1px solid #222;
+  border-radius: 10px;
+  overflow: hidden;
+  min-height: 0;
+  flex: 1;
+  background: #111;
+}
+
+.editor-control-surface .control-surface-panel {
+  height: 100%;
 }

@@ -9,14 +9,86 @@ import { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useDraggable } from '@dnd-kit/core';
 import type { EditorStore } from './store';
-import { ALL_CATEGORIES, type BlockCategory } from './types';
+import { ALL_SUBCATEGORIES, type BlockSubcategory, type BlockForm } from './types';
 import {
   BLOCK_DEFINITIONS,
-  getBlocksByCategory,
   getBlocksForPalette,
+  getBlockTags,
   type BlockDefinition,
 } from './blocks';
 import './BlockLibrary.css';
+
+const FORM_ORDER: BlockForm[] = ['macro', 'composite', 'legacy-composite', 'primitive'];
+
+const FORM_LABELS: Record<BlockForm, string> = {
+  macro: 'Macros',
+  composite: 'Composites',
+  'legacy-composite': 'Legacy Composites',
+  primitive: 'Primitives',
+};
+
+const SUBCATEGORY_ORDER = new Map<BlockSubcategory, number>(
+  ALL_SUBCATEGORIES.map((subcategory, index) => [subcategory, index])
+);
+
+interface FormGroup {
+  form: BlockForm;
+  label: string;
+  count: number;
+  subcategories: Array<{
+    subcategory: BlockSubcategory;
+    blocks: readonly BlockDefinition[];
+  }>;
+}
+
+function getSubcategoryKey(form: BlockForm, subcategory: BlockSubcategory): string {
+  return `${form}:${subcategory}`;
+}
+
+function sortBlocksForDisplay(a: BlockDefinition, b: BlockDefinition): number {
+  const priorityDiff = (a.priority ?? 99) - (b.priority ?? 99);
+  if (priorityDiff !== 0) return priorityDiff;
+  return a.label.localeCompare(b.label);
+}
+
+function groupBlocksByForm(blocks: readonly BlockDefinition[]): FormGroup[] {
+  const formMap = new Map<BlockForm, Map<BlockSubcategory, BlockDefinition[]>>();
+
+  for (const block of blocks) {
+    let subcategoryMap = formMap.get(block.form);
+    if (!subcategoryMap) {
+      subcategoryMap = new Map<BlockSubcategory, BlockDefinition[]>();
+      formMap.set(block.form, subcategoryMap);
+    }
+
+    const list = subcategoryMap.get(block.subcategory) ?? [];
+    list.push(block);
+    subcategoryMap.set(block.subcategory, list);
+  }
+
+  return FORM_ORDER.map((form) => {
+    const subcategoryMap = formMap.get(form);
+    if (!subcategoryMap) return null;
+
+    const subcategories = Array.from(subcategoryMap.entries())
+      .sort(
+        (a, b) => (SUBCATEGORY_ORDER.get(a[0]) ?? Number.MAX_SAFE_INTEGER) - (SUBCATEGORY_ORDER.get(b[0]) ?? Number.MAX_SAFE_INTEGER)
+      )
+      .map(([subcategory, list]) => ({
+        subcategory,
+        blocks: list.slice().sort(sortBlocksForDisplay),
+      }));
+
+    const count = subcategories.reduce((acc, sub) => acc + sub.blocks.length, 0);
+
+    return {
+      form,
+      label: FORM_LABELS[form],
+      count,
+      subcategories,
+    };
+  }).filter(Boolean) as FormGroup[];
+}
 
 interface BlockLibraryProps {
   store: EditorStore;
@@ -95,12 +167,18 @@ function DraggableBlockItem({ definition, isSelected, onSelect, onDoubleClickAdd
  */
 export const BlockLibrary = observer(({ store }: BlockLibraryProps) => {
   const [search, setSearch] = useState('');
-  const [collapsed, setCollapsed] = useState<Set<BlockCategory>>(new Set());
+  const [collapsedForms, setCollapsedForms] = useState<Set<BlockForm>>(new Set());
+  const [collapsedSubcategories, setCollapsedSubcategories] = useState<Set<string>>(new Set());
   const [showAllBlocks, setShowAllBlocks] = useState(false);
 
   const previewedType = store.previewedDefinition?.type ?? null;
   const activeLane = store.activeLane;
   const filterByLane = store.settings.filterByLane;
+
+  const formGroups = useMemo(
+    () => groupBlocksByForm(BLOCK_DEFINITIONS),
+    [BLOCK_DEFINITIONS]
+  );
 
   /**
    * Add a block to its suggested lane (first lane matching laneKind).
@@ -125,20 +203,60 @@ export const BlockLibrary = observer(({ store }: BlockLibraryProps) => {
   const searchFilteredBlocks = useMemo(() => {
     if (!search.trim()) return null;
     const term = search.toLowerCase();
-    return BLOCK_DEFINITIONS.filter(
-      (b) =>
+    return BLOCK_DEFINITIONS.filter((b) => {
+      const labelsMatch =
         b.label.toLowerCase().includes(term) ||
-        b.description.toLowerCase().includes(term)
-    );
-  }, [search]);
+        b.description.toLowerCase().includes(term) ||
+        b.type.toLowerCase().includes(term);
 
-  const toggleCategory = (category: BlockCategory) => {
-    setCollapsed((prev) => {
+      const tags = getBlockTags(b);
+      const tagsMatch = Object.entries(tags).some(([key, value]) => {
+        if (typeof value === 'string') {
+          return (
+            key.toLowerCase().includes(term) ||
+            value.toLowerCase().includes(term)
+          );
+        }
+        if (typeof value === 'number' || typeof value === 'boolean') {
+          return (
+            key.toLowerCase().includes(term) ||
+            String(value).toLowerCase().includes(term)
+          );
+        }
+        if (Array.isArray(value)) {
+          return (
+            key.toLowerCase().includes(term) ||
+            value.some((item) =>
+              String(item).toLowerCase().includes(term)
+            )
+          );
+        }
+        return key.toLowerCase().includes(term);
+      });
+
+      return labelsMatch || tagsMatch;
+    });
+  }, [search, BLOCK_DEFINITIONS]);
+
+  const toggleForm = (form: BlockForm) => {
+    setCollapsedForms((prev) => {
       const next = new Set(prev);
-      if (next.has(category)) {
-        next.delete(category);
+      if (next.has(form)) {
+        next.delete(form);
       } else {
-        next.add(category);
+        next.add(form);
+      }
+      return next;
+    });
+  };
+
+  const toggleSubcategory = (key: string) => {
+    setCollapsedSubcategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
       }
       return next;
     });
@@ -239,33 +357,54 @@ export const BlockLibrary = observer(({ store }: BlockLibraryProps) => {
             )}
           </>
         ) : (
-          // Category view (default, no filtering)
-          ALL_CATEGORIES.map((category) => {
-            const blocks = getBlocksByCategory(category);
-            if (blocks.length === 0) return null;
-            const isCollapsed = collapsed.has(category);
+          // Form/Subcategory view (default, no filtering)
+          formGroups.map((group) => {
+            const isFormCollapsed = collapsedForms.has(group.form);
 
             return (
-              <div key={category} className={`category ${isCollapsed ? 'collapsed' : ''}`}>
-                <h3
-                  className="category-label"
-                  onClick={() => toggleCategory(category)}
+              <div key={group.form} className={`tier ${isFormCollapsed ? 'collapsed' : ''}`}>
+                <div
+                  className="tier-header"
+                  onClick={() => toggleForm(group.form)}
                 >
-                  <span className="category-chevron">{isCollapsed ? '▸' : '▾'}</span>
-                  {category}
-                  <span className="category-count">{blocks.length}</span>
-                </h3>
-                {!isCollapsed && (
-                  <div className="category-blocks">
-                    {blocks.map((definition) => (
-                      <DraggableBlockItem
-                        key={definition.type}
-                        definition={definition}
-                        isSelected={previewedType === definition.type}
-                        onSelect={() => store.previewDefinition(definition)}
-                        onDoubleClickAdd={() => addBlockToSuggestedLane(definition)}
-                      />
-                    ))}
+                  <span className="category-chevron">{isFormCollapsed ? '▸' : '▾'}</span>
+                  <span className="tier-label">{group.label}</span>
+                  <span className="category-count">{group.count}</span>
+                </div>
+
+                {!isFormCollapsed && (
+                  <div className="tier-subcategories">
+                    {group.subcategories.map(({ subcategory, blocks }) => {
+                      const key = getSubcategoryKey(group.form, subcategory);
+                      const isCollapsed = collapsedSubcategories.has(key);
+
+                      return (
+                        <div key={key} className={`subcategory ${isCollapsed ? 'collapsed' : ''}`}>
+                          <div
+                            className="subcategory-header"
+                            onClick={() => toggleSubcategory(key)}
+                          >
+                            <span className="category-chevron">{isCollapsed ? '▸' : '▾'}</span>
+                            <span className="subcategory-label">{subcategory}</span>
+                            <span className="category-count">{blocks.length}</span>
+                          </div>
+
+                          {!isCollapsed && (
+                            <div className="category-blocks">
+                              {blocks.map((definition) => (
+                                <DraggableBlockItem
+                                  key={definition.type}
+                                  definition={definition}
+                                  isSelected={previewedType === definition.type}
+                                  onSelect={() => store.previewDefinition(definition)}
+                                  onDoubleClickAdd={() => addBlockToSuggestedLane(definition)}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

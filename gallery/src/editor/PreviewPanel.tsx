@@ -78,6 +78,11 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, store }: Pre
     const renderer = new SvgRenderer(svg);
     rendererRef.current = renderer;
 
+    const handleStateChange = (state: PlayState) => {
+      setPlayState(state);
+      store?.setPlaying(state === 'playing');
+    };
+
     const player = createPlayer(
       (tree: RenderTree, _tMs: number) => {
         renderer.render(tree);
@@ -85,7 +90,7 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, store }: Pre
       {
         width,
         height,
-        onStateChange: setPlayState,
+        onStateChange: handleStateChange,
         onTimeChange: setCurrentTime,
         onLoopModeChange: setLoopMode,
         onTimelineChange: (hint) => {
@@ -227,7 +232,7 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, store }: Pre
         </span>
       </div>
 
-      <div className="preview-canvas" style={{ width, height }}>
+      <div className="preview-canvas" style={{ width: '100%', height: '100%' }}>
         <svg
           ref={svgRef}
           width={width}

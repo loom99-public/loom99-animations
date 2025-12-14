@@ -9,7 +9,7 @@
  */
 
 import { observer } from 'mobx-react-lite';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -103,6 +103,15 @@ export const Editor = observer(() => {
   // Create compiler service
   const compilerService = useMemo(() => createCompilerService(store), [store]);
 
+  // Layout state
+  const [libraryCollapsed, setLibraryCollapsed] = useState(false);
+  const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
+  const [leftSplit, setLeftSplit] = useState(0.5); // library vs inspector
+  const [centerSplit, setCenterSplit] = useState(0.4); // preview vs patch bay
+  const [dragging, setDragging] = useState<null | 'left-split' | 'center-split'>(null);
+  const leftColumnRef = useRef<HTMLDivElement | null>(null);
+  const centerColumnRef = useRef<HTMLDivElement | null>(null);
+
   // Set up auto-compile on patch changes
   useEffect(() => {
     const dispose = setupAutoCompile(store, compilerService, {
@@ -110,6 +119,42 @@ export const Editor = observer(() => {
     });
     return dispose;
   }, [store, compilerService]);
+
+  // Allow the editor layout to take the full viewport width/height
+  useEffect(() => {
+    document.body.classList.add('editor-mode');
+    return () => {
+      document.body.classList.remove('editor-mode');
+    };
+  }, []);
+
+  // Drag handles for resizers
+  useEffect(() => {
+    if (!dragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (dragging === 'left-split' && leftColumnRef.current) {
+        const rect = leftColumnRef.current.getBoundingClientRect();
+        const ratio = (e.clientY - rect.top) / rect.height;
+        setLeftSplit(Math.max(0.2, Math.min(0.8, ratio)));
+      }
+      if (dragging === 'center-split' && centerColumnRef.current) {
+        const rect = centerColumnRef.current.getBoundingClientRect();
+        const ratio = (e.clientY - rect.top) / rect.height;
+        setCenterSplit(Math.max(0.2, Math.min(0.8, ratio)));
+      }
+    };
+
+    const handleMouseUp = () => setDragging(null);
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [dragging]);
 
   // Load a default macro on startup and generate its control surface
   useEffect(() => {
@@ -212,28 +257,77 @@ export const Editor = observer(() => {
     }
   }
 
-  // --- FLEXIBLE RIGHT-HAND PANEL LAYOUT ---
-  // Always show preview (top), control surface (bottom),
-  // Inspector overlays control surface (or floats) and can be toggled
-  const [inspectorVisible, setInspectorVisible] = useState(true);
-
   return (
     <DndContext
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       collisionDetection={pointerWithin}
     >
-      <div className="editor">
+      <div className={`editor ${dragging ? 'dragging' : ''}`}>
         <SettingsToolbar store={store} />
         <div className="editor-main">
-          <BlockLibrary store={store} />
+          <div className="editor-left" ref={leftColumnRef}>
+            <div
+              className={`left-panel library-panel ${libraryCollapsed ? 'collapsed' : ''}`}
+              style={{
+                flex: libraryCollapsed
+                  ? '0 0 auto'
+                  : inspectorCollapsed
+                    ? '1 1 0'
+                    : `${leftSplit} 1 0`,
+              }}
+            >
+              <div className="panel-header">
+                <span className="panel-title">Library</span>
+                <button
+                  className="panel-toggle-btn"
+                  onClick={() => setLibraryCollapsed((v) => !v)}
+                  title={libraryCollapsed ? 'Show library' : 'Hide library'}
+                >
+                  {libraryCollapsed ? 'Show' : 'Hide'}
+                </button>
+              </div>
+              {!libraryCollapsed && <BlockLibrary store={store} />}
+            </div>
 
-          <div className="editor-center">
-            <PatchBay store={store} />
+            {!libraryCollapsed && !inspectorCollapsed && (
+              <div
+                className="vertical-resizer"
+                onMouseDown={() => setDragging('left-split')}
+                title="Drag to resize Library / Inspector"
+              />
+            )}
+
+            <div
+              className={`left-panel inspector-panel ${inspectorCollapsed ? 'collapsed' : ''}`}
+              style={{
+                flex: inspectorCollapsed
+                  ? '0 0 auto'
+                  : libraryCollapsed
+                    ? '1 1 0'
+                    : `${1 - leftSplit} 1 0`,
+              }}
+            >
+              <div className="panel-header">
+                <span className="panel-title">Inspector</span>
+                <button
+                  className="panel-toggle-btn"
+                  onClick={() => setInspectorCollapsed((v) => !v)}
+                  title={inspectorCollapsed ? 'Show inspector' : 'Hide inspector'}
+                >
+                  {inspectorCollapsed ? 'Show' : 'Hide'}
+                </button>
+              </div>
+              {!inspectorCollapsed && (
+                <div className="inspector-wrapper">
+                  <Inspector store={store} />
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="editor-right-panel">
-            <div className="editor-preview">
+          <div className="editor-center" ref={centerColumnRef}>
+            <div className="editor-preview" style={{ flex: centerSplit }}>
               <PreviewPanel
                 compilerService={compilerService}
                 isPlaying={store.uiState.isPlaying}
@@ -241,34 +335,21 @@ export const Editor = observer(() => {
               />
             </div>
 
+            <div
+              className="horizontal-resizer"
+              onMouseDown={() => setDragging('center-split')}
+              title="Drag to resize Preview / Patch"
+            />
+
+            <div className="editor-patch" style={{ flex: 1 - centerSplit }}>
+              <PatchBay store={store} />
+            </div>
+          </div>
+
+          <div className="editor-right-panel">
             <div className="editor-control-surface">
               <ControlSurfacePanel store={controlSurfaceStore} />
             </div>
-
-            {/* Inspector overlays or docks here; user can hide/show */}
-            {inspectorVisible && (
-              <div className="editor-inspector floating">
-                <button
-                  className="inspector-close-btn"
-                  title="Hide Inspector"
-                  onClick={() => setInspectorVisible(false)}
-                  style={{ alignSelf: 'flex-end', margin: 8 }}
-                >
-                  ×
-                </button>
-                <Inspector store={store} />
-              </div>
-            )}
-            {!inspectorVisible && (
-              <button
-                className="inspector-open-btn"
-                title="Show Inspector"
-                style={{ position: 'absolute', top: 6, right: 6, zIndex: 10 }}
-                onClick={() => setInspectorVisible(true)}
-              >
-                🛈 Inspector
-              </button>
-            )}
           </div>
         </div>
 
@@ -291,4 +372,3 @@ export const Editor = observer(() => {
     </DndContext>
   );
 });
-

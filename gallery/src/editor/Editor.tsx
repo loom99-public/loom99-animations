@@ -1,13 +1,13 @@
 /**
  * Editor Component
  *
- * Main editor container with 5-panel layout:
+ * Main editor container with multi-panel layout:
+ * - Top: SettingsToolbar (with Save/Load/Export + StatusBadge)
  * - Left: BlockLibrary
  * - Center: PatchBay
- * - Right-Top: Preview
+ * - Right-Top: Preview (with all player controls)
  * - Right-Middle: Inspector
  * - Right-Bottom: Control Surface
- * - Bottom: Transport
  */
 
 import { observer } from 'mobx-react-lite';
@@ -24,7 +24,6 @@ import { EditorStore } from './store';
 import { BlockLibrary } from './BlockLibrary';
 import { PatchBay } from './PatchBay';
 import { Inspector } from './Inspector';
-import { Transport } from './Transport';
 import { LogWindow } from './LogWindow';
 import { PreviewPanel } from './PreviewPanel';
 import { SettingsToolbar } from './SettingsToolbar';
@@ -232,7 +231,11 @@ export const Editor = observer(() => {
 
           <div className="editor-right-panel">
             <div className="editor-preview">
-              <PreviewPanel compilerService={compilerService} isPlaying={store.uiState.isPlaying} />
+              <PreviewPanel
+                compilerService={compilerService}
+                isPlaying={store.uiState.isPlaying}
+                store={store}
+              />
             </div>
 
             <div className="editor-control-surface">
@@ -246,8 +249,6 @@ export const Editor = observer(() => {
         </div>
 
         <LogWindow />
-
-        <Transport store={store} />
 
         {/* Trash zone appears when dragging placed blocks */}
         <TrashZone isVisible={isDraggingPlacedBlock} />

@@ -60,9 +60,57 @@ export type BlockId = string;
  */
 export type BlockType = string; // e.g., 'RadialOrigin', 'PhaseMachine', 'ParticleRenderer'
 
+// =============================================================================
+// Block Tier System (Primitives, Compounds, Macros)
+// =============================================================================
+
 /**
- * All block categories in display order.
- * Single source of truth - used by both type and UI.
+ * Block tier defines the fundamental nature of a block.
+ *
+ * - 'primitive': Irreducible atomic operations (implemented in TypeScript)
+ * - 'compound': Built from primitives, behaves as single block in UI
+ * - 'legacy-compound': Existing blocks to be migrated to compound definitions
+ * - 'macro': Expands into visible blocks when added to patch
+ */
+export type BlockTier = 'primitive' | 'compound' | 'legacy-compound' | 'macro';
+
+/**
+ * Top-level block categories (tier groupings).
+ */
+export const BLOCK_TIERS = ['Macros', 'Compounds', 'Primitives'] as const;
+export type BlockTierCategory = (typeof BLOCK_TIERS)[number];
+
+/**
+ * Subcategories within each tier.
+ * These organize blocks by domain/function.
+ */
+export const ALL_SUBCATEGORIES = [
+  // Macro subcategories
+  'Animation Styles',
+  'Effects',
+
+  // Compound/Primitive subcategories (shared)
+  'Sources',        // Data entry points (SVG, Text)
+  'Fields',         // Per-element values
+  'Timing',         // Delays, durations, staggers
+  'Spatial',        // Positions, transforms
+  'Style',          // Colors, sizes, opacity
+  'Behavior',       // Motion parameters (wobble, spiral)
+  'Math',           // Arithmetic operations
+  'Vector',         // Point/Vec2 operations
+  'Time',           // Clock, phase, easing
+  'Compose',        // Combining operations
+  'Render',         // Drawing primitives
+  'FX',             // Filters and effects
+  'Adapters',       // Type conversions
+  'Output',         // Final sinks
+] as const;
+
+export type BlockSubcategory = (typeof ALL_SUBCATEGORIES)[number];
+
+/**
+ * Legacy categories - kept for backwards compatibility during migration.
+ * @deprecated Use BlockTier + BlockSubcategory instead
  */
 export const ALL_CATEGORIES = [
   'Macros',     // Recipe starters - expand into multiple blocks
@@ -81,6 +129,7 @@ export const ALL_CATEGORIES = [
 
 /**
  * Block category for library organization.
+ * @deprecated Use BlockSubcategory instead
  */
 export type BlockCategory = (typeof ALL_CATEGORIES)[number];
 
@@ -393,7 +442,6 @@ export interface EditorUIState {
 
   /** Playback state */
   isPlaying: boolean;
-  currentTime: number; // seconds
 }
 
 // =============================================================================

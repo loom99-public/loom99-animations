@@ -448,10 +448,19 @@ export const PatchBay = observer(({ store }: PatchBayProps) => {
   // Build port color map for visual connection indication
   const portColorMap = buildPortColorMap(store.connections);
 
+  // Click anywhere in patch-bay (except ports/blocks which stop propagation) clears port selection
+  const handleBackgroundClick = () => {
+    // Clear port selection - blocks already clear this via selectBlock
+    // This handles clicks on lane backgrounds, headers, empty areas, etc.
+    if (store.uiState.selectedPort) {
+      store.setSelectedPort(null);
+    }
+  };
+
   return (
-    <div className="patch-bay">
+    <div className="patch-bay" onClick={handleBackgroundClick}>
       <LayoutSelector store={store} />
-      <div className="patch-bay-lanes">
+      <div className="patch-bay-lanes" onClick={handleBackgroundClick}>
         {store.lanes.map((lane) => (
           <DroppableLane
             key={lane.id}

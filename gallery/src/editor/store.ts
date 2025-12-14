@@ -28,6 +28,26 @@ import {
   PRESET_LAYOUTS,
 } from './laneLayouts';
 import { getMacroKey, getMacroExpansion, type MacroExpansion } from './macros';
+
+// =============================================================================
+// Migration Helpers
+// =============================================================================
+
+/**
+ * Migrate SVGPathSource target values from old format to new library ID format.
+ * Old: 'logo', 'text', 'heart'
+ * New: 'builtin:logo', 'builtin:text', 'builtin:heart'
+ */
+function migrateBlockParams(type: string, params: Record<string, unknown>): Record<string, unknown> {
+  if (type === 'SVGPathSource' && params.target) {
+    const target = String(params.target);
+    // Migrate old format to new
+    if (target === 'logo') return { ...params, target: 'builtin:logo' };
+    if (target === 'text') return { ...params, target: 'builtin:text' };
+    if (target === 'heart') return { ...params, target: 'builtin:heart' };
+  }
+  return params;
+}
 import { computeAutoWire, findPrevBlockInLane, type AutoWireContext } from './autowire';
 import { logStore } from './logStore';
 
@@ -88,7 +108,6 @@ export class EditorStore {
       portRef: null,
     },
     isPlaying: true,
-    currentTime: 0,
   };
 
   /** Previewed block definition (from library, before placement) */
@@ -119,7 +138,6 @@ export class EditorStore {
       selectBlock: action,
       previewDefinition: action,
       setPlaying: action,
-      setCurrentTime: action,
       setSeed: action,
       setSpeed: action,
       loadPatch: action,
@@ -230,13 +248,17 @@ export class EditorStore {
     // Find lane to infer category
     const laneObj = this.lanes.find((l) => l.id === laneId);
 
+    // Merge params with defaults and migrate old values
+    const rawParams = params ?? definition?.defaultParams ?? {};
+    const migratedParams = migrateBlockParams(type, rawParams);
+
     const block: Block = {
       id,
       type,
       label: definition?.label ?? type,
       inputs: definition?.inputs ?? [],
       outputs: definition?.outputs ?? [],
-      params: params ?? definition?.defaultParams ?? {},
+      params: migratedParams,
       category: definition?.category ?? this.inferCategory(laneObj?.kind ?? 'Program'),
       description: definition?.description ?? `${type} block`,
     };
@@ -347,7 +369,6 @@ export class EditorStore {
     // Auto-start playback if not already playing
     if (!this.uiState.isPlaying) {
       this.uiState.isPlaying = true;
-      this.uiState.currentTime = 0;
     }
 
     // Auto-clear logs if enabled
@@ -486,6 +507,8 @@ export class EditorStore {
 
   selectBlock(blockId: BlockId | null): void {
     this.uiState.selectedBlockId = blockId;
+    // Clear port selection when selecting a block
+    this.uiState.selectedPort = null;
     // Clear preview when selecting a placed block
     if (blockId) {
       this.previewedDefinition = null;
@@ -505,10 +528,6 @@ export class EditorStore {
 
   setPlaying(playing: boolean): void {
     this.uiState.isPlaying = playing;
-  }
-
-  setCurrentTime(time: number): void {
-    this.uiState.currentTime = time;
   }
 
   setSeed(seed: number): void {
@@ -608,12 +627,18 @@ export class EditorStore {
    * NOTE: Preserves playback state for live updates.
    */
   loadPatch(patch: Patch): void {
-    this.blocks = patch.blocks;
+    // Migrate block params from old formats
+    const migratedBlocks = patch.blocks.map(block => ({
+      ...block,
+      params: migrateBlockParams(block.type, block.params),
+    }));
+
+    this.blocks = migratedBlocks;
     this.connections = patch.connections;
     this.lanes = patch.lanes;
     this.settings = patch.settings;
     this.uiState.selectedBlockId = null;
-    // NOTE: Do NOT reset currentTime or isPlaying - preserve playback state
+    // NOTE: Do NOT reset isPlaying - preserve playback state
 
     // Update ID counter to avoid collisions
     const maxId = Math.max(
@@ -625,13 +650,13 @@ export class EditorStore {
 
   /**
    * Clear all blocks and connections.
-   * NOTE: Preserves playback state (currentTime, isPlaying) for live updates.
+   * NOTE: Preserves playback state (isPlaying) for live updates.
    */
   clearPatch(): void {
     this.blocks = [];
     this.connections = [];
     this.uiState.selectedBlockId = null;
-    // NOTE: Do NOT reset currentTime or isPlaying - preserve playback state
+    // NOTE: Do NOT reset isPlaying - preserve playback state
     this.previewedDefinition = null;
 
     // Reset lane block assignments
@@ -661,7 +686,7 @@ export class EditorStore {
       // This demonstrates the complete modular animation system
 
       // Scene: Load SVG paths
-      const sceneId = this.addBlock('SVGPathSource', sceneLane?.id ?? 'scene', { target: 'logo' });
+      const sceneId = this.addBlock('SVGPathSource', sceneLane?.id ?? 'scene', { target: 'builtin:logo' });
 
       // Fields: Start positions (radial) and delays (staggered)
       const positionsId = this.addBlock('RadialOrigin', fieldsLane?.id ?? 'fields', {

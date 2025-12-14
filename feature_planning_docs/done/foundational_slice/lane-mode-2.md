@@ -152,3 +152,97 @@ What Advanced Mode does not change
 	•	Evaluation order (topo sort)
 
 Lane model in Advanced Mode
+
+type LaneKind =
+  | "scene"
+  | "phase"
+  | "field"
+  | "scalar"
+  | "spec"
+  | "compile"
+  | "program"
+  | "output";
+
+type LaneFlavor =
+  | "motion"
+  | "timing"
+  | "style"
+  | "utility"
+  | "none";
+
+interface LaneConfig {
+  id: string;
+  kind: LaneKind;
+  flavor: LaneFlavor;
+  name: string;
+  collapsed?: boolean;
+  height?: number;
+  tint?: string;      // purely visual
+  pinned?: boolean;
+}
+
+Multiple lanes of same kind are normal.
+
+Advanced mode palette changes
+
+Instead of hard-curated lists, you use:
+	•	lane kind + flavor as a ranking signal
+	•	plus the user’s recent blocks as a ranking signal
+
+But type-compatibility is always the gate.
+
+⸻
+
+“Simple → Advanced” migration
+
+Users should be able to toggle without losing work.
+
+Recommended approach:
+	•	Lanes are just views over the same Patch graph.
+	•	Patch graph doesn’t store “lane semantics”, only layout metadata.
+	•	In Simple mode, you project blocks into fixed lanes by:
+	•	block category tags (from registry)
+	•	or inferred by output port types
+	•	or stored laneId if it matches
+
+When switching to Advanced:
+	•	preserve current lane assignments if possible
+	•	else assign blocks based on category/type
+
+So the graph is stable; the desk changes.
+
+⸻
+
+A concrete example: LineMorph in Simple Mode
+
+User workflow looks like:
+	1.	Scene lane: pick Logo01Scene
+	2.	Phases lane: drop Entrance/Hold/Fold
+	3.	Motion lane: drop ConvergeOriginMode
+	4.	Timing lane: drop LinearStagger
+	5.	Style lane: drop NeonLineStyle
+	6.	Spec lane: drop LineMorphSpec and auto-wire the five inputs
+	7.	Compile lane: drop CompileLineMorph
+	8.	Output lane: OutputProgram
+
+It feels like LEGO, but it’s actually building a typed program.
+
+⸻
+
+The one “must-have” UX to make this click
+
+Port halos + lane headers that show expected types.
+
+Lane header should say something like:
+	•	“Timing Params (Field)”
+	•	“Compile (Spec → Program)”
+	•	“Compositors (Program → Program)”
+
+This teaches users the model without documentation.
+
+⸻
+
+If you want, I can follow up with:
+	•	a concrete BlockDescriptor tagging scheme (category, laneKind, laneFlavor, priority)
+	•	the exact “ranking” algorithm for palette suggestions
+	•	and the auto-wire algorithm (with ambiguity rules) in code form.

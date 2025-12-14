@@ -9,7 +9,23 @@
  * - Parameter schema (for Inspector UI)
  */
 
-import type { BlockCategory, Slot, BlockParams, SlotType, LaneKind, LaneFlavor } from './types';
+import type { BlockCategory, BlockTier, BlockSubcategory, Slot, BlockParams, SlotType, LaneKind, LaneFlavor } from './types';
+import { pathLibrary } from './pathLibrary';
+
+// =============================================================================
+// Path Library Helpers
+// =============================================================================
+
+/**
+ * Get dropdown options from the path library.
+ * Called at module load and whenever paths change.
+ */
+function getPathOptions(): readonly { value: string; label: string }[] {
+  return pathLibrary.getAll().map(entry => ({
+    value: entry.id,
+    label: entry.name,
+  }));
+}
 
 // =============================================================================
 // Block Definition Type
@@ -22,7 +38,25 @@ export interface BlockDefinition {
   /** Human-readable label */
   readonly label: string;
 
-  /** Category for library organization */
+  /**
+   * Block tier: primitive, compound, legacy-compound, or macro
+   * - primitive: Irreducible atomic operations
+   * - compound: Built from primitives, single unit in UI
+   * - legacy-compound: Existing blocks pending migration
+   * - macro: Expands into visible blocks when added
+   */
+  readonly tier: BlockTier;
+
+  /**
+   * Subcategory within tier for organization.
+   * e.g., 'Sources', 'Fields', 'Timing', 'Spatial', 'Math', etc.
+   */
+  readonly subcategory: BlockSubcategory;
+
+  /**
+   * Category for library organization.
+   * @deprecated Use tier + subcategory instead
+   */
   readonly category: BlockCategory;
 
   /** Description shown in inspector */
@@ -53,6 +87,45 @@ export interface BlockDefinition {
 
   /** Priority for palette ordering (lower = higher priority, shown first) */
   readonly priority?: number;
+
+  // === Compound-specific fields ===
+
+  /**
+   * For compounds: the primitive graph that defines this block.
+   * For primitives: undefined.
+   * For legacy-compound: undefined (pending migration).
+   */
+  readonly primitiveGraph?: CompoundGraph;
+}
+
+/**
+ * Defines the internal primitive graph of a compound block.
+ * This is how compounds are expressed in terms of primitives.
+ */
+export interface CompoundGraph {
+  /** Internal nodes (primitives) */
+  readonly nodes: Record<string, CompoundNode>;
+
+  /** Connections between internal nodes */
+  readonly edges: readonly CompoundEdge[];
+
+  /** Maps external inputs to internal nodes */
+  readonly inputMap: Record<string, string>;
+
+  /** Maps internal nodes to external outputs */
+  readonly outputMap: Record<string, string>;
+}
+
+export interface CompoundNode {
+  /** Primitive block type */
+  readonly type: string;
+  /** Parameter overrides */
+  readonly params?: Record<string, unknown>;
+}
+
+export interface CompoundEdge {
+  readonly from: string;  // "nodeId.outputSlot"
+  readonly to: string;    // "nodeId.inputSlot"
 }
 
 // =============================================================================
@@ -92,6 +165,8 @@ function output(id: string, label: string, type: SlotType): Slot {
 export const MacroLineDrawing: BlockDefinition = {
   type: 'macro:lineDrawing',
   label: '✨ Line Drawing',
+  tier: 'macro',
+  subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Particles animate from random positions to form a shape. Expands into ~12 primitive blocks.',
   inputs: [],
@@ -106,6 +181,8 @@ export const MacroLineDrawing: BlockDefinition = {
 export const MacroParticles: BlockDefinition = {
   type: 'macro:particles',
   label: '✨ Particles',
+  tier: 'macro',
+  subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Glowing particles converge to form a shape. Expands into ~12 primitive blocks.',
   inputs: [],
@@ -120,6 +197,8 @@ export const MacroParticles: BlockDefinition = {
 export const MacroBouncingCircle: BlockDefinition = {
   type: 'macro:bouncingCircle',
   label: '✨ Bouncing Circle',
+  tier: 'macro',
+  subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Simple oscillating circle animation. Expands into primitive blocks.',
   inputs: [],
@@ -134,6 +213,8 @@ export const MacroBouncingCircle: BlockDefinition = {
 export const MacroOscillator: BlockDefinition = {
   type: 'macro:oscillator',
   label: '✨ Oscillator',
+  tier: 'macro',
+  subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Math-driven oscillating animation. Expands into primitive blocks.',
   inputs: [],
@@ -148,6 +229,8 @@ export const MacroOscillator: BlockDefinition = {
 export const MacroRadialBurst: BlockDefinition = {
   type: 'macro:radialBurst',
   label: '✨ Radial Burst',
+  tier: 'macro',
+  subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Particles burst from center, then converge to form shape.',
   inputs: [],
@@ -162,6 +245,8 @@ export const MacroRadialBurst: BlockDefinition = {
 export const MacroCascade: BlockDefinition = {
   type: 'macro:cascade',
   label: '✨ Cascade',
+  tier: 'macro',
+  subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Particles fall from top like a waterfall.',
   inputs: [],
@@ -176,6 +261,8 @@ export const MacroCascade: BlockDefinition = {
 export const MacroScatter: BlockDefinition = {
   type: 'macro:scatter',
   label: '✨ Scatter',
+  tier: 'macro',
+  subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Particles start scattered, slowly converge to form shape.',
   inputs: [],
@@ -190,6 +277,8 @@ export const MacroScatter: BlockDefinition = {
 export const MacroImplosion: BlockDefinition = {
   type: 'macro:implosion',
   label: '✨ Implosion',
+  tier: 'macro',
+  subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Particles rush in from all sides to form shape.',
   inputs: [],
@@ -204,6 +293,8 @@ export const MacroImplosion: BlockDefinition = {
 export const MacroSwarm: BlockDefinition = {
   type: 'macro:swarm',
   label: '✨ Swarm',
+  tier: 'macro',
+  subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Particles swarm up from bottom to form shape.',
   inputs: [],
@@ -218,6 +309,8 @@ export const MacroSwarm: BlockDefinition = {
 export const MacroLoveYouBaby: BlockDefinition = {
   type: 'macro:loveYouBaby',
   label: '💖 Love You Baby',
+  tier: 'macro',
+  subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Particles swarm into a big heart shape.',
   inputs: [],
@@ -232,6 +325,8 @@ export const MacroLoveYouBaby: BlockDefinition = {
 export const MacroNebula: BlockDefinition = {
   type: 'macro:nebula',
   label: '🌌 Nebula',
+  tier: 'macro',
+  subcategory: 'Animation Styles',
   category: 'Macros',
   description: 'Macro: Cosmic particles with rainbow colors, varied sizes, and dreamy motion. Uses 16 blocks!',
   inputs: [],
@@ -246,6 +341,8 @@ export const MacroNebula: BlockDefinition = {
 export const MacroGlitchStorm: BlockDefinition = {
   type: 'macro:glitchStorm',
   label: '⚡ Glitch Storm',
+  tier: 'macro',
+  subcategory: 'Effects',
   category: 'Macros',
   description: 'Macro: Digital chaos with grid positions, scan-line timing, and RGB chromatic aberration.',
   inputs: [],
@@ -260,6 +357,8 @@ export const MacroGlitchStorm: BlockDefinition = {
 export const MacroAurora: BlockDefinition = {
   type: 'macro:aurora',
   label: '🌊 Aurora',
+  tier: 'macro',
+  subcategory: 'Effects',
   category: 'Macros',
   description: 'Macro: Ethereal curtain of light descending with wave-based flow and gradient colors.',
   inputs: [],
@@ -271,6 +370,38 @@ export const MacroAurora: BlockDefinition = {
   priority: -88,
 };
 
+export const MacroRevealMask: BlockDefinition = {
+  type: 'macro:revealMask',
+  label: '🎭 Reveal Mask',
+  tier: 'macro',
+  subcategory: 'Effects',
+  category: 'Macros',
+  description: 'Macro: Sliding mask reveal transition. Content is progressively revealed with wipe effect.',
+  inputs: [],
+  outputs: [],
+  defaultParams: {},
+  paramSchema: [],
+  color: '#14b8a6',
+  laneKind: 'Program',
+  priority: -87,
+};
+
+export const MacroLiquid: BlockDefinition = {
+  type: 'macro:liquid',
+  label: '💧 Liquid',
+  tier: 'macro',
+  subcategory: 'Effects',
+  category: 'Macros',
+  description: 'Macro: Gooey blob circles drop and merge to form shapes. Uses goo filter for liquid effect.',
+  inputs: [],
+  outputs: [],
+  defaultParams: {},
+  paramSchema: [],
+  color: '#10b981',
+  laneKind: 'Program',
+  priority: -86,
+};
+
 // =============================================================================
 // Scene Blocks
 // =============================================================================
@@ -278,24 +409,24 @@ export const MacroAurora: BlockDefinition = {
 export const SVGPathSource: BlockDefinition = {
   type: 'SVGPathSource',
   label: 'SVG Paths',
+  tier: 'legacy-compound',
+  subcategory: 'Sources',
   category: 'Scene',
-  description: 'Load SVG path data from target (logo, text, or heart)',
+  description: 'Load SVG path data from the path library',
   inputs: [],
   outputs: [output('scene', 'Scene', 'Scene')],
   defaultParams: {
-    target: 'logo',
+    target: 'builtin:logo',
   },
   paramSchema: [
     {
       key: 'target',
       label: 'Target',
       type: 'select',
-      options: [
-        { value: 'logo', label: 'Logo' },
-        { value: 'text', label: 'Text' },
-        { value: 'heart', label: 'Heart' },
-      ],
-      defaultValue: 'logo',
+      get options() {
+        return getPathOptions();
+      },
+      defaultValue: 'builtin:logo',
     },
   ],
   color: '#4a9eff',
@@ -306,6 +437,8 @@ export const SVGPathSource: BlockDefinition = {
 export const SamplePoints: BlockDefinition = {
   type: 'SamplePoints',
   label: 'Sample Points',
+  tier: 'legacy-compound',
+  subcategory: 'Sources',
   category: 'Derivers',
   description: 'Extract point targets from scene paths',
   inputs: [input('scene', 'Scene', 'Scene')],
@@ -336,6 +469,8 @@ export const SamplePoints: BlockDefinition = {
 export const RadialOrigin: BlockDefinition = {
   type: 'RadialOrigin',
   label: 'Radial Origin',
+  tier: 'legacy-compound',
+  subcategory: 'Spatial',
   category: 'Fields',
   description: 'Generate start positions in a radial pattern around a center point',
   inputs: [],
@@ -363,6 +498,8 @@ export const RadialOrigin: BlockDefinition = {
 export const LinearStagger: BlockDefinition = {
   type: 'LinearStagger',
   label: 'Linear Stagger',
+  tier: 'legacy-compound',
+  subcategory: 'Timing',
   category: 'Fields',
   description: 'Generate delays that increase linearly by element index',
   inputs: [],
@@ -384,6 +521,8 @@ export const LinearStagger: BlockDefinition = {
 export const RegionField: BlockDefinition = {
   type: 'regionField',
   label: 'Region Field',
+  tier: 'legacy-compound',
+  subcategory: 'Spatial',
   category: 'Fields',
   description: 'Generate random points within a rectangular region',
   inputs: [],
@@ -409,6 +548,8 @@ export const RegionField: BlockDefinition = {
 export const ConstantFieldDuration: BlockDefinition = {
   type: 'constantFieldDuration',
   label: 'Constant Duration',
+  tier: 'legacy-compound',
+  subcategory: 'Timing',
   category: 'Fields',
   description: 'Same duration for all elements',
   inputs: [],
@@ -428,6 +569,8 @@ export const ConstantFieldDuration: BlockDefinition = {
 export const WaveStagger: BlockDefinition = {
   type: 'WaveStagger',
   label: 'Wave Stagger',
+  tier: 'legacy-compound',
+  subcategory: 'Timing',
   category: 'Fields',
   description: 'Generate wave-based delays for organic staggering effects',
   inputs: [],
@@ -455,6 +598,8 @@ export const WaveStagger: BlockDefinition = {
 export const SizeVariation: BlockDefinition = {
   type: 'SizeVariation',
   label: 'Size Variation',
+  tier: 'legacy-compound',
+  subcategory: 'Style',
   category: 'Fields',
   description: 'Generate per-element size multipliers for varied effects',
   inputs: [],
@@ -1273,13 +1418,13 @@ export const MaskReveal: BlockDefinition = {
   type: 'MaskReveal',
   label: 'Mask Reveal',
   category: 'Render',
-  description: 'Wipe/reveal mask transition',
+  description: 'Wipe/reveal mask transition - clips content with animated mask',
   inputs: [
     input('content', 'Content', 'RenderTree'),
     input('progress', 'Progress', 'Signal<Unit>'),
   ],
   outputs: [output('tree', 'Tree', 'RenderTree')],
-  defaultParams: { direction: 'left-to-right', softEdge: 20, sceneWidth: 800, sceneHeight: 600 },
+  defaultParams: { direction: 'left-to-right', softEdge: 20, sceneWidth: 400, sceneHeight: 300 },
   paramSchema: [
     { key: 'direction', label: 'Direction', type: 'select', options: [
       { value: 'left-to-right', label: 'Left → Right' },
@@ -1289,6 +1434,8 @@ export const MaskReveal: BlockDefinition = {
       { value: 'radial', label: 'Radial' },
     ], defaultValue: 'left-to-right' },
     { key: 'softEdge', label: 'Soft Edge', type: 'number', min: 0, max: 100, step: 5, defaultValue: 20 },
+    { key: 'sceneWidth', label: 'Width', type: 'number', min: 100, max: 1920, step: 10, defaultValue: 400 },
+    { key: 'sceneHeight', label: 'Height', type: 'number', min: 100, max: 1080, step: 10, defaultValue: 300 },
   ],
   color: '#ef4444',
   laneKind: 'Program',
@@ -1300,6 +1447,8 @@ export const MaskReveal: BlockDefinition = {
 export const TextSource: BlockDefinition = {
   type: 'TextSource',
   label: 'Text Source',
+  tier: 'legacy-compound',
+  subcategory: 'Sources',
   category: 'Scene',
   description: 'Create scene from text (per-character elements)',
   inputs: [],
@@ -1551,6 +1700,8 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   MacroNebula,
   MacroGlitchStorm,
   MacroAurora,
+  MacroRevealMask,
+  MacroLiquid,
   // Scene
   SVGPathSource,
   SamplePoints,

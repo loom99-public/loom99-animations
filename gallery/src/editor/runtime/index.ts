@@ -60,6 +60,9 @@ export type {
 
 export { Player, createPlayer } from './player';
 
+// Re-export timeline types from compiler for convenience
+export type { TimelineHint, CuePoint } from '../compiler/types';
+
 // SVG Renderer
 export {
   SvgRenderer,

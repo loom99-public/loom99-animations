@@ -13,7 +13,7 @@
  */
 
 import type { RenderTree } from './renderTree';
-import type { CompileCtx, RuntimeCtx, Program, Seed } from '../compiler/types';
+import type { CompileCtx, RuntimeCtx, Program, Seed, TimelineHint, CuePoint } from '../compiler/types';
 
 // =============================================================================
 // Types
@@ -51,6 +51,10 @@ export interface PlayerOptions {
   onStateChange?: (state: PlayState) => void;
   onTimeChange?: (tMs: number) => void;
   onLoopModeChange?: (mode: LoopMode) => void;
+  onTimelineChange?: (hint: TimelineHint | null) => void;
+  onCuePointsChange?: (cuePoints: readonly CuePoint[]) => void;
+  /** If true, automatically apply timeline hints from programs */
+  autoApplyTimeline?: boolean;
 }
 
 // =============================================================================
@@ -77,10 +81,17 @@ export class Player {
   private maxTime = 10000; // 10 seconds default
   private playDirection = 1; // 1 = forward, -1 = backward (for pingpong)
 
+  // Timeline hints from the current program
+  private currentTimeline: TimelineHint | null = null;
+  private cuePoints: readonly CuePoint[] = [];
+  private autoApplyTimeline: boolean;
+
   private onFrame: (tree: RenderTree, tMs: number) => void;
   private onStateChange?: (state: PlayState) => void;
   private onTimeChange?: (tMs: number) => void;
   private onLoopModeChange?: (mode: LoopMode) => void;
+  private onTimelineChange?: (hint: TimelineHint | null) => void;
+  private onCuePointsChange?: (cuePoints: readonly CuePoint[]) => void;
 
   constructor(opts: PlayerOptions) {
     this.compileCtx = opts.compileCtx;
@@ -89,6 +100,9 @@ export class Player {
     this.onStateChange = opts.onStateChange;
     this.onTimeChange = opts.onTimeChange;
     this.onLoopModeChange = opts.onLoopModeChange;
+    this.onTimelineChange = opts.onTimelineChange;
+    this.onCuePointsChange = opts.onCuePointsChange;
+    this.autoApplyTimeline = opts.autoApplyTimeline ?? true;
   }
 
   // ===========================================================================
@@ -180,16 +194,122 @@ export class Player {
     return this.playState;
   }
 
+  /**
+   * Get the current timeline hint from the program.
+   */
+  getTimeline(): TimelineHint | null {
+    return this.currentTimeline;
+  }
+
+  /**
+   * Get cue points from the current timeline.
+   */
+  getCuePoints(): readonly CuePoint[] {
+    return this.cuePoints;
+  }
+
+  /**
+   * Check if the current program has a finite duration.
+   */
+  hasFiniteDuration(): boolean {
+    return this.currentTimeline?.kind === 'finite';
+  }
+
+  /**
+   * Get the program's recommended duration (if finite).
+   */
+  getProgramDuration(): number | null {
+    if (this.currentTimeline?.kind === 'finite') {
+      return this.currentTimeline.durationMs;
+    }
+    return null;
+  }
+
+  /**
+   * Enable or disable automatic timeline application.
+   */
+  setAutoApplyTimeline(enabled: boolean): void {
+    this.autoApplyTimeline = enabled;
+  }
+
   private instantiateProgram(): void {
     if (!this.programFactory || !this.scene) return;
 
     this.program = this.programFactory(this.seed, this.scene, this.compileCtx);
+
+    // Extract timeline hints from the program
+    this.extractTimelineHints();
 
     // NOTE: We intentionally do NOT reset tMs
     // This preserves scrubbing + temporal continuity during hot swap
 
     // Render once to show new program at current time
     this.renderOnce();
+  }
+
+  /**
+   * Extract and apply timeline hints from the current program.
+   */
+  private extractTimelineHints(): void {
+    if (!this.program) {
+      this.currentTimeline = null;
+      this.cuePoints = [];
+      this.onTimelineChange?.(null);
+      this.onCuePointsChange?.([]);
+      return;
+    }
+
+    // Get timeline from program if available
+    const timeline = this.program.timeline?.() ?? null;
+    this.currentTimeline = timeline;
+
+    // Extract cue points
+    if (timeline?.kind === 'finite' && timeline.cuePoints) {
+      this.cuePoints = timeline.cuePoints;
+    } else {
+      this.cuePoints = [];
+    }
+
+    // Notify listeners
+    this.onTimelineChange?.(timeline);
+    this.onCuePointsChange?.(this.cuePoints);
+
+    // Auto-apply timeline settings if enabled
+    if (this.autoApplyTimeline && timeline) {
+      this.applyTimelineHints(timeline);
+    }
+  }
+
+  /**
+   * Apply timeline hints to player settings.
+   */
+  private applyTimelineHints(timeline: TimelineHint): void {
+    if (timeline.kind === 'finite') {
+      // Set max time to program duration
+      this.maxTime = timeline.durationMs;
+
+      // Apply recommended loop mode if specified
+      if (timeline.recommendedLoop) {
+        this.setLoopMode(timeline.recommendedLoop);
+      }
+    } else if (timeline.kind === 'infinite') {
+      // Use suggested preview window or default
+      this.maxTime = timeline.windowMs ?? 10000;
+
+      // Apply recommended loop mode
+      if (timeline.recommendedLoop) {
+        this.setLoopMode(timeline.recommendedLoop);
+      }
+    }
+  }
+
+  /**
+   * Manually apply timeline hints (for when autoApply is disabled).
+   */
+  applyCurrentTimeline(): void {
+    if (this.currentTimeline) {
+      this.applyTimelineHints(this.currentTimeline);
+    }
   }
 
   // ===========================================================================
@@ -321,12 +441,15 @@ export function createPlayer(
     onStateChange?: (state: PlayState) => void;
     onTimeChange?: (tMs: number) => void;
     onLoopModeChange?: (mode: LoopMode) => void;
+    onTimelineChange?: (hint: TimelineHint | null) => void;
+    onCuePointsChange?: (cuePoints: readonly CuePoint[]) => void;
+    autoApplyTimeline?: boolean;
   }
 ): Player {
   const compileCtx: CompileCtx = {
     env: {},
     geom: {
-      get: <K extends object, V>(key: K, compute: () => V) => compute(),
+      get: <K extends object, V>(_key: K, compute: () => V) => compute(),
       invalidate: () => {},
     },
   };
@@ -346,5 +469,8 @@ export function createPlayer(
     onStateChange: opts?.onStateChange,
     onTimeChange: opts?.onTimeChange,
     onLoopModeChange: opts?.onLoopModeChange,
+    onTimelineChange: opts?.onTimelineChange,
+    onCuePointsChange: opts?.onCuePointsChange,
+    autoApplyTimeline: opts?.autoApplyTimeline,
   });
 }

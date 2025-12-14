@@ -20,15 +20,19 @@ import {
   type LoopMode,
   type RenderTree,
   type Scene,
+  type TimelineHint,
+  type CuePoint,
 } from './runtime';
 import type { CompilerService, Viewport } from './compiler';
 import type { Program } from './compiler/types';
+import type { EditorStore } from './store';
 import { logStore } from './logStore';
 import './PreviewPanel.css';
 
 interface PreviewPanelProps {
   compilerService?: CompilerService;
   isPlaying?: boolean;
+  store?: EditorStore;
 }
 
 /**
@@ -41,7 +45,7 @@ const DEFAULT_SCENE: Scene = {
 
 const DEFAULT_VIEWPORT: Viewport = { width: 800, height: 600 };
 
-export const PreviewPanel = observer(({ compilerService, isPlaying }: PreviewPanelProps) => {
+export const PreviewPanel = observer(({ compilerService, isPlaying, store }: PreviewPanelProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const playerRef = useRef<Player | null>(null);
   const rendererRef = useRef<SvgRenderer | null>(null);
@@ -55,6 +59,12 @@ export const PreviewPanel = observer(({ compilerService, isPlaying }: PreviewPan
     compilerService?.getViewport() ?? DEFAULT_VIEWPORT
   );
   const [loopMode, setLoopMode] = useState<LoopMode>('loop');
+  const [cuePoints, setCuePoints] = useState<readonly CuePoint[]>([]);
+  const [timeline, setTimeline] = useState<TimelineHint | null>(null);
+
+  // Speed and seed from store (with fallbacks)
+  const speed = store?.settings.speed ?? 1.0;
+  const seed = store?.settings.seed ?? 42;
 
   // Derive dimensions from viewport
   const { width, height } = viewport;
@@ -69,7 +79,7 @@ export const PreviewPanel = observer(({ compilerService, isPlaying }: PreviewPan
     rendererRef.current = renderer;
 
     const player = createPlayer(
-      (tree: RenderTree, tMs: number) => {
+      (tree: RenderTree, _tMs: number) => {
         renderer.render(tree);
       },
       {
@@ -78,6 +88,17 @@ export const PreviewPanel = observer(({ compilerService, isPlaying }: PreviewPan
         onStateChange: setPlayState,
         onTimeChange: setCurrentTime,
         onLoopModeChange: setLoopMode,
+        onTimelineChange: (hint) => {
+          setTimeline(hint);
+          // Update maxTime when timeline changes
+          if (hint?.kind === 'finite') {
+            setMaxTime(hint.durationMs);
+          } else if (hint?.kind === 'infinite' && hint.windowMs) {
+            setMaxTime(hint.windowMs);
+          }
+        },
+        onCuePointsChange: setCuePoints,
+        autoApplyTimeline: true,
       }
     );
     player.setMaxTime(maxTime);
@@ -179,6 +200,19 @@ export const PreviewPanel = observer(({ compilerService, isPlaying }: PreviewPan
     playerRef.current?.setLoopMode(nextMode);
   }, [loopMode]);
 
+  const handleSpeedChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newSpeed = parseFloat(e.target.value) || 1;
+    const clampedSpeed = Math.max(0.1, Math.min(4, newSpeed));
+    store?.setSpeed(clampedSpeed);
+    playerRef.current?.setSpeed(clampedSpeed);
+  }, [store]);
+
+  const handleSeedChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newSeed = parseInt(e.target.value) || 0;
+    store?.setSeed(newSeed);
+    // Seed change triggers recompilation via autoCompile
+  }, [store]);
+
   const formatTime = (ms: number): string => {
     const seconds = (ms / 1000).toFixed(2);
     return `${seconds}s`;
@@ -204,43 +238,100 @@ export const PreviewPanel = observer(({ compilerService, isPlaying }: PreviewPan
       </div>
 
       <div className="preview-controls">
-        <button
-          className={`preview-btn ${playState === 'playing' ? 'active' : ''}`}
-          onClick={handlePlayPause}
-          title={playState === 'playing' ? 'Pause' : 'Play'}
-        >
-          {playState === 'playing' ? '⏸' : '▶'}
-        </button>
+        {/* Top row: Scrubber + time displays */}
+        <div className="preview-controls-scrubber-row">
+          <span className="preview-time">{formatTime(currentTime)}</span>
 
-        <button
-          className="preview-btn"
-          onClick={handleReset}
-          title="Reset"
-        >
-          ⏮
-        </button>
+          {/* Scrubber with cue point markers */}
+          <div className="preview-scrubber-container">
+            <input
+              type="range"
+              className="preview-scrubber"
+              min={0}
+              max={maxTime}
+              step={16}
+              value={currentTime}
+              onChange={handleScrub}
+            />
+            {/* Cue point markers */}
+            {cuePoints.map((cue, i) => {
+              const percent = maxTime > 0 ? (cue.tMs / maxTime) * 100 : 0;
+              return (
+                <div
+                  key={`cue-${i}`}
+                  className={`cue-marker cue-${cue.kind ?? 'marker'}`}
+                  style={{ left: `${percent}%` }}
+                  title={`${cue.label} (${formatTime(cue.tMs)})`}
+                />
+              );
+            })}
+          </div>
 
-        <button
-          className={`preview-btn ${loopMode !== 'none' ? 'active' : ''}`}
-          onClick={handleLoopModeToggle}
-          title={`Loop: ${loopMode}`}
-        >
-          {loopMode === 'loop' ? '🔁' : loopMode === 'pingpong' ? '🔀' : '➡️'}
-        </button>
+          <span className="preview-time">{formatTime(maxTime)}</span>
 
-        <span className="preview-time">{formatTime(currentTime)}</span>
+          {/* Timeline indicator */}
+          {timeline && (
+            <span className="timeline-indicator" title={timeline.kind === 'finite' ? 'Finite duration' : 'Infinite animation'}>
+              {timeline.kind === 'finite' ? '⏱' : '∞'}
+            </span>
+          )}
+        </div>
 
-        <input
-          type="range"
-          className="preview-scrubber"
-          min={0}
-          max={maxTime}
-          step={16}
-          value={currentTime}
-          onChange={handleScrub}
-        />
+        {/* Bottom row: Playback buttons + settings */}
+        <div className="preview-controls-buttons-row">
+          <button
+            className={`preview-btn ${playState === 'playing' ? 'active' : ''}`}
+            onClick={handlePlayPause}
+            title={playState === 'playing' ? 'Pause' : 'Play'}
+          >
+            {playState === 'playing' ? '⏸' : '▶'}
+          </button>
 
-        <span className="preview-time">{formatTime(maxTime)}</span>
+          <button
+            className="preview-btn"
+            onClick={handleReset}
+            title="Reset"
+          >
+            ⏮
+          </button>
+
+          <button
+            className={`preview-btn ${loopMode !== 'none' ? 'active' : ''}`}
+            onClick={handleLoopModeToggle}
+            title={`Loop: ${loopMode}`}
+          >
+            {loopMode === 'loop' ? '🔁' : loopMode === 'pingpong' ? '🔀' : '➡️'}
+          </button>
+
+          <div className="preview-controls-divider" />
+
+          <div className="preview-setting">
+            <span className="preview-setting-label">Speed</span>
+            <input
+              type="number"
+              className="preview-setting-input"
+              value={speed}
+              onChange={handleSpeedChange}
+              min={0.1}
+              max={4}
+              step={0.1}
+              title="Playback speed (0.1 - 4x)"
+            />
+          </div>
+
+          <div className="preview-setting">
+            <span className="preview-setting-label">Seed</span>
+            <input
+              type="number"
+              className="preview-setting-input"
+              value={seed}
+              onChange={handleSeedChange}
+              min={0}
+              step={1}
+              title="Random seed (changes animation variation)"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -44,13 +44,78 @@
   background: transparent;
 }
 
+/* Two-row controls layout */
 .preview-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #1a1a1a;
+  border-top: 1px solid #333;
+}
+
+/* Top row: Scrubber + time displays */
+.preview-controls-scrubber-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  background: #1a1a1a;
-  border-top: 1px solid #333;
+  min-height: 32px;
+}
+
+/* Bottom row: Playback buttons + settings */
+.preview-controls-buttons-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+
+/* Divider between buttons and settings */
+.preview-controls-divider {
+  width: 1px;
+  height: 24px;
+  background: #444;
+  margin: 0 4px;
+}
+
+/* Settings inputs (Speed/Seed) */
+.preview-setting {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preview-setting-label {
+  font-size: 11px;
+  color: #888;
+  min-width: 35px;
+}
+
+.preview-setting-input {
+  width: 55px;
+  padding: 4px 6px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 11px;
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.preview-setting-input:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+/* Remove spinners from number inputs */
+.preview-setting-input::-webkit-inner-spin-button,
+.preview-setting-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.preview-setting-input[type='number'] {
+  -moz-appearance: textfield;
 }
 
 .preview-btn {
@@ -123,4 +188,58 @@
   border-radius: 50%;
   cursor: pointer;
   border: none;
+}
+
+/* Scrubber container with cue point markers */
+.preview-scrubber-container {
+  position: relative;
+  flex: 1;
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.preview-scrubber-container .preview-scrubber {
+  flex: 1;
+  z-index: 1;
+}
+
+/* Cue point markers */
+.cue-marker {
+  position: absolute;
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  width: 3px;
+  height: 18px;
+  border-radius: 1px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.7;
+}
+
+.cue-marker.cue-phase {
+  background: #ffd93d;
+  height: 20px;
+}
+
+.cue-marker.cue-beat {
+  background: #ff6b6b;
+  height: 16px;
+}
+
+.cue-marker.cue-marker {
+  background: #4ecdc4;
+  height: 14px;
+}
+
+/* Timeline indicator */
+.timeline-indicator {
+  font-size: 14px;
+  color: #888;
+  padding: 0 4px;
+  cursor: default;
+}
+
+.timeline-indicator:hover {
+  color: #aaa;
 }

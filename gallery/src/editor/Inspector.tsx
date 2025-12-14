@@ -111,10 +111,6 @@ function PortWiringPanel({
     store.disconnect(connectionId);
   };
 
-  const handleClose = () => {
-    store.setSelectedPort(null);
-  };
-
   // Hover highlighting - set hovered port in store
   const handleTargetHover = (target: PortRef | null) => {
     setHoveredTarget(target);
@@ -133,7 +129,6 @@ function PortWiringPanel({
           </span>
           <h3>{slot.label}</h3>
         </div>
-        <button className="wiring-close-btn" onClick={handleClose}>×</button>
       </div>
 
       <div className="wiring-panel-body">
@@ -403,45 +398,68 @@ export const Inspector = observer(({ store }: InspectorProps) => {
             <p className="inspector-hint">No parameters</p>
           ) : (
             <div className="param-list">
-              {Object.entries(block.params).map(([key, value]) => (
-                <div key={key} className="param-item">
-                  <label className="param-label">{key}</label>
-                  <div className="param-value">
-                    {typeof value === 'boolean' ? (
-                      <input
-                        type="checkbox"
-                        checked={value}
-                        onChange={(e) =>
-                          store.updateBlockParams(block.id, {
-                            [key]: e.target.checked,
-                          })
-                        }
-                      />
-                    ) : typeof value === 'number' ? (
-                      <input
-                        type="number"
-                        value={value}
-                        step={value < 1 ? 0.1 : 1}
-                        onChange={(e) =>
-                          store.updateBlockParams(block.id, {
-                            [key]: parseFloat(e.target.value) || 0,
-                          })
-                        }
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        value={String(value)}
-                        onChange={(e) =>
-                          store.updateBlockParams(block.id, {
-                            [key]: e.target.value,
-                          })
-                        }
-                      />
-                    )}
+              {Object.entries(block.params).map(([key, value]) => {
+                // Look up paramSchema for this key to determine input type
+                const schema = definition?.paramSchema.find(s => s.key === key);
+                const label = schema?.label ?? key;
+
+                return (
+                  <div key={key} className="param-item">
+                    <label className="param-label">{label}</label>
+                    <div className="param-value">
+                      {schema?.type === 'select' && schema.options ? (
+                        <select
+                          value={String(value)}
+                          onChange={(e) =>
+                            store.updateBlockParams(block.id, {
+                              [key]: e.target.value,
+                            })
+                          }
+                        >
+                          {schema.options.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : typeof value === 'boolean' ? (
+                        <input
+                          type="checkbox"
+                          checked={value}
+                          onChange={(e) =>
+                            store.updateBlockParams(block.id, {
+                              [key]: e.target.checked,
+                            })
+                          }
+                        />
+                      ) : typeof value === 'number' ? (
+                        <input
+                          type="number"
+                          value={value}
+                          step={schema?.step ?? (value < 1 ? 0.1 : 1)}
+                          min={schema?.min}
+                          max={schema?.max}
+                          onChange={(e) =>
+                            store.updateBlockParams(block.id, {
+                              [key]: parseFloat(e.target.value) || 0,
+                            })
+                          }
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          value={String(value)}
+                          onChange={(e) =>
+                            store.updateBlockParams(block.id, {
+                              [key]: e.target.value,
+                            })
+                          }
+                        />
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

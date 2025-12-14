@@ -1,0 +1,569 @@
+# PLAN: Player Time UI Refactoring
+
+**Date**: 2025-12-13
+**Goal**: Consolidate all player controls into PreviewPanel and eliminate Transport component entirely
+**Based on**: STATUS-2025-12-13-playertime.md
+
+## Overview
+
+This plan implements the UI restructuring to consolidate all player controls into the PreviewPanel, eliminating the redundant Transport component. The changes will:
+1. Move Save/Load/Export buttons to SettingsToolbar
+2. Increase PreviewPanel controls height and reorganize layout (scrubber on top)
+3. Move Speed/Seed controls to PreviewPanel
+4. Remove Transport component completely
+5. Move StatusBadge to SettingsToolbar
+
+## Implementation Steps
+
+### Step 1: Add Save/Load/Export to SettingsToolbar
+**Complexity**: Simple
+**Dependencies**: None
+**Files**:
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/SettingsToolbar.tsx`
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/SettingsToolbar.css`
+
+**Changes**:
+1. Add three new buttons to `.toolbar-right` section (after Clear All button)
+2. Buttons: Save, Load, Export
+3. All should be `disabled` with tooltip "Phase 6"
+4. Style similar to existing `.toolbar-clear-btn` but with different hover states
+5. Order: Clear All | Save | Load | Export | Status
+
+**CSS Additions**:
+```css
+.toolbar-action-btn {
+  padding: 5px 12px;
+  margin-left: 6px;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #888;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.toolbar-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.toolbar-action-btn:hover:not(:disabled) {
+  background: #222;
+  border-color: #4a9eff;
+  color: #fff;
+}
+```
+
+**Testing**:
+- Verify buttons appear in top bar
+- Verify disabled state
+- Verify tooltips show "Phase 6"
+- Verify no layout breakage
+
+---
+
+### Step 2: Move StatusBadge to SettingsToolbar
+**Complexity**: Simple
+**Dependencies**: Step 1 complete
+**Files**:
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/SettingsToolbar.tsx`
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/SettingsToolbar.css`
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/Editor.tsx`
+
+**Changes**:
+1. Import StatusBadge in SettingsToolbar.tsx
+2. Add StatusBadge to end of `.toolbar-right` section (after Export button)
+3. Remove StatusBadge from Transport.tsx (will be deleted in Step 6)
+4. Add CSS to properly space StatusBadge in toolbar context
+
+**CSS Additions**:
+```css
+.toolbar-right .status-badge-container {
+  margin-left: 12px;
+}
+```
+
+**Testing**:
+- Verify StatusBadge renders in top bar
+- Verify popup appears correctly (positioning may need adjustment)
+- Verify status updates still work
+- Verify click interaction works
+
+---
+
+### Step 3: Add Speed/Seed Controls to PreviewPanel
+**Complexity**: Moderate
+**Dependencies**: None (can be done in parallel with Steps 1-2)
+**Files**:
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/PreviewPanel.tsx`
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/PreviewPanel.css`
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/store.ts`
+
+**Changes**:
+
+**PreviewPanel.tsx**:
+1. Add `store?: EditorStore` to PreviewPanelProps
+2. Update Editor.tsx to pass `store={store}` to PreviewPanel
+3. Add local state for speed/seed or wire directly to store
+4. Add input handlers for speed/seed that call `store.setSpeed()` / `store.setSeed()`
+5. Add two number inputs to controls section (will be positioned in Step 4)
+6. Default values if no store: speed=1.0, seed=42
+
+**Code additions** (PreviewPanel.tsx):
+```typescript
+interface PreviewPanelProps {
+  compilerService?: CompilerService;
+  isPlaying?: boolean;
+  store?: EditorStore;  // ADD THIS
+}
+
+// In component body:
+const speed = store?.settings.speed ?? 1.0;
+const seed = store?.settings.seed ?? 42;
+
+const handleSpeedChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const newSpeed = parseFloat(e.target.value) || 1;
+  store?.setSpeed(newSpeed);
+  // Also update player speed if needed
+  playerRef.current?.setSpeed?.(newSpeed);
+}, [store]);
+
+const handleSeedChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const newSeed = parseInt(e.target.value) || 0;
+  store?.setSeed(newSeed);
+  // Recompile will happen automatically via autoCompile
+}, [store]);
+```
+
+**CSS additions** (PreviewPanel.css):
+```css
+.preview-setting {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preview-setting-label {
+  font-size: 11px;
+  color: #888;
+  min-width: 35px;
+}
+
+.preview-setting-input {
+  width: 55px;
+  padding: 4px 6px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 11px;
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.preview-setting-input:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+/* Remove spinners */
+.preview-setting-input::-webkit-inner-spin-button,
+.preview-setting-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.preview-setting-input[type='number'] {
+  -moz-appearance: textfield;
+}
+```
+
+**Testing**:
+- Verify inputs render (layout will be fixed in Step 4)
+- Verify changing speed updates store and affects playback
+- Verify changing seed triggers recompilation
+- Verify inputs work without store prop (standalone preview)
+
+---
+
+### Step 4: Refactor PreviewPanel Controls Layout
+**Complexity**: Moderate
+**Dependencies**: Step 3 complete
+**Files**:
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/PreviewPanel.tsx`
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/PreviewPanel.css`
+
+**Changes**:
+
+**Current layout** (single row ~48px):
+```
+[Play] [Reset] [Loop] [Time] [===Scrubber===] [Time] [∞]
+```
+
+**New layout** (two rows ~80-96px):
+
+**Top Row** (scrubber + time displays):
+```
+[Time] [===========Scrubber with cue markers===========] [Time] [∞]
+```
+
+**Bottom Row** (controls + settings):
+```
+[Play] [Reset] [Loop] | Speed: [1.0] | Seed: [42]
+```
+
+**PreviewPanel.tsx structure**:
+```typescript
+<div className="preview-controls">
+  {/* Top row: Scrubber */}
+  <div className="preview-controls-scrubber-row">
+    <span className="preview-time">{formatTime(currentTime)}</span>
+    <div className="preview-scrubber-container">
+      <input type="range" className="preview-scrubber" ... />
+      {/* Cue markers */}
+    </div>
+    <span className="preview-time">{formatTime(maxTime)}</span>
+    {timeline && (
+      <span className="timeline-indicator" ...>
+        {timeline.kind === 'finite' ? '⏱' : '∞'}
+      </span>
+    )}
+  </div>
+
+  {/* Bottom row: Buttons + Settings */}
+  <div className="preview-controls-buttons-row">
+    <button className="preview-btn" ...>▶/⏸</button>
+    <button className="preview-btn" ...>⏮</button>
+    <button className="preview-btn" ...>🔁/🔀/➡️</button>
+
+    <div className="preview-controls-divider"></div>
+
+    <div className="preview-setting">
+      <span className="preview-setting-label">Speed</span>
+      <input type="number" className="preview-setting-input" ... />
+    </div>
+
+    <div className="preview-setting">
+      <span className="preview-setting-label">Seed</span>
+      <input type="number" className="preview-setting-input" ... />
+    </div>
+  </div>
+</div>
+```
+
+**PreviewPanel.css changes**:
+```css
+/* Updated from single-row to two-row layout */
+.preview-controls {
+  display: flex;
+  flex-direction: column;  /* Changed from default row */
+  gap: 8px;
+  padding: 12px;  /* Increased from 8px */
+  background: #1a1a1a;
+  border-top: 1px solid #333;
+}
+
+.preview-controls-scrubber-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;  /* Taller scrubber row */
+}
+
+.preview-controls-buttons-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.preview-controls-divider {
+  width: 1px;
+  height: 24px;
+  background: #444;
+  margin: 0 4px;
+}
+
+/* Scrubber container gets more height */
+.preview-scrubber-container {
+  position: relative;
+  flex: 1;
+  height: 24px;  /* Increased from 20px */
+  display: flex;
+  align-items: center;
+}
+
+/* Cue markers get more height */
+.cue-marker {
+  position: absolute;
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  width: 3px;
+  height: 18px;  /* Increased from 14px */
+  border-radius: 1px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.7;
+}
+
+.cue-marker.cue-phase {
+  background: #ffd93d;
+  height: 20px;  /* Increased from 16px */
+}
+
+.cue-marker.cue-beat {
+  background: #ff6b6b;
+  height: 16px;  /* Increased from 12px */
+}
+
+.cue-marker.cue-marker {
+  background: #4ecdc4;
+  height: 14px;  /* Increased from 10px */
+}
+```
+
+**Testing**:
+- Verify scrubber row appears on top with larger height
+- Verify cue markers render correctly with new sizes
+- Verify buttons row appears below with settings
+- Verify total height is approximately doubled (~80-96px)
+- Verify all controls remain functional
+- Verify responsive behavior
+
+---
+
+### Step 5: Update Editor.tsx - Pass store to PreviewPanel
+**Complexity**: Simple
+**Dependencies**: Step 3 complete
+**Files**:
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/Editor.tsx`
+
+**Changes**:
+1. Update PreviewPanel instantiation to pass store prop
+
+**Code change**:
+```typescript
+// Line 235 - change from:
+<PreviewPanel compilerService={compilerService} isPlaying={store.uiState.isPlaying} />
+
+// To:
+<PreviewPanel
+  compilerService={compilerService}
+  isPlaying={store.uiState.isPlaying}
+  store={store}
+/>
+```
+
+**Testing**:
+- Verify PreviewPanel receives store
+- Verify speed/seed controls work
+- Verify no console errors
+
+---
+
+### Step 6: Remove Transport Component
+**Complexity**: Moderate
+**Dependencies**: Steps 1, 2, 3, 4, 5 all complete
+**Files**:
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/Editor.tsx`
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/Editor.css`
+- **DELETE**: `/Users/bmf/code/loom99-animations/gallery/src/editor/Transport.tsx`
+- **DELETE**: `/Users/bmf/code/loom99-animations/gallery/src/editor/Transport.css`
+
+**Changes**:
+
+**Editor.tsx**:
+1. Remove Transport import
+2. Remove `<Transport store={store} />` line (line 250)
+
+**Before**:
+```typescript
+import { Transport } from './Transport';
+...
+<LogWindow />
+<Transport store={store} />
+<TrashZone isVisible={isDraggingPlacedBlock} />
+```
+
+**After**:
+```typescript
+// Remove Transport import
+...
+<LogWindow />
+<TrashZone isVisible={isDraggingPlacedBlock} />
+```
+
+**Editor.css**:
+- No changes needed - Transport was already positioned absolutely at bottom
+- TrashZone will now take the bottom space when visible
+
+**Delete files**:
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/Transport.tsx`
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/Transport.css`
+
+**Testing**:
+- Verify Transport component no longer renders
+- Verify bottom bar is gone (60px space reclaimed)
+- Verify all functionality still works from PreviewPanel and SettingsToolbar
+- Verify TrashZone still appears correctly when dragging blocks
+- Verify no broken imports or TypeScript errors
+
+---
+
+### Step 7: Cleanup store.ts
+**Complexity**: Simple
+**Dependencies**: Step 6 complete
+**Files**:
+- `/Users/bmf/code/loom99-animations/gallery/src/editor/store.ts`
+
+**Changes**:
+1. Remove `currentTime` from uiState (line 91)
+2. Keep `isPlaying` (used by PreviewPanel)
+3. Update any code that references `store.uiState.currentTime`
+
+**Investigation needed**:
+- Search codebase for `uiState.currentTime` references
+- Verify no other components depend on this state
+- Player maintains authoritative time via `tMs`
+
+**Code change**:
+```typescript
+// In uiState, remove:
+// currentTime: 0,
+
+// Only keep:
+isPlaying: true,
+```
+
+**Testing**:
+- Verify no compilation errors
+- Verify no runtime errors
+- Verify playback still works correctly
+- Search for `currentTime` references to ensure none remain
+
+---
+
+## Testing Checklist
+
+### Visual/Layout Testing
+- [ ] Save/Load/Export buttons appear in top toolbar
+- [ ] StatusBadge appears in top toolbar with proper spacing
+- [ ] PreviewPanel controls height is approximately doubled
+- [ ] Scrubber row appears on top with time displays
+- [ ] Buttons + settings row appears below scrubber
+- [ ] Cue markers render correctly with larger height
+- [ ] No visual glitches or layout breakage
+- [ ] Transport component is completely gone
+- [ ] Bottom 60px space is reclaimed
+
+### Functional Testing
+- [ ] Play/pause works from PreviewPanel
+- [ ] Scrubber works and updates time display
+- [ ] Loop mode toggle works (loop/pingpong/none)
+- [ ] Speed control changes playback speed
+- [ ] Seed control triggers recompilation
+- [ ] Cue markers appear for programs with timeline hints
+- [ ] StatusBadge click shows error popup
+- [ ] Save/Load/Export show Phase 6 tooltips
+- [ ] All existing editor functionality still works
+
+### Regression Testing
+- [ ] Block library drag/drop still works
+- [ ] Inspector still works
+- [ ] Compiler service still works
+- [ ] Control surface still works
+- [ ] Log window still works
+- [ ] Context menu still works
+- [ ] Demo loading still works
+
+### Code Quality
+- [ ] No TypeScript errors
+- [ ] No console warnings
+- [ ] No unused imports
+- [ ] CSS is clean (no duplicate rules)
+- [ ] Files properly deleted (Transport.tsx, Transport.css)
+
+## Risk Assessment
+
+### Low Risk
+- Steps 1, 2: Moving buttons to toolbar (pure addition)
+- Step 5: Passing store prop (pure addition)
+- Step 7: Cleanup (removing unused state)
+
+### Medium Risk
+- Step 3: Adding Speed/Seed controls (requires store integration)
+- Step 4: Layout refactoring (CSS complexity, may need iteration)
+
+### Higher Risk
+- Step 6: Removing Transport (destructive change, must verify all functionality migrated)
+
+## Rollback Strategy
+
+Each step is atomic and can be reverted via git:
+```bash
+# Revert specific files
+git checkout HEAD -- <file>
+
+# Revert entire commit
+git revert <commit-hash>
+```
+
+If issues arise during Step 6, the Transport component can be temporarily re-added while debugging.
+
+## Post-Implementation
+
+### Documentation Updates Needed
+- Update PLAYERTIME.md with new architecture
+- Document consolidated control layout
+- Update any screenshots showing old layout
+
+### Future Enhancements
+- Add Player.setSpeed() method if not present
+- Consider adding time display format options (ms vs s)
+- Consider adding keyboard shortcuts for player controls
+- Timeline metadata generation (see STATUS item #5 - separate task)
+
+## Completion Criteria
+
+All steps completed successfully when:
+1. All buttons/controls migrated to new locations
+2. Transport component completely removed
+3. All tests passing
+4. No regression in existing functionality
+5. Visual polish complete (proper spacing, alignment)
+6. Code is clean (no dead code, proper types)
+
+## Estimated Complexity by Step
+
+| Step | Complexity | Estimated Effort | Risk |
+|------|------------|------------------|------|
+| 1 | Simple | 15-20 min | Low |
+| 2 | Simple | 10-15 min | Low |
+| 3 | Moderate | 30-40 min | Medium |
+| 4 | Moderate | 40-50 min | Medium |
+| 5 | Simple | 5-10 min | Low |
+| 6 | Moderate | 20-30 min | Higher |
+| 7 | Simple | 10-15 min | Low |
+| **Total** | **Moderate** | **~2.5-3 hours** | **Medium** |
+
+## Notes
+
+- Steps 1-2 can be done together (both modify SettingsToolbar)
+- Step 3 can be done in parallel with Steps 1-2
+- Step 4 depends on Step 3
+- Step 6 must be last (after all migrations complete)
+- Step 7 is cleanup and can be done after Step 6
+
+## Out of Scope
+
+The following items from STATUS are NOT included in this plan:
+
+**Item 5: Cue Points Not Showing**
+- Root cause documented in STATUS file
+- Requires compiler infrastructure changes
+- Should be separate task/plan
+- Involves modifying DemoProgramBlock and other compiler blocks to generate timeline() functions
+
+**Item 6: PlayerTime Functionality Documentation**
+- Already completed in PLAYERTIME.md
+- No action needed

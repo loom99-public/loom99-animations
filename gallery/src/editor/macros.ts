@@ -505,6 +505,136 @@ export const MACRO_REGISTRY: Record<string, MacroExpansion> = {
   },
 
   // =============================================================================
+  // 🎭 REVEAL MASK - Sliding mask wipe reveal with glow edge
+  // =============================================================================
+  'macro:revealMask': {
+    blocks: [
+      // Scene - logo paths
+      { ref: 'scene', type: 'SVGPathSource', laneKind: 'Scene', label: 'Shape Source',
+        params: { target: 'logo' } },
+      { ref: 'targets', type: 'SceneToTargets', laneKind: 'Scene', label: 'Sample Points' },
+      { ref: 'count', type: 'elementCount', laneKind: 'Scene', label: 'Element Count' },
+
+      // Fields - particles at their target positions (no movement, just revealed)
+      { ref: 'delays', type: 'constantFieldDuration', laneKind: 'Fields', label: 'No Delay',
+        params: { duration: 0 } },
+      { ref: 'durations', type: 'constantFieldDuration', laneKind: 'Fields', label: 'Instant',
+        params: { duration: 0.01 } },
+
+      // Phase - clean entrance/hold/exit timing
+      { ref: 'phase', type: 'PhaseMachine', laneKind: 'Phase', label: 'Reveal Timing',
+        params: { entranceDuration: 2.0, holdDuration: 2.0, exitDuration: 1.0 } },
+      { ref: 'progress', type: 'phaseProgress', laneKind: 'Phase', label: 'Phase Progress' },
+
+      // Compose - per-element (particles stay at targets)
+      { ref: 'perProgress', type: 'perElementProgress', laneKind: 'Spec', label: 'Element Progress' },
+      { ref: 'lerp', type: 'lerpPoints', laneKind: 'Spec', label: 'Static Positions' },
+
+      // Render - create particles, then mask them
+      { ref: 'glow', type: 'glowFilter', laneKind: 'Program', label: 'Glow',
+        params: { color: '#ffffff', blur: 8, intensity: 1.5 } },
+      { ref: 'circles', type: 'perElementCircles', laneKind: 'Program', label: 'Shape Points',
+        params: { radius: 3.5, fill: '#ffffff', opacity: 1 } },
+      { ref: 'mask', type: 'MaskReveal', laneKind: 'Program', label: 'Wipe Mask',
+        params: { direction: 'left-to-right', softEdge: 25, sceneWidth: 400, sceneHeight: 300 } },
+
+      // Output
+      { ref: 'canvas', type: 'canvas', laneKind: 'Output', label: 'Canvas',
+        params: { width: 400, height: 300, background: '#0a0a12' } },
+    ],
+    connections: [
+      // Scene flow
+      { fromRef: 'scene', fromSlot: 'scene', toRef: 'targets', toSlot: 'scene' },
+      { fromRef: 'targets', fromSlot: 'targets', toRef: 'count', toSlot: 'targets' },
+      { fromRef: 'targets', fromSlot: 'targets', toRef: 'lerp', toSlot: 'ends' },
+      // Use targets as both start and end (static positions)
+      { fromRef: 'targets', fromSlot: 'targets', toRef: 'lerp', toSlot: 'starts' },
+
+      // Fields to compose
+      { fromRef: 'delays', fromSlot: 'durations', toRef: 'perProgress', toSlot: 'delays' },
+      { fromRef: 'durations', fromSlot: 'durations', toRef: 'perProgress', toSlot: 'durations' },
+
+      // Phase to compose and mask
+      { fromRef: 'phase', fromSlot: 'phase', toRef: 'perProgress', toSlot: 'phase' },
+      { fromRef: 'phase', fromSlot: 'phase', toRef: 'progress', toSlot: 'phase' },
+
+      // Compose chain
+      { fromRef: 'perProgress', fromSlot: 'progress', toRef: 'lerp', toSlot: 'progress' },
+
+      // Render chain: circles → mask → canvas
+      { fromRef: 'lerp', fromSlot: 'positions', toRef: 'circles', toSlot: 'positions' },
+      { fromRef: 'count', fromSlot: 'count', toRef: 'circles', toSlot: 'count' },
+      { fromRef: 'glow', fromSlot: 'filter', toRef: 'circles', toSlot: 'filter' },
+      { fromRef: 'circles', fromSlot: 'tree', toRef: 'mask', toSlot: 'content' },
+      { fromRef: 'progress', fromSlot: 'progress', toRef: 'mask', toSlot: 'progress' },
+      { fromRef: 'mask', fromSlot: 'tree', toRef: 'canvas', toSlot: 'render' },
+    ],
+  },
+
+  // =============================================================================
+  // 💧 LIQUID - Gooey blob circles forming shapes (warm orange/yellow)
+  // =============================================================================
+  'macro:liquid': {
+    blocks: [
+      // Scene - logo paths as blob targets
+      { ref: 'scene', type: 'SVGPathSource', laneKind: 'Scene', label: 'Blob Targets',
+        params: { target: 'logo' } },
+      { ref: 'targets', type: 'SceneToTargets', laneKind: 'Scene', label: 'Sample Points' },
+      { ref: 'count', type: 'elementCount', laneKind: 'Scene', label: 'Blob Count' },
+
+      // Fields - blobs drop from above with randomized timing
+      { ref: 'origins', type: 'TopDropOrigin', laneKind: 'Fields', label: 'Drop Origin',
+        params: { sceneWidth: 400, dropHeight: -80, xSpread: 1.0, heightVariation: 60 } },
+      { ref: 'delays', type: 'RandomStagger', laneKind: 'Fields', label: 'Drop Stagger',
+        params: { minDelay: 0, maxDelay: 1.5, distribution: 'uniform' } },
+      { ref: 'durations', type: 'DurationVariation', laneKind: 'Fields', label: 'Fall Time',
+        params: { baseDuration: 1.0, variation: 0.4, minDuration: 0.5 } },
+
+      // Phase - slower entrance for liquid drip effect
+      { ref: 'phase', type: 'PhaseMachine', laneKind: 'Phase', label: 'Liquid Timing',
+        params: { entranceDuration: 3.5, holdDuration: 2.0, exitDuration: 0.8 } },
+
+      // Compose - per-element lerp for drop motion
+      { ref: 'progress', type: 'perElementProgress', laneKind: 'Spec', label: 'Drop Progress',
+        params: { easing: 'easeOutCubic' } },
+      { ref: 'lerp', type: 'lerpPoints', laneKind: 'Spec', label: 'Drop Path' },
+
+      // Render - goo filter for metaball effect, large warm-colored blobs
+      { ref: 'goo', type: 'GooFilter', laneKind: 'Program', label: 'Goo Effect',
+        params: { blur: 10, threshold: 18, contrast: 35 } },
+      { ref: 'circles', type: 'perElementCircles', laneKind: 'Program', label: 'Blobs',
+        params: { radius: 10, fill: '#ffaa22', opacity: 1 } },
+
+      // Output - dark blue background for contrast
+      { ref: 'canvas', type: 'canvas', laneKind: 'Output', label: 'Canvas',
+        params: { width: 400, height: 300, background: '#1a1a2e' } },
+    ],
+    connections: [
+      // Scene flow
+      { fromRef: 'scene', fromSlot: 'scene', toRef: 'targets', toSlot: 'scene' },
+      { fromRef: 'targets', fromSlot: 'targets', toRef: 'count', toSlot: 'targets' },
+      { fromRef: 'targets', fromSlot: 'targets', toRef: 'lerp', toSlot: 'ends' },
+
+      // Fields to compose
+      { fromRef: 'origins', fromSlot: 'positions', toRef: 'lerp', toSlot: 'starts' },
+      { fromRef: 'delays', fromSlot: 'delays', toRef: 'progress', toSlot: 'delays' },
+      { fromRef: 'durations', fromSlot: 'durations', toRef: 'progress', toSlot: 'durations' },
+
+      // Phase to compose
+      { fromRef: 'phase', fromSlot: 'phase', toRef: 'progress', toSlot: 'phase' },
+
+      // Compose chain
+      { fromRef: 'progress', fromSlot: 'progress', toRef: 'lerp', toSlot: 'progress' },
+
+      // Render chain
+      { fromRef: 'lerp', fromSlot: 'positions', toRef: 'circles', toSlot: 'positions' },
+      { fromRef: 'count', fromSlot: 'count', toRef: 'circles', toSlot: 'count' },
+      { fromRef: 'goo', fromSlot: 'filter', toRef: 'circles', toSlot: 'filter' },
+      { fromRef: 'circles', fromSlot: 'tree', toRef: 'canvas', toSlot: 'render' },
+    ],
+  },
+
+  // =============================================================================
   // ✨ AURORA - Wave-like motion with gradient colors
   // =============================================================================
   'macro:aurora': {

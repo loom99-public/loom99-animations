@@ -11,6 +11,7 @@ import { observer } from 'mobx-react-lite';
 import { useState, useRef, useEffect } from 'react';
 import type { EditorStore } from './store';
 import { PRESET_LAYOUTS } from './laneLayouts';
+import { StatusBadge } from './StatusBadge';
 import './SettingsToolbar.css';
 
 interface SettingsToolbarProps {
@@ -313,6 +314,34 @@ export const SettingsToolbar = observer(({ store }: SettingsToolbarProps) => {
         >
           Clear All
         </button>
+
+        {/* Action buttons - disabled until Phase 6 */}
+        <button
+          className="toolbar-action-btn"
+          disabled
+          title="Save patch (Phase 6)"
+        >
+          Save
+        </button>
+        <button
+          className="toolbar-action-btn"
+          disabled
+          title="Load patch (Phase 6)"
+        >
+          Load
+        </button>
+        <button
+          className="toolbar-action-btn"
+          disabled
+          title="Export animation (Phase 6)"
+        >
+          Export
+        </button>
+
+        <div className="toolbar-divider" />
+
+        <StatusBadge />
+
         <span className="toolbar-status">
           {store.blocks.length} blocks · {store.connections.length} connections
         </span>

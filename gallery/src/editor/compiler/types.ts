@@ -34,11 +34,40 @@ export interface RuntimeCtx {
 export type KernelEvent = { type: string; payload?: unknown };
 
 /**
+ * A CuePoint marks a significant moment in the animation.
+ * Used for phase boundaries, beats, and other structural markers.
+ */
+export interface CuePoint {
+  tMs: number;
+  label: string;
+  kind?: 'phase' | 'beat' | 'marker';
+}
+
+/**
+ * TimelineHint describes the temporal structure of a program.
+ * Programs can optionally expose this to inform the player.
+ */
+export type TimelineHint =
+  | {
+      kind: 'finite';
+      durationMs: number;
+      recommendedLoop?: 'loop' | 'pingpong' | 'none';
+      cuePoints?: readonly CuePoint[];
+    }
+  | {
+      kind: 'infinite';
+      recommendedLoop?: 'loop' | 'none';
+      windowMs?: number; // Suggested preview window
+    };
+
+/**
  * Program is time-dependent: returns signal + event handlers.
+ * Optionally includes timeline metadata for player-aware playback.
  */
 export interface Program<T> {
   signal: (tMs: number, rt: RuntimeCtx) => T;
   event: (ev: KernelEvent) => KernelEvent[];
+  timeline?: () => TimelineHint;
 }
 
 export interface Vec2 {

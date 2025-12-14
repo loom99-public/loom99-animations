@@ -4,11 +4,11 @@
  * Creates a mask-based reveal effect.
  * Used for wipe transitions where content is progressively revealed.
  *
- * Outputs: RenderTree with masked content.
+ * Accepts RenderTreeProgram and outputs RenderTreeProgram with mask applied.
  */
 
-import type { BlockCompiler, RuntimeCtx } from '../../types';
-import type { DrawNode } from '../../../runtime/renderTree';
+import type { BlockCompiler, RuntimeCtx, Program } from '../../types';
+import type { RenderTree, DrawNode } from '../../../runtime/renderTree';
 import { group } from '../../../runtime/renderTree';
 
 type WipeDirection = 'left-to-right' | 'right-to-left' | 'top-to-bottom' | 'bottom-to-top' | 'radial';
@@ -16,80 +16,136 @@ type WipeDirection = 'left-to-right' | 'right-to-left' | 'top-to-bottom' | 'bott
 export const MaskRevealBlock: BlockCompiler = {
   type: 'MaskReveal',
   inputs: [
-    { name: 'content', type: { kind: 'RenderTree' }, required: true },
+    { name: 'content', type: { kind: 'RenderTreeProgram' }, required: true },
     { name: 'progress', type: { kind: 'Signal:Unit' }, required: true },
   ],
-  outputs: [{ name: 'tree', type: { kind: 'RenderTree' } }],
+  outputs: [{ name: 'tree', type: { kind: 'RenderTreeProgram' } }],
 
   compile({ inputs, params, id }) {
     const direction = (params.direction as WipeDirection) ?? 'left-to-right';
     const softEdge = Number(params.softEdge ?? 20);
-    const sceneWidth = Number(params.sceneWidth ?? 800);
-    const sceneHeight = Number(params.sceneHeight ?? 600);
+    const sceneWidth = Number(params.sceneWidth ?? 400);
+    const sceneHeight = Number(params.sceneHeight ?? 300);
 
-    // Get content and progress from inputs
-    const contentTree = inputs.content?.kind === 'RenderTree' ? inputs.content.value : null;
-    const progressSignal = inputs.progress?.kind === 'Signal:Unit' ? inputs.progress.value : null;
+    // Get content program and progress signal from inputs
+    const contentProgram = inputs.content?.kind === 'RenderTreeProgram'
+      ? inputs.content.value as Program<RenderTree>
+      : null;
+    const progressSignal = inputs.progress?.kind === 'Signal:Unit'
+      ? inputs.progress.value as (t: number, ctx: RuntimeCtx) => number
+      : null;
 
-    const signal = (tMs: number, rt: RuntimeCtx): DrawNode => {
-      const progress = progressSignal ? (progressSignal as (t: number, ctx: RuntimeCtx) => number)(tMs, rt) : 0;
-
-      // Calculate mask position based on direction and progress
-      let maskX = 0, maskY = 0, maskWidth = sceneWidth, maskHeight = sceneHeight;
-
-      switch (direction) {
-        case 'left-to-right':
-          maskWidth = progress * sceneWidth;
-          break;
-        case 'right-to-left':
-          maskX = (1 - progress) * sceneWidth;
-          maskWidth = progress * sceneWidth;
-          break;
-        case 'top-to-bottom':
-          maskHeight = progress * sceneHeight;
-          break;
-        case 'bottom-to-top':
-          maskY = (1 - progress) * sceneHeight;
-          maskHeight = progress * sceneHeight;
-          break;
-        case 'radial':
-          // Radial mask would need circle clip-path
-          break;
-      }
-
-      // Create mask rect node
-      const maskNode: DrawNode = {
-        kind: 'shape',
-        id: `mask-${id}`,
-        geom: {
-          kind: 'rect',
-          x: maskX,
-          y: maskY,
-          width: maskWidth,
-          height: maskHeight,
-        },
-        style: {
-          fill: '#ffffff',
-        },
+    if (!contentProgram) {
+      return {
+        tree: { kind: 'Error', message: 'MaskReveal: content must be RenderTreeProgram' },
       };
+    }
 
-      // Get content nodes
-      const contentNodes = contentTree
-        ? [(contentTree as (t: number, ctx: RuntimeCtx) => DrawNode)(tMs, rt)]
-        : [];
+    // Create the masked program
+    const program: Program<RenderTree> = {
+      signal: (tMs: number, rt: RuntimeCtx): RenderTree => {
+        const progress = progressSignal ? progressSignal(tMs, rt) : 1;
 
-      return group(`mask-reveal-${id}`, [
-        ...contentNodes,
-        // Mask would be applied via SVG clipPath in renderer
-        maskNode,
-      ]);
-    };
+        // Calculate clip rect based on direction and progress
+        let clipX = 0, clipY = 0, clipWidth = sceneWidth, clipHeight = sceneHeight;
 
-    return {
-      tree: {
-        kind: 'RenderTree',
-        value: signal,
+        switch (direction) {
+          case 'left-to-right':
+            clipWidth = progress * sceneWidth;
+            break;
+          case 'right-to-left':
+            clipX = (1 - progress) * sceneWidth;
+            clipWidth = progress * sceneWidth;
+            break;
+          case 'top-to-bottom':
+            clipHeight = progress * sceneHeight;
+            break;
+          case 'bottom-to-top':
+            clipY = (1 - progress) * sceneHeight;
+            clipHeight = progress * sceneHeight;
+            break;
+          case 'radial': {
+            // Radial reveal from center
+            const maxRadius = Math.sqrt(sceneWidth * sceneWidth + sceneHeight * sceneHeight) / 2;
+            const radius = progress * maxRadius;
+            // For radial, we'll use a different approach - apply opacity based on distance
+            break;
+          }
+        }
+
+        // Get the content tree at this time
+        const contentTree = contentProgram.signal(tMs, rt);
+
+        // Create a clipped group wrapper
+        const clippedGroup: DrawNode = {
+          kind: 'group',
+          id: `mask-reveal-${id}`,
+          children: [contentTree as DrawNode],
+          clip: {
+            kind: 'rect',
+            x: clipX,
+            y: clipY,
+            width: Math.max(0, clipWidth),
+            height: Math.max(0, clipHeight),
+          },
+        };
+
+        // Add glow line at reveal edge for visual effect
+        const glowNodes: DrawNode[] = [];
+        if (softEdge > 0 && progress > 0 && progress < 1) {
+          let lineX1 = 0, lineY1 = 0, lineX2 = 0, lineY2 = 0;
+
+          switch (direction) {
+            case 'left-to-right':
+              lineX1 = lineX2 = clipWidth;
+              lineY1 = 0;
+              lineY2 = sceneHeight;
+              break;
+            case 'right-to-left':
+              lineX1 = lineX2 = clipX;
+              lineY1 = 0;
+              lineY2 = sceneHeight;
+              break;
+            case 'top-to-bottom':
+              lineX1 = 0;
+              lineX2 = sceneWidth;
+              lineY1 = lineY2 = clipHeight;
+              break;
+            case 'bottom-to-top':
+              lineX1 = 0;
+              lineX2 = sceneWidth;
+              lineY1 = lineY2 = clipY;
+              break;
+          }
+
+          // Edge glow intensity peaks at middle of reveal
+          const glowIntensity = Math.sin(progress * Math.PI);
+
+          const glowLine: DrawNode = {
+            kind: 'shape',
+            id: `mask-glow-${id}`,
+            geom: {
+              kind: 'line',
+              x1: lineX1,
+              y1: lineY1,
+              x2: lineX2,
+              y2: lineY2,
+            },
+            style: {
+              stroke: '#00ffff',
+              strokeWidth: softEdge * 0.5,
+              opacity: glowIntensity * 0.8,
+              filter: `blur(${softEdge}px)`,
+            },
+          };
+          glowNodes.push(glowLine);
+        }
+
+        return group(`mask-reveal-root-${id}`, [clippedGroup, ...glowNodes]);
       },
+      event: contentProgram.event,
     };
+
+    return { tree: { kind: 'RenderTreeProgram', value: program } };
   },
 };

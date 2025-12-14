@@ -413,3 +413,4 @@ export function orderSelectionById(sel: Selection): Selection {
  *    - simplest: hash(sceneId + seed + modeStackSignature)
  *    - must change when the underlying geometry changes, not when only transforms/styles change.
  */
+ 

@@ -1,12 +1,13 @@
 /**
  * SVGPathSource Block Compiler
  *
- * Loads SVG path data from logo or text targets.
+ * Loads SVG path data from the path library.
  * Outputs: TargetScene with sampled points from paths.
  */
 
 import type { BlockCompiler, TargetScene, Vec2 } from '../../types';
-import { LOGO_PATHS, TEXT_PATHS, HEART_PATHS, type LineData } from '../../../../data/pathData';
+import type { LineData } from '../../../../data/pathData';
+import { pathLibrary } from '../../../pathLibrary';
 
 /**
  * Sample points along a path defined by LineData.
@@ -110,16 +111,36 @@ function getPathColors(paths: LineData[], pointsPerPath: number[]): string[] {
   return colors;
 }
 
+/**
+ * Migrate old target values to new library ID format.
+ * Called at compile time to handle legacy patches.
+ */
+function migrateTargetId(target: string): string {
+  // Map old hardcoded values to new library IDs
+  if (target === 'logo') return 'builtin:logo';
+  if (target === 'text') return 'builtin:text';
+  if (target === 'heart') return 'builtin:heart';
+  // Already in new format or user-defined path
+  return target;
+}
+
 export const SVGPathSourceBlock: BlockCompiler = {
   type: 'SVGPathSource',
   inputs: [],
   outputs: [{ name: 'scene', type: { kind: 'TargetScene' } }],
 
   compile({ id, params }) {
-    const target = String(params.target ?? 'logo');
+    const rawTarget = String(params.target ?? 'builtin:logo');
+    const targetId = migrateTargetId(rawTarget);
     const density = Number(params.density ?? 1.0);
 
-    const paths = target === 'text' ? TEXT_PATHS : target === 'heart' ? HEART_PATHS : LOGO_PATHS;
+    // Get path data from library
+    const entry = pathLibrary.getById(targetId);
+    if (!entry) {
+      throw new Error(`SVGPathSource: Path not found in library: "${targetId}"`);
+    }
+
+    const paths = entry.data;
 
     // Sample points from all paths
     const allPoints: Vec2[] = [];
@@ -161,7 +182,7 @@ export const SVGPathSourceBlock: BlockCompiler = {
         max: { x: maxX, y: maxY },
       },
       meta: {
-        source: target,
+        source: targetId,
         colors,
         pathCount: paths.length,
       },

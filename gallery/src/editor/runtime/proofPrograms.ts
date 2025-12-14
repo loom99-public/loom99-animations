@@ -5,8 +5,8 @@
  * These test: effects, composition, stable IDs, time-driven rendering.
  */
 
-import type { Program } from '../compiler/types';
-import type { RenderTree, DrawNode, Style } from './renderTree';
+import type { Program, TimelineHint } from '../compiler/types';
+import type { RenderTree, DrawNode } from './renderTree';
 import { group, path, circle, withOpacity, withTransform2D } from './renderTree';
 
 // =============================================================================
@@ -15,6 +15,7 @@ import { group, path, circle, withOpacity, withTransform2D } from './renderTree'
 
 /**
  * Simple pulsing line - tests opacity effect and time-driven rendering.
+ * This is an infinite animation - it loops continuously.
  */
 export const pulsingLineProgram: Program<RenderTree> = {
   signal(tMs) {
@@ -31,6 +32,14 @@ export const pulsingLineProgram: Program<RenderTree> = {
   },
   event() {
     return [];
+  },
+  timeline(): TimelineHint {
+    // Pulsing is infinite, but we suggest a 3s preview window (one full pulse cycle)
+    return {
+      kind: 'infinite',
+      recommendedLoop: 'loop',
+      windowMs: 3141, // ~PI seconds for one full sine cycle
+    };
   },
 };
 
@@ -121,19 +130,24 @@ export const composedEffectsProgram: Program<RenderTree> = {
 // Proof Program 4: Line Drawing Animation
 // =============================================================================
 
+// Line drawing animation constants
+const LINE_DRAWING_DURATION_MS = 3000; // 3 seconds for full draw
+const LINE_DRAWING_HOLD_MS = 1500; // 1.5 second hold at end
+const LINE_DRAWING_TOTAL_MS = LINE_DRAWING_DURATION_MS + LINE_DRAWING_HOLD_MS;
+
 /**
  * Line drawing effect using stroke-dasharray/dashoffset.
  * Tests style animation over time.
+ * This is a FINITE animation with entrance + hold phases.
  */
 export const lineDrawingProgram: Program<RenderTree> = {
   signal(tMs) {
     const t = tMs / 1000;
-    const duration = 3; // 3 seconds for full draw
+    const duration = LINE_DRAWING_DURATION_MS / 1000;
     const progress = Math.min(1, t / duration);
 
     // Approximate path length
     const pathLength = 1000;
-    const dashOffset = pathLength * (1 - progress);
 
     // Multiple lines with staggered start
     const lines: DrawNode[] = [];
@@ -159,6 +173,18 @@ export const lineDrawingProgram: Program<RenderTree> = {
   },
   event() {
     return [];
+  },
+  timeline(): TimelineHint {
+    return {
+      kind: 'finite',
+      durationMs: LINE_DRAWING_TOTAL_MS,
+      recommendedLoop: 'loop',
+      cuePoints: [
+        { tMs: 0, label: 'Entrance Start', kind: 'phase' },
+        { tMs: LINE_DRAWING_DURATION_MS, label: 'Hold', kind: 'phase' },
+        { tMs: LINE_DRAWING_TOTAL_MS, label: 'End', kind: 'phase' },
+      ],
+    };
   },
 };
 

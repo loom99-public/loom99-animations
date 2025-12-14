@@ -5,9 +5,7 @@
  * - Top: SettingsToolbar (with Save/Load/Export + StatusBadge)
  * - Left: BlockLibrary
  * - Center: PatchBay
- * - Right-Top: Preview (with all player controls)
- * - Right-Middle: Inspector
- * - Right-Bottom: Control Surface
+ * - Right: Flexible right panel (Preview, Inspector, Control Surface)
  */
 
 import { observer } from 'mobx-react-lite';
@@ -214,6 +212,11 @@ export const Editor = observer(() => {
     }
   }
 
+  // --- FLEXIBLE RIGHT-HAND PANEL LAYOUT ---
+  // Always show preview (top), control surface (bottom),
+  // Inspector overlays control surface (or floats) and can be toggled
+  const [inspectorVisible, setInspectorVisible] = useState(true);
+
   return (
     <DndContext
       onDragStart={handleDragStart}
@@ -241,10 +244,31 @@ export const Editor = observer(() => {
             <div className="editor-control-surface">
               <ControlSurfacePanel store={controlSurfaceStore} />
             </div>
-          </div>
 
-          <div className="editor-inspector">
-            <Inspector store={store} />
+            {/* Inspector overlays or docks here; user can hide/show */}
+            {inspectorVisible && (
+              <div className="editor-inspector floating">
+                <button
+                  className="inspector-close-btn"
+                  title="Hide Inspector"
+                  onClick={() => setInspectorVisible(false)}
+                  style={{ alignSelf: 'flex-end', margin: 8 }}
+                >
+                  ×
+                </button>
+                <Inspector store={store} />
+              </div>
+            )}
+            {!inspectorVisible && (
+              <button
+                className="inspector-open-btn"
+                title="Show Inspector"
+                style={{ position: 'absolute', top: 6, right: 6, zIndex: 10 }}
+                onClick={() => setInspectorVisible(true)}
+              >
+                🛈 Inspector
+              </button>
+            )}
           </div>
         </div>
 
@@ -267,3 +291,4 @@ export const Editor = observer(() => {
     </DndContext>
   );
 });
+

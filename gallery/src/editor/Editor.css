@@ -1,80 +1,3 @@
-/**
- * Editor Layout Styles
- */
-
-.editor {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  background: #0a0a0a;
-  color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow: hidden;
-}
-
-.editor-main {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-  min-height: 0;
-}
-
-.editor-center {
-  flex: 1 1 0;
-  min-width: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Right panel containing Preview and Control Surface */
-.editor-right-panel {
-  display: flex;
-  flex-direction: column;
-  width: 420px;
-  min-width: 320px;
-  background: #111;
-  border-left: 1px solid #333;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.editor-preview {
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  border-bottom: 1px solid #333;
-}
-
-.editor-preview > .preview-panel {
-  flex-shrink: 0;
-  border-radius: 0;
-  border: none;
-}
-
-.editor-control-surface {
-  flex: 1;
-  min-height: 200px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.editor-control-surface > .control-surface-panel {
-  flex: 1;
-  width: 100%;
-  min-width: unset;
-  max-width: unset;
-}
-
 .editor-inspector {
   display: flex;
   flex-direction: column;
@@ -84,83 +7,54 @@
   border-left: 1px solid #333;
   overflow: hidden;
   flex-shrink: 0;
+  z-index: 5;
+}
+
+.editor-inspector.floating {
+  position: absolute;
+  top: 60px;
+  right: 18px;
+  width: 340px;
+  min-width: 220px;
+  max-width: 400px;
+  max-height: 80vh;
+  box-shadow: 0 6px 36px #000e, 0 1px 2px #111c;
+  border-radius: 10px;
+  background: #161616;
+  border: 1px solid #333;
+  padding-bottom: 0;
+  overflow: auto;
+}
+
+.inspector-close-btn {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 22px;
+  cursor: pointer;
+  transition: color 0.12s;
+}
+.inspector-close-btn:hover {
+  color: #ff7676;
+}
+
+.inspector-open-btn {
+  background: #262a31;
+  color: #b3cbe5;
+  border: 1px solid #444c;
+  border-radius: 8px;
+  font-size: 14px;
+  padding: 3px 10px;
+  cursor: pointer;
+  opacity: 0.95;
+  transition: background 0.1s, color 0.1s;
+}
+.inspector-open-btn:hover {
+  background: #425073;
+  color: #fff;
 }
 
 .editor-inspector > .inspector {
   flex: 1;
   overflow-y: auto;
-}
-
-/* Global scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #1a1a1a;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #444;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Trash zone - full-width bar at bottom when dragging placed blocks */
-.trash-zone {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  background: rgba(239, 68, 68, 0.1);
-  border-top: 2px dashed #ef4444;
-  color: #ef4444;
-  font-size: 14px;
-  font-weight: 500;
-  animation: trash-zone-appear 0.15s ease-out;
-  z-index: 1000;
-}
-
-.trash-zone-active {
-  background: rgba(239, 68, 68, 0.25);
-  border-top-style: solid;
-  border-top-width: 3px;
-}
-
-.trash-zone-active .trash-icon {
-  transform: scale(1.2);
-}
-
-.trash-zone-active .trash-label {
-  font-weight: 600;
-}
-
-.trash-icon {
-  font-size: 24px;
-  transition: transform 0.15s;
-}
-
-.trash-label {
-  white-space: nowrap;
-  transition: font-weight 0.1s;
-}
-
-@keyframes trash-zone-appear {
-  from {
-    opacity: 0;
-    height: 0;
-  }
-  to {
-    opacity: 1;
-    height: 60px;
-  }
 }

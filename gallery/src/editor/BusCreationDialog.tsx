@@ -24,6 +24,10 @@ interface BusCreationDialogProps {
   suggestedType?: TypeDesc;
   suggestedName?: string;
 
+  // For context-aware naming
+  sourceBlockLabel?: string;
+  sourcePortName?: string;
+
   // For auto-publish/subscribe after creation
   autoPublishFromBlock?: string;
   autoPublishFromPort?: string;
@@ -99,6 +103,146 @@ function busNameExists(store: EditorStore, name: string): boolean {
 }
 
 /**
+ * Sanitize a name for use as a bus name.
+ * Converts to lowercase, replaces spaces with underscores.
+ * Returns empty string if sanitization fails.
+ */
+function sanitizeName(name: string): string {
+  const sanitized = name.toLowerCase().replace(/\s+/g, '_').trim();
+  // Only allow alphanumeric, underscore, hyphen
+  if (!/^[a-z0-9_-]+$/.test(sanitized)) {
+    return '';
+  }
+  return sanitized;
+}
+
+/**
+ * Generate a context-aware bus name from block label and port name.
+ * Returns empty string if sanitization fails or inputs are invalid.
+ */
+function generateContextAwareName(blockLabel?: string, portName?: string): string {
+  if (!blockLabel) return '';
+
+  // Try block_port pattern first
+  if (portName) {
+    const combined = `${blockLabel}_${portName}`;
+    const sanitized = sanitizeName(combined);
+    if (sanitized) return sanitized;
+  }
+
+  // Fallback to just block label
+  return sanitizeName(blockLabel);
+}
+
+/**
+ * Generate a unique bus name based on a base name.
+ * Handles collision by appending letter (A-Z) or number.
+ *
+ * Collision sequence:
+ * - "energy" exists → "energyA"
+ * - "energyA" exists → "energyB"
+ * - "energyZ" exists → "energy1"
+ * - "energy1" exists → "energy2"
+ *
+ * For names ending with a letter:
+ * - "phaseA" exists → "phaseB"
+ * - "phaseZ" exists → "phase1"
+ */
+function generateUniqueBusName(baseName: string, existingNames: string[]): string {
+  const normalizedExisting = existingNames.map(n => n.toLowerCase());
+
+  // If base name is unique, use it
+  if (!normalizedExisting.includes(baseName.toLowerCase())) {
+    return baseName;
+  }
+
+  // Check if base name ends with a letter (A-Z)
+  const letterMatch = baseName.match(/^(.+?)([A-Z])$/);
+
+  if (letterMatch) {
+    // Base name ends with a letter, increment it
+    const prefix = letterMatch[1]!;
+    const currentLetter = letterMatch[2]!;
+    const currentCode = currentLetter.charCodeAt(0);
+
+    // Try next letters
+    for (let code = currentCode + 1; code <= 'Z'.charCodeAt(0); code++) {
+      const candidate = prefix + String.fromCharCode(code);
+      if (!normalizedExisting.includes(candidate.toLowerCase())) {
+        return candidate;
+      }
+    }
+
+    // All letters exhausted, start with numbers
+    const numericPrefix = prefix.replace(/[A-Z]$/, '');
+    for (let i = 1; i < 1000; i++) {
+      const candidate = `${numericPrefix}${i}`;
+      if (!normalizedExisting.includes(candidate.toLowerCase())) {
+        return candidate;
+      }
+    }
+  } else {
+    // Base name doesn't end with a letter
+    // Try appending A-Z first
+    for (let code = 'A'.charCodeAt(0); code <= 'Z'.charCodeAt(0); code++) {
+      const candidate = baseName + String.fromCharCode(code);
+      if (!normalizedExisting.includes(candidate.toLowerCase())) {
+        return candidate;
+      }
+    }
+
+    // All letters exhausted, use numbers
+    for (let i = 1; i < 1000; i++) {
+      const candidate = `${baseName}${i}`;
+      if (!normalizedExisting.includes(candidate.toLowerCase())) {
+        return candidate;
+      }
+    }
+  }
+
+  // Fallback (should never reach here)
+  return baseName + '_' + Date.now();
+}
+
+/**
+ * Generate the initial suggested name for a new bus.
+ * Priority:
+ * 1. Context-aware from block/port (if available and valid)
+ * 2. Suggested name (if provided)
+ * 3. Default by domain
+ * Then make it unique by handling collisions.
+ */
+function generateInitialName(
+  store: EditorStore,
+  domain: CoreDomain,
+  suggestedName?: string,
+  blockLabel?: string,
+  portName?: string
+): string {
+  const existingNames = store.buses.map(b => b.name);
+
+  // Try context-aware naming first
+  if (blockLabel) {
+    const contextName = generateContextAwareName(blockLabel, portName);
+    if (contextName) {
+      return generateUniqueBusName(contextName, existingNames);
+    }
+  }
+
+  // Use suggested name if provided
+  if (suggestedName) {
+    const sanitized = sanitizeName(suggestedName);
+    if (sanitized) {
+      return generateUniqueBusName(sanitized, existingNames);
+    }
+  }
+
+  // Fallback to domain default
+  const defaultName = DEFAULT_BUS_NAMES[domain];
+  return generateUniqueBusName(defaultName, existingNames);
+}
+
+/**
  * Bus creation dialog.
  */
 export const BusCreationDialog = observer((props: BusCreationDialogProps) => {
@@ -109,6 +253,8 @@ export const BusCreationDialog = observer((props: BusCreationDialogProps) => {
     onCreated,
     suggestedType,
     suggestedName,
+    sourceBlockLabel,
+    sourcePortName,
     autoPublishFromBlock,
     autoPublishFromPort,
     autoSubscribeToBlock,
@@ -127,6 +273,7 @@ export const BusCreationDialog = observer((props: BusCreationDialogProps) => {
   const [busName, setBusName] = useState<string>('');
   const [combineMode, setCombineMode] = useState<BusCombineMode>('last');
   const [validationError, setValidationError] = useState<string>('');
+  const [userHasEdited, setUserHasEdited] = useState<boolean>(false);
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -134,16 +281,23 @@ export const BusCreationDialog = observer((props: BusCreationDialogProps) => {
       const domain = getInitialDomain();
       setSelectedDomain(domain);
 
-      // Set name: suggested > default by domain
-      const defaultName = suggestedName ?? DEFAULT_BUS_NAMES[domain];
-      setBusName(defaultName);
+      // Generate initial name with auto-suggestion
+      const initialName = generateInitialName(
+        store,
+        domain,
+        suggestedName,
+        sourceBlockLabel,
+        sourcePortName
+      );
+      setBusName(initialName);
 
       // Set combine mode: default by domain
       setCombineMode(DEFAULT_COMBINE_MODES[domain]);
 
       setValidationError('');
+      setUserHasEdited(false);
     }
-  }, [isOpen, suggestedType, suggestedName]);
+  }, [isOpen, suggestedType, suggestedName, sourceBlockLabel, sourcePortName]);
 
   // Update combine mode when domain changes
   useEffect(() => {
@@ -153,15 +307,24 @@ export const BusCreationDialog = observer((props: BusCreationDialogProps) => {
   const handleDomainChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const domain = e.target.value as CoreDomain;
     setSelectedDomain(domain);
-    // Update name if it's still the default for previous domain
-    if (busName === DEFAULT_BUS_NAMES[selectedDomain]) {
-      setBusName(DEFAULT_BUS_NAMES[domain]);
+
+    // Update name only if user hasn't manually edited it
+    if (!userHasEdited) {
+      const newName = generateInitialName(
+        store,
+        domain,
+        suggestedName,
+        sourceBlockLabel,
+        sourcePortName
+      );
+      setBusName(newName);
     }
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBusName(e.target.value);
     setValidationError('');
+    setUserHasEdited(true);
   };
 
   const handleCreate = () => {

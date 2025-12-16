@@ -5,8 +5,9 @@
  */
 
 import { observer } from 'mobx-react-lite';
-import type { Bus, BusCombineMode } from './types';
+import type { Bus, BusCombineMode, CoreDomain } from './types';
 import type { EditorStore } from './store';
+import { BusViz } from './BusViz';
 import './BusBoard.css';
 
 interface BusChannelProps {
@@ -48,6 +49,13 @@ function getCombineModeOptions(domain: string): BusCombineMode[] {
     boolean: ['last'],
   };
   return options[domain] ?? ['last'];
+}
+
+/**
+ * Check if domain is a core domain (for type guard).
+ */
+function isCoreDomain(domain: string): domain is CoreDomain {
+  return ['number', 'vec2', 'color', 'boolean', 'time', 'phase', 'rate', 'trigger'].includes(domain);
 }
 
 /**
@@ -95,12 +103,20 @@ export const BusChannel = observer(({ bus, store, isSelected, onSelect }: BusCha
         </div>
       </div>
 
-      {/* Live Visualization (placeholder) */}
-      <div className="bus-channel-viz" title={`${bus.type.domain} visualization (placeholder)`}>
-        <div className="bus-viz-placeholder">
-          {/* Static placeholder - actual viz in WI-6 */}
-          <span className="bus-viz-icon">{domainIcon}</span>
-        </div>
+      {/* Live Visualization */}
+      <div className="bus-channel-viz" title={`${bus.type.domain} visualization`}>
+        {isCoreDomain(bus.type.domain) ? (
+          <BusViz
+            domain={bus.type.domain}
+            defaultValue={bus.defaultValue}
+            size={20}
+          />
+        ) : (
+          <div className="bus-viz-placeholder">
+            {/* Fallback for non-core domains */}
+            <span className="bus-viz-icon">{domainIcon}</span>
+          </div>
+        )}
       </div>
 
       {/* Combine Mode */}

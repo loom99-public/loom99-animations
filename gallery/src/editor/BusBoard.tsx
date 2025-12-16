@@ -32,8 +32,8 @@ interface BusGroup {
  * Phase 3: All are Signal types.
  */
 function groupBuses(buses: Bus[]): BusGroup[] {
-  const signalBuses = buses.filter(b => b.type.base === 'Signal');
-  const fieldBuses = buses.filter(b => b.type.base === 'Field');
+  const signalBuses = buses.filter(b => b.type.world === 'signal');
+  const fieldBuses = buses.filter(b => b.type.world === 'field');
 
   const groups: BusGroup[] = [];
 

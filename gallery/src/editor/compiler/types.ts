@@ -129,6 +129,7 @@ export type ValueKind =
   | 'Field:Spiral'
   | 'Field:Wave'
   | 'Field:Wobble'
+  | 'Field:Path'
 
   // Signals
   | 'Signal:Time'
@@ -139,9 +140,13 @@ export type ValueKind =
   // Special types
   | 'PhaseMachine'
   | 'TargetScene'
+  | 'Scene'
   | 'RenderTreeProgram'
+  | 'RenderTree'
   | 'RenderNode'
+  | 'RenderNodeArray'
   | 'FilterDef'
+  | 'StrokeStyle'
 
   // Specs (structured config that compiles to Programs)
   | 'Spec:LineMorph'
@@ -216,8 +221,10 @@ export interface BlockInstance {
  * Forward declaration of bus types (imported from main types)
  * These will be available when buses are present in a patch.
  */
-// Re-export types from main editor types
-export type { Bus, Publisher, Listener } from '../types';
+// Import types from main editor types for use in CompilerPatch
+import type { Bus, Publisher, Listener } from '../types';
+// Re-export for consumers
+export type { Bus, Publisher, Listener };
 
 /**
  * Extended CompilerPatch with optional bus support.
@@ -251,10 +258,19 @@ export type Artifact =
   | { kind: 'Field:boolean'; value: Field<boolean> }
   | { kind: 'Field:color'; value: Field<unknown> }
   | { kind: 'Field:vec2'; value: Field<Vec2> }
+  | { kind: 'Field:Point'; value: Field<Vec2> }
+  | { kind: 'Field<Point>'; value: Field<Vec2> }
+  | { kind: 'Field:Jitter'; value: Field<unknown> }
+  | { kind: 'Field:Spiral'; value: Field<unknown> }
+  | { kind: 'Field:Wave'; value: Field<unknown> }
+  | { kind: 'Field:Wobble'; value: Field<unknown> }
+  | { kind: 'Field:Path'; value: Field<unknown> }
 
   | { kind: 'PhaseMachine'; value: PhaseMachine }
   | { kind: 'TargetScene'; value: TargetScene }
+  | { kind: 'Scene'; value: unknown }
   | { kind: 'RenderTreeProgram'; value: Program<RenderTree> }
+  | { kind: 'StrokeStyle'; value: unknown }
 
   // Primitive block artifacts (Phase 2)
   | { kind: 'ElementCount'; value: number }
@@ -264,6 +280,7 @@ export type Artifact =
   | { kind: 'Signal:vec2'; value: (t: number, ctx: RuntimeCtx) => Vec2 }
   | { kind: 'RenderNode'; value: DrawNode }
   | { kind: 'RenderNodeArray'; value: readonly DrawNode[] }
+  | { kind: 'RenderTree'; value: (tMs: number, ctx: RuntimeCtx) => DrawNode }
   | { kind: 'FilterDef'; value: unknown }
 
   | { kind: 'Spec:LineMorph'; value: unknown }

@@ -93,6 +93,29 @@ export interface TypeDesc {
 export type BusCombineMode = 'sum' | 'average' | 'max' | 'min' | 'last' | 'layer';
 
 /**
+ * Format a TypeDesc for display.
+ */
+export function formatTypeDesc(typeDesc: TypeDesc): string {
+  return `${typeDesc.world}:${typeDesc.domain}`;
+}
+
+/**
+ * Get available combine modes for a given domain.
+ */
+export function getCombineModesForDomain(domain: Domain): BusCombineMode[] {
+  // Numeric domains support all combine modes
+  if (domain === 'number' || domain === 'duration' || domain === 'unit') {
+    return ['sum', 'average', 'max', 'min', 'last'];
+  }
+  // Point/vec2 domains support vector operations
+  if (domain === 'point' || domain === 'vec2') {
+    return ['sum', 'average', 'last'];
+  }
+  // Other domains only support 'last' and 'layer'
+  return ['last', 'layer'];
+}
+
+/**
  * Bus interface - central typed signal distributors.
  */
 export interface Bus {
@@ -281,6 +304,7 @@ export const ALL_SUBCATEGORIES = [
   'FX',             // Filters and effects
   'Adapters',       // Type conversions
   'Output',         // Final sinks
+  'Other',          // Fallback for legacy blocks without subcategory
 ] as const;
 
 export type BlockSubcategory = (typeof ALL_SUBCATEGORIES)[number];
@@ -550,6 +574,13 @@ export interface Patch {
   settings: {
     seed: number;
     speed: number;
+    advancedLaneMode?: boolean;
+    autoConnect?: boolean;
+    showTypeHints?: boolean;
+    highlightCompatible?: boolean;
+    warnBeforeDisconnect?: boolean;
+    filterByLane?: boolean;
+    filterByConnection?: boolean;
   };
 
   /** Composite definitions for this patch */

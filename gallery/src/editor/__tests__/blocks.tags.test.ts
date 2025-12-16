@@ -10,7 +10,8 @@ describe('block registry tags', () => {
 
       expect(tags).toBeDefined();
       expect(tags.form).toBe(definition.form);
-      expect(tags.subcategory).toBe(definition.subcategory);
+      // subcategory defaults to 'Other' when not defined
+      expect(tags.subcategory).toBe(definition.subcategory ?? 'Other');
       expect(tags.laneKind).toBe(definition.laneKind);
     }
   });

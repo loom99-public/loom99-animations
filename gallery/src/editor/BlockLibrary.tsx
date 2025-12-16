@@ -62,9 +62,10 @@ function groupBlocksByForm(blocks: readonly BlockDefinition[]): FormGroup[] {
       formMap.set(block.form, subcategoryMap);
     }
 
-    const list = subcategoryMap.get(block.subcategory) ?? [];
+    const subcategory = block.subcategory ?? 'Other';
+    const list = subcategoryMap.get(subcategory) ?? [];
     list.push(block);
-    subcategoryMap.set(block.subcategory, list);
+    subcategoryMap.set(subcategory, list);
   }
 
   return FORM_ORDER.map((form) => {

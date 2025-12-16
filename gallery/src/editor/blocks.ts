@@ -65,8 +65,9 @@ export interface BlockDefinition {
   /**
    * Subcategory within form for organization.
    * e.g., 'Sources', 'Fields', 'Timing', 'Spatial', 'Math', etc.
+   * Optional - defaults to category mapping for legacy blocks.
    */
-  readonly subcategory: BlockSubcategory;
+  readonly subcategory?: BlockSubcategory;
 
   /**
    * Category for library organization.
@@ -2175,7 +2176,7 @@ export function getBlockTags(definition: BlockDefinition): BlockTags {
 
   // Normalize canonical tags
   tags.form = definition.form;
-  tags.subcategory = definition.subcategory;
+  tags.subcategory = definition.subcategory ?? 'Other';
   tags.laneKind = definition.laneKind;
 
   if (definition.laneFlavor) {

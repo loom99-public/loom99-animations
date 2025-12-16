@@ -250,17 +250,21 @@ export function composeModes(
   }
 
   const lineage = modes.map(m => m.key);
-  const mergedFields: LineMorphModeFields = {};
 
-  for (const mode of modes) {
-    if (mode.fields.origin) mergedFields.origin = mode.fields.origin;
-    if (mode.fields.delay) mergedFields.delay = mode.fields.delay;
-    if (mode.fields.duration) mergedFields.duration = mode.fields.duration;
-    if (mode.fields.strokeWidth) mergedFields.strokeWidth = mode.fields.strokeWidth;
-    if (mode.fields.glowRadius) mergedFields.glowRadius = mode.fields.glowRadius;
-    if (mode.fields.color) mergedFields.color = mode.fields.color;
-    if (mode.fields.opacity) mergedFields.opacity = mode.fields.opacity;
-  }
+  // Merge all mode fields using spread to avoid readonly assignment issues
+  const mergedFields = modes.reduce<LineMorphModeFields>(
+    (acc, mode) => ({
+      ...acc,
+      ...(mode.fields.origin && { origin: mode.fields.origin }),
+      ...(mode.fields.delay && { delay: mode.fields.delay }),
+      ...(mode.fields.duration && { duration: mode.fields.duration }),
+      ...(mode.fields.strokeWidth && { strokeWidth: mode.fields.strokeWidth }),
+      ...(mode.fields.glowRadius && { glowRadius: mode.fields.glowRadius }),
+      ...(mode.fields.color && { color: mode.fields.color }),
+      ...(mode.fields.opacity && { opacity: mode.fields.opacity }),
+    }),
+    {}
+  );
 
   return {
     key: lineage.join('+'),

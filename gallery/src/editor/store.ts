@@ -550,7 +550,7 @@ export class EditorStore {
   renameLane(laneId: LaneId, newName: string): void {
     const lane = this.lanes.find((l) => l.id === laneId);
     if (!lane) return;
-    lane.name = newName;
+    lane.label = newName;
   }
 
   addLane(lane: Lane): void {
@@ -836,6 +836,7 @@ export class EditorStore {
       type: typeDesc,
       combineMode,
       defaultValue,
+      sortKey: this.buses.length,
     };
 
     this.buses.push(bus);
@@ -1062,7 +1063,7 @@ export class EditorStore {
    */
   findBusesByTypeDesc(typeDesc: TypeDescriptor): Bus[] {
     return this.buses.filter(b =>
-      b.type.kind === typeDesc.kind && b.type.domain === typeDesc.domain
+      b.type.world === typeDesc.world && b.type.domain === typeDesc.domain
     );
   }
 

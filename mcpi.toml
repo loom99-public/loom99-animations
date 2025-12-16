@@ -1,2 +1,7 @@
 [servers]
 "chromedevtools/chrome-devtools-mcp" = { command = "npx", args = ["-y", "chrome-devtools-mcp@latest"] }
+"amaccormac/gemini-mcp-tool" = { command = "npx", args = ["-y", "gemini-mcp-tool"] }
+
+[disabled]
+web-reader = { command = "http", args = ["https://api.z.ai/api/mcp/web_reader/mcp"] }
+web-search-prime = { command = "http", args = ["https://api.z.ai/api/mcp/web_search_prime/mcp"] }

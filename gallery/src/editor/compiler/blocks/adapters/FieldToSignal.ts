@@ -26,7 +26,7 @@ export const FieldToSignalBlock: BlockCompiler = {
     const values = field(42, 1, ctx);
     const value = values[0] ?? 0;
 
-    const signal = (tMs: number, _ctx: RuntimeCtx): number => value;
+    const signal = (_tMs: number, _ctx: RuntimeCtx): number => value;
 
     return { signal: { kind: 'Signal:number', value: signal } };
   },

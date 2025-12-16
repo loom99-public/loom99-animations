@@ -38,12 +38,6 @@ function isFieldBus(bus: Bus): boolean {
   return bus.type.world === 'field';
 }
 
-/**
- * Check if a bus is a Signal bus (supported in Phase 2).
- */
-function isSignalBus(bus: Bus): boolean {
-  return bus.type.world === 'signal';
-}
 
 /**
  * Type guard to check if patch has buses.
@@ -56,24 +50,6 @@ export function isBusAwarePatch(patch: CompilerPatch): boolean {
 // Default Values
 // =============================================================================
 
-/**
- * Get default value for a bus type when no publishers exist.
- * Follows "no influence" principle per BUS-SEMANTICS-CONTRACT.md.
- */
-function getDefaultSignalValue(domain: string): unknown {
-  const defaults: Record<string, unknown> = {
-    'number': 0,
-    'vec2': { x: 0, y: 0 } as Vec2,
-    'color': { r: 0, g: 0, b: 0, a: 0 }, // transparent, not opaque black
-    'boolean': false,
-    'time': 0,
-    'phase': 0,
-    'rate': 1,
-    'trigger': { kind: 'never' },
-  };
-
-  return defaults[domain] ?? null;
-}
 
 // =============================================================================
 // Publisher Sorting
@@ -315,7 +291,7 @@ function topoSortBlocksWithBuses(
 export function compileBusAwarePatch(
   patch: CompilerPatch,
   registry: BlockRegistry,
-  seed: Seed,
+  _seed: Seed,
   ctx: CompileCtx
 ): CompileResult {
   const errors: CompileError[] = [];
@@ -563,7 +539,7 @@ function getBusValue(
     return {
       kind: 'Error',
       message: `Bus ${busId} not found`,
-      where: { busId },
+      where: { blockId: busId },
     };
   }
 

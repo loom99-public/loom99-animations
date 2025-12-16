@@ -25,13 +25,9 @@ export const PerElementCirclesBlock: BlockCompiler = {
       };
     }
 
-    const positionsSignal = inputs.positions.value as (tMs: number, ctx: RuntimeCtx) => readonly Vec2[];
+    const positionsSignal = inputs.positions.value as unknown as (tMs: number, ctx: RuntimeCtx) => readonly Vec2[];
 
     // Get element count if provided (accepts Scalar:number or ElementCount)
-    const countInput = inputs.count;
-    const _elementCount = countInput?.kind === 'Scalar:number' || countInput?.kind === 'ElementCount'
-      ? Number(countInput.value)
-      : undefined;
 
     // Get filter if provided (CSS filter string like "blur(8px)")
     const filterString = inputs.filter?.kind === 'FilterDef' ? (inputs.filter.value as string) : null;

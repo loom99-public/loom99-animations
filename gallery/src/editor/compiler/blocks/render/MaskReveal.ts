@@ -66,8 +66,6 @@ export const MaskRevealBlock: BlockCompiler = {
             break;
           case 'radial': {
             // Radial reveal from center
-            const maxRadius = Math.sqrt(sceneWidth * sceneWidth + sceneHeight * sceneHeight) / 2;
-            const radius = progress * maxRadius;
             // For radial, we'll use a different approach - apply opacity based on distance
             break;
           }
@@ -77,8 +75,9 @@ export const MaskRevealBlock: BlockCompiler = {
         const contentTree = contentProgram.signal(tMs, rt);
 
         // Create a clipped group wrapper
-        const clippedGroup: DrawNode = {
-          kind: 'group',
+        // Note: clip is an experimental extension not in base DrawNode type
+        const clippedGroup = {
+          kind: 'group' as const,
           id: `mask-reveal-${id}`,
           children: [contentTree as DrawNode],
           clip: {
@@ -88,7 +87,7 @@ export const MaskRevealBlock: BlockCompiler = {
             width: Math.max(0, clipWidth),
             height: Math.max(0, clipHeight),
           },
-        };
+        } as DrawNode;
 
         // Add glow line at reveal edge for visual effect
         const glowNodes: DrawNode[] = [];
@@ -121,8 +120,9 @@ export const MaskRevealBlock: BlockCompiler = {
           // Edge glow intensity peaks at middle of reveal
           const glowIntensity = Math.sin(progress * Math.PI);
 
-          const glowLine: DrawNode = {
-            kind: 'shape',
+          // Note: 'line' geometry is an experimental extension
+          const glowLine = {
+            kind: 'shape' as const,
             id: `mask-glow-${id}`,
             geom: {
               kind: 'line',
@@ -137,7 +137,7 @@ export const MaskRevealBlock: BlockCompiler = {
               opacity: glowIntensity * 0.8,
               filter: `blur(${softEdge}px)`,
             },
-          };
+          } as unknown as DrawNode;
           glowNodes.push(glowLine);
         }
 

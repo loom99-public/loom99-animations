@@ -7,6 +7,7 @@
 
 import type {
   BlockCompiler,
+  CompiledOutputs,
   Field,
   RuntimeCtx,
   Vec2,
@@ -60,7 +61,7 @@ export const LerpPointsBlock: BlockCompiler = {
     if (endsKind === 'TargetScene') {
       // Extract target positions from TargetScene as a field
       // TargetScene.targets is Vec2[] directly (not {position: Vec2}[])
-      const targetScene = inputs.ends.value as { targets?: Vec2[] };
+      const targetScene = inputs.ends.value as unknown as { targets?: Vec2[] };
       const targetPositions = targetScene.targets ?? [];
       toField = (_seed: number, n: number) => {
         // Return target positions, cycling if n > targets.length
@@ -73,10 +74,11 @@ export const LerpPointsBlock: BlockCompiler = {
     } else {
       toField = inputs.ends.value;
     }
-    const progressSignal = inputs.progress.value as (tMs: number, ctx: RuntimeCtx) => readonly number[];
+    const progressSignal = inputs.progress.value as unknown as (tMs: number, ctx: RuntimeCtx) => readonly number[];
 
     const seed = 42;
-    const n = ctx.elementCount ?? 10;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const n = (ctx as any).elementCount ?? 10;
 
     // Evaluate position fields at compile time (BULK form)
     const fromPositions = fromField(seed, n, ctx);
@@ -97,6 +99,6 @@ export const LerpPointsBlock: BlockCompiler = {
       return positions;
     };
 
-    return { positions: { kind: 'Signal:vec2', value: positionsSignal as unknown } };
+    return { positions: { kind: 'Signal:vec2', value: positionsSignal } } as unknown as CompiledOutputs;
   },
 };

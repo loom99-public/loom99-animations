@@ -257,7 +257,6 @@ export function createCompilerService(store: EditorStore): CompilerService {
         lastResult = result;
         return result;
       } catch (e) {
-        const elapsed = (performance.now() - startTime).toFixed(1);
         const message = e instanceof Error ? e.message : String(e);
         const stack = e instanceof Error ? e.stack : undefined;
 

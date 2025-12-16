@@ -20,7 +20,7 @@ export const ScalarToSignalNumberBlock: BlockCompiler = {
       value = Number(params?.value ?? 0);
     }
 
-    const signal = (tMs: number, _ctx: RuntimeCtx): number => value;
+    const signal = (_tMs: number, _ctx: RuntimeCtx): number => value;
 
     return { signal: { kind: 'Signal:number', value: signal } };
   },

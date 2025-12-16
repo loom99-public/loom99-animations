@@ -23,8 +23,6 @@ import type {
   CompilerPatch,
   PortRef,
   PortType,
-  Program,
-  RenderTree,
   Seed,
   ValueKind,
 } from './types';
@@ -56,7 +54,7 @@ export function compilePatch(
 function compilePatchWireOnly(
   patch: CompilerPatch,
   registry: BlockRegistry,
-  seed: Seed,
+  _seed: Seed,
   ctx: CompileCtx
 ): CompileResult {
   const errors: CompileError[] = [];
@@ -83,7 +81,6 @@ function compilePatchWireOnly(
 
   // 2) Build connection indices (detect multiple writers to same input)
   const incoming = indexIncoming(patch.connections);
-  const outgoing = indexOutgoing(patch.connections);
 
   for (const [toKey, conns] of incoming.entries()) {
     if (conns.length > 1) {
@@ -355,19 +352,6 @@ function indexIncoming(
   return m;
 }
 
-function indexOutgoing(
-  conns: readonly CompilerConnection[]
-): Map<string, CompilerConnection[]> {
-  const m = new Map<string, CompilerConnection[]>();
-  for (const c of conns) {
-    const k = keyOf(c.from.blockId, c.from.port);
-    const arr = m.get(k) ?? [];
-    arr.push(c);
-    m.set(k, arr);
-  }
-  return m;
-}
-
 function keyOf(blockId: string, port: string): string {
   return `${blockId}:${port}`;
 }
@@ -444,7 +428,7 @@ function inferOutputPort(
   patch: CompilerPatch,
   registry: BlockRegistry,
   compiled: Map<string, Artifact>,
-  errors: CompileError[]
+  _errors: CompileError[]
 ): PortRef | null {
   // Heuristic: find all produced RenderTreeProgram ports that are NOT used as a source.
   // If exactly one, pick it.

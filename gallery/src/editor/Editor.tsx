@@ -3,9 +3,9 @@
  *
  * Main editor container with multi-panel layout:
  * - Top: SettingsToolbar (with Save/Load/Export + StatusBadge)
- * - Left: BlockLibrary
- * - Center: PatchBay
- * - Right: Flexible right panel (Preview, Inspector, Control Surface)
+ * - Left: BlockLibrary + Inspector
+ * - Center: Preview + PatchBay + BusBoard
+ * - Right: Control Surface
  */
 
 import { observer } from 'mobx-react-lite';
@@ -27,6 +27,7 @@ import { PreviewPanel } from './PreviewPanel';
 import { SettingsToolbar } from './SettingsToolbar';
 import { ContextMenu } from './ContextMenu';
 import { PathManagerModal } from './PathManagerModal';
+import { BusBoard } from './BusBoard';
 import { createCompilerService, setupAutoCompile } from './compiler';
 import { ControlSurfaceStore, ControlSurfacePanel, generateSurfaceForMacro } from './controlSurface';
 import type { BlockDefinition } from './blocks';
@@ -77,7 +78,7 @@ function HelpModal({ topic, onClose }: HelpModalProps) {
               <ul>
                 <li>The center lanes show how data flows: Scene → Phase → Fields → Spec → Program.</li>
                 <li>Connect outputs to inputs to move scenes, fields, and signals through the graph.</li>
-                <li>Think of it as a visual program where wires show the “why” behind the motion.</li>
+                <li>Think of it as a visual program where wires show the "why" behind the motion.</li>
               </ul>
             ),
           },
@@ -722,18 +723,18 @@ export const Editor = observer(() => {
             </div>
           </div>
 
-            <div className="editor-center" ref={centerColumnRef}>
-              <div className="editor-preview" style={{ flex: centerSplit }}>
-                <PreviewPanel
-                  compilerService={compilerService}
-                  isPlaying={store.uiState.isPlaying}
-                  store={store}
-                  onShowHelp={() => {
-                    setHelpCenterOpen(true);
-                    setHelpTopic(null);
-                  }}
-                />
-              </div>
+          <div className="editor-center" ref={centerColumnRef}>
+            <div className="editor-preview" style={{ flex: centerSplit }}>
+              <PreviewPanel
+                compilerService={compilerService}
+                isPlaying={store.uiState.isPlaying}
+                store={store}
+                onShowHelp={() => {
+                  setHelpCenterOpen(true);
+                  setHelpTopic(null);
+                }}
+              />
+            </div>
 
             <div
               className="horizontal-resizer"
@@ -741,33 +742,39 @@ export const Editor = observer(() => {
               title="Drag to resize Preview / Patch"
             />
 
-            <div className="editor-patch" style={{ flex: 1 - centerSplit }}>
-              <div className="panel-header patch-header">
-                <span className="panel-title">Patch</span>
-                <div className="panel-header-actions">
-                  <button
-                    className="panel-help-btn"
-                    onClick={() => {
-                      setHelpCenterOpen(true);
-                      setHelpTopic(null);
-                    }}
-                    title="What is the Patch?"
-                  >
-                    ?
-                  </button>
+            <div className="editor-patch-container" style={{ flex: 1 - centerSplit }}>
+              <div className="editor-patch">
+                <div className="panel-header patch-header">
+                  <span className="panel-title">Patch</span>
+                  <div className="panel-header-actions">
+                    <button
+                      className="panel-help-btn"
+                      onClick={() => {
+                        setHelpCenterOpen(true);
+                        setHelpTopic(null);
+                      }}
+                      title="What is the Patch?"
+                    >
+                      ?
+                    </button>
+                  </div>
+                </div>
+                <div className="patch-body">
+                  <PatchBay store={store} />
                 </div>
               </div>
-              <div className="patch-body">
-                <PatchBay store={store} />
+
+              <div className="editor-bus-board">
+                <BusBoard store={store} />
               </div>
             </div>
           </div>
 
-            <div className="editor-right-panel">
-              <div className="editor-control-surface">
-                <div className="panel-header">
-                  <span className="panel-title">Control Surface</span>
-                  <div className="panel-header-actions">
+          <div className="editor-right-panel">
+            <div className="editor-control-surface">
+              <div className="panel-header">
+                <span className="panel-title">Control Surface</span>
+                <div className="panel-header-actions">
                   <button
                     className="panel-help-btn"
                     onClick={() => {

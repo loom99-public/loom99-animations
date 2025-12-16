@@ -27,7 +27,7 @@ const DEFAULT_PALETTE = [
 ];
 
 export const ColorControlUI = observer(function ColorControlUI({ control, onChange, onReset }: ColorControlUIProps) {
-  const { value, allowAlpha, palette, label } = control;
+  const { value, allowAlpha, label } = control;
   const [showPicker, setShowPicker] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

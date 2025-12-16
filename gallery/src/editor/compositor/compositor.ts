@@ -12,7 +12,7 @@
  * - Stack runner lifts to Program→Program
  */
 
-import type { DrawNode, RenderTree } from '../runtime/renderTree';
+import type { DrawNode } from '../runtime/renderTree';
 import type { SelectionSpec } from './selection';
 
 // =============================================================================
@@ -112,7 +112,7 @@ export function createCompositor<TreeT = DrawNode>(
 export function scopedCompositor<TreeT extends { id: string } = DrawNode>(
   id: string,
   selection: SelectionSpec<TreeT>,
-  nodeTransform: (node: TreeT, ctx: CompositorCtx) => TreeT,
+  __nodeTransform: (node: TreeT, ctx: CompositorCtx) => TreeT,
   options?: {
     label?: string;
     capabilities?: () => CompositorCapabilities;
@@ -124,7 +124,7 @@ export function scopedCompositor<TreeT extends { id: string } = DrawNode>(
     id,
     label: options?.label,
     selection,
-    apply: (tree, ctx) => {
+    apply: (tree, _ctx) => {
       // Placeholder: real implementation uses TreeRewrite
       // See scoped() in scoped.ts for full implementation
       return tree;

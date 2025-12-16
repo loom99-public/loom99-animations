@@ -5,7 +5,7 @@
  * All selectors are pure predicates.
  */
 
-import type { Selector, NodePath, SelectionCtx } from './selection';
+import type { Selector, NodePath } from './selection';
 import type { DrawNode } from '../runtime/renderTree';
 
 // =============================================================================

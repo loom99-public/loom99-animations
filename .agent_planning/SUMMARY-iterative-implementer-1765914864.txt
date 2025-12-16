@@ -1,0 +1,78 @@
+Agent: iterative-implementer | 2025-12-16T13:54:24Z
+Completed: WI-10 Bus Board Grouping and Filtering | Files: 2 | Commits: 1
+Status: complete
+
+## Work Completed
+
+Implemented WI-10: Bus Board Grouping and Filtering functionality for Phase 3 Bus UI.
+
+### Implementation Details
+
+1. **Bus Grouping**
+   - Added `groupBuses()` function to categorize buses by type (Signal vs Field)
+   - Phase 3: All buses are Signal type → "Global Signals" group
+   - Future-ready: Field buses will appear in "Per-Element Fields" group
+   - Group header displays category name + bus count in parentheses
+
+2. **Collapsible Groups**
+   - Group headers are clickable with expand/collapse toggle
+   - Icons: ▶ (collapsed) / ▼ (expanded)
+   - Collapsed groups hide all buses, show only header
+   - Group collapse state persisted to localStorage via `busboard-group-collapse` key
+
+3. **Filter Input**
+   - Search/filter input added at top of Bus Board (below "New Bus" button)
+   - Case-insensitive substring matching on bus names
+   - Clear button (X) appears when filter text is present
+   - Empty state handling: "No buses match" when filter returns no results
+   - Filter applied before grouping (filtered buses then grouped)
+
+4. **State Management**
+   - `filterText` state for search input
+   - `groupCollapseState` state persisted to localStorage
+   - `useMemo` for efficient filtering and grouping
+   - `useEffect` hook to save group state on change
+
+### Files Modified
+
+1. `/Users/bmf/code/loom99-animations/gallery/src/editor/BusBoard.tsx`
+   - Added filter state and UI
+   - Added grouping logic
+   - Added collapsible group headers
+   - Added localStorage persistence
+
+2. `/Users/bmf/code/loom99-animations/gallery/src/editor/BusBoard.css`
+   - Filter section styles (input + clear button)
+   - Group header styles (hover, icons, title, count)
+   - Group buses container with left padding for visual hierarchy
+
+### Acceptance Criteria Met
+
+- [x] Buses grouped by category ("Global Signals" for Phase 3)
+- [x] Group header shows category name + bus count
+- [x] Group header is collapsible
+- [x] Collapsed group hides buses
+- [x] Group state persisted to localStorage
+- [x] Search/filter input at top of Bus Board
+- [x] Filters buses by name (case-insensitive substring)
+- [x] Empty result: "No buses match" message
+- [x] Clearing filter restores full list
+- [x] Filter input has clear button (X icon)
+
+### Testing Notes
+
+- All existing tests pass (1 pre-existing failure in composite.expansion.test.ts, unrelated)
+- localStorage persistence tested with localStorage.setItem/getItem
+- Error handling added for localStorage operations (try/catch with console.warn)
+- Future-ready for Field buses when implemented in Phase 4
+
+### Commit
+
+79d183d: feat(editor): add Bus Board grouping and filtering (WI-10)
+
+### Next Steps
+
+WI-10 is complete. Remaining Phase 3 work items:
+- WI-11: Bus Name Auto-suggestion (P2 - nice to have)
+- WI-8: Perception Stack UI (P2 - may defer to Phase 4)
+- WI-12: Lane Removal (deferred to Phase 3.3 or Phase 4)

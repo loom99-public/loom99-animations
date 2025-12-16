@@ -31,7 +31,9 @@ import type {
   AdapterStep,
 } from './types';
 import { SIMPLE_LAYOUT, DETAILED_LAYOUT, getLayoutById } from './laneLayouts';
-import type { TypeDescriptor, BusCombineMode } from './types';
+import type { TypeDescriptor, BusCombineMode, LaneKind, BlockCategory, BlockType } from './types';
+import { getBlockDefinition } from './blocks';
+import { getMacroKey, getMacroExpansion, type MacroExpansion } from './macros';
 
 // =============================================================================
 // Migration Helpers
@@ -63,7 +65,7 @@ export class EditorStore {
 
   blocks: Block[] = [];
   connections: Connection[] = [];
-  lanes: Lane[] = [...SIMPLE_LAYOUT.lanes]; // Default to Simple layout
+  lanes: Lane[] = this.createLanesFromLayout(SIMPLE_LAYOUT); // Default to Simple layout
   buses: Bus[] = [];
   publishers: Publisher[] = [];
   listeners: Listener[] = [];
@@ -112,6 +114,7 @@ export class EditorStore {
       settings: observable,
       previewedDefinition: observable,
       addBlock: action,
+      expandMacro: action,
       updateBlock: action,
       removeBlock: action,
       addConnection: action,
@@ -190,8 +193,142 @@ export class EditorStore {
   // Actions - Block Management
   // =============================================================================
 
-  addBlock(block: Block): void {
+  /**
+   * Add a block to the patch.
+   *
+   * @param type Block type to create
+   * @param laneId Lane to place it in
+   * @param params Optional initial parameters
+   * @returns Created block ID (or first block ID if macro expanded)
+   */
+  addBlock(type: BlockType, laneId: LaneId, params?: Record<string, unknown>): BlockId {
+    // Check if this is a macro that should expand
+    const macroKey = getMacroKey(type, params);
+    if (macroKey) {
+      const expansion = getMacroExpansion(macroKey);
+      if (expansion) {
+        return this.expandMacro(expansion);
+      }
+    }
+
+    // Regular block addition
+    const id = `block-${this.nextId++}`;
+
+    // Look up block definition from registry
+    const definition = getBlockDefinition(type);
+
+    // Find lane to infer category
+    const laneObj = this.lanes.find((l) => l.id === laneId);
+
+    // Merge params with defaults and migrate old values
+    const rawParams = params ?? definition?.defaultParams ?? {};
+    const migratedParams = migrateBlockParams(type, rawParams);
+
+    const block: Block = {
+      id,
+      type,
+      label: definition?.label ?? type,
+      inputs: definition?.inputs ?? [],
+      outputs: definition?.outputs ?? [],
+      params: migratedParams,
+      category: definition?.category ?? this.inferCategory(laneObj?.kind ?? 'Program'),
+      description: definition?.description ?? `${type} block`,
+    };
+
     this.blocks.push(block);
+
+    // Add to lane - use array spread to ensure MobX detects the change
+    if (laneObj) {
+      laneObj.blockIds = [...laneObj.blockIds, id];
+    }
+
+    return id;
+  }
+
+  /**
+   * Expand a macro into multiple blocks with connections.
+   *
+   * @param expansion The macro expansion definition
+   * @returns The ID of the first block created
+   */
+  expandMacro(expansion: MacroExpansion): BlockId {
+    // Clear the patch first - macros replace everything
+    this.clearPatch();
+
+    // Map from macro ref IDs to actual block IDs
+    const refToId = new Map<string, BlockId>();
+
+    // Create all blocks
+    for (const macroBlock of expansion.blocks) {
+      // Find the appropriate lane for this block's kind
+      const lane = this.lanes.find((l) => l.kind === macroBlock.laneKind);
+      if (!lane) continue;
+
+      const id = `block-${this.nextId++}`;
+      const definition = getBlockDefinition(macroBlock.type);
+
+      const block: Block = {
+        id,
+        type: macroBlock.type,
+        label: macroBlock.label ?? definition?.label ?? macroBlock.type,
+        inputs: definition?.inputs ?? [],
+        outputs: definition?.outputs ?? [],
+        params: { ...(definition?.defaultParams ?? {}), ...(macroBlock.params ?? {}) },
+        category: definition?.category ?? this.inferCategory(lane.kind),
+        description: definition?.description ?? `${macroBlock.type} block`,
+      };
+
+      this.blocks.push(block);
+      lane.blockIds = [...lane.blockIds, id];
+      refToId.set(macroBlock.ref, id);
+    }
+
+    // Create all connections
+    for (const conn of expansion.connections) {
+      const fromId = refToId.get(conn.fromRef);
+      const toId = refToId.get(conn.toRef);
+      if (fromId && toId) {
+        this.connect(fromId, conn.fromSlot, toId, conn.toSlot);
+      }
+    }
+
+    // Return the first block ID (for selection purposes)
+    const firstRef = expansion.blocks[0]?.ref;
+    return firstRef ? refToId.get(firstRef) ?? '' : '';
+  }
+
+  /**
+   * Map lane kind to block category.
+   */
+  private inferCategory(kind: LaneKind): BlockCategory {
+    const mapping: Record<LaneKind, BlockCategory> = {
+      Scene: 'Scene',
+      Phase: 'Time',
+      Fields: 'Fields',
+      Scalars: 'Math',
+      Spec: 'Compose',
+      Program: 'Compose',
+      Output: 'Render',
+    };
+    return mapping[kind];
+  }
+
+  /**
+   * Create lanes from a layout template.
+   */
+  private createLanesFromLayout(layout: LaneLayout): Lane[] {
+    return layout.lanes.map((template) => ({
+      id: template.id,
+      name: template.id, // Legacy compatibility
+      kind: template.kind,
+      label: template.label,
+      description: template.description,
+      flavor: template.flavor,
+      flowStyle: template.flowStyle,
+      blockIds: [],
+      collapsed: false,
+      pinned: false,
+    }));
   }
 
   updateBlock(id: BlockId, updates: Partial<Block>): void {

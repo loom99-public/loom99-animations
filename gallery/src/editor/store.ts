@@ -31,8 +31,9 @@ import type {
   Listener,
   AdapterStep,
   PortRef,
+  Slot,
 } from './types';
-import { SIMPLE_LAYOUT, DETAILED_LAYOUT, getLayoutById, PRESET_LAYOUTS, DEFAULT_LAYOUT, mapLaneToLayout } from './laneLayouts';
+import { getLayoutById, PRESET_LAYOUTS, DEFAULT_LAYOUT, mapLaneToLayout } from './laneLayouts';
 import type { TypeDescriptor, BusCombineMode, BlockCategory, BlockType } from './types';
 import { getBlockDefinition } from './blocks';
 import { getMacroKey, getMacroExpansion, type MacroExpansion } from './macros';
@@ -230,7 +231,7 @@ export class EditorStore {
   }
 
   /** Get selected port with full block/slot info */
-  get selectedPortInfo(): { block: Block; slot: { id: string; label: string; type: string; direction: string }; direction: 'input' | 'output' } | null {
+  get selectedPortInfo(): { block: Block; slot: Slot; direction: 'input' | 'output' } | null {
     const portRef = this.uiState.selectedPort;
     if (!portRef) return null;
 
@@ -538,7 +539,7 @@ export class EditorStore {
   toggleLaneCollapsed(laneId: LaneId): void {
     const lane = this.lanes.find((l) => l.id === laneId);
     if (!lane) return;
-    lane.isCollapsed = !lane.isCollapsed;
+    lane.collapsed = !lane.collapsed;
   }
 
   toggleLanePinned(laneId: LaneId): void {
@@ -687,11 +688,12 @@ export class EditorStore {
     this.composites = this.composites.filter((c) => c.id !== id);
   }
 
-  instantiateComposite(compositeId: string, laneId: LaneId, position: { x: number; y: number }): void {
+  instantiateComposite(compositeId: string, laneId: LaneId, _position: { x: number; y: number }): void {
     const composite = this.composites.find((c) => c.id === compositeId);
     if (!composite) return;
 
-    // Create new blocks with updated IDs and positions
+    // Create new blocks with updated IDs
+    // Note: Block position tracking not yet implemented
     const idMap = new Map<BlockId, BlockId>();
     for (const block of composite.blocks) {
       const newId = `block-${this.nextId++}` as BlockId;
@@ -700,10 +702,6 @@ export class EditorStore {
       const newBlock: Block = {
         ...block,
         id: newId,
-        position: {
-          x: block.position.x + position.x,
-          y: block.position.y + position.y,
-        },
       };
 
       this.blocks.push(newBlock);
@@ -723,8 +721,8 @@ export class EditorStore {
 
       const newConn: Connection = {
         id: `conn-${this.nextId++}`,
-        from: { blockId: fromId, port: conn.from.port },
-        to: { blockId: toId, port: conn.to.port },
+        from: { blockId: fromId, slotId: conn.from.port },
+        to: { blockId: toId, slotId: conn.to.port },
       };
 
       this.connections.push(newConn);
@@ -1091,7 +1089,7 @@ export class EditorStore {
         listeners: this.listeners.map((l) => ({ ...l })),
       }),
       settings: { ...this.settings },
-      composites: this.composites.map((c) => ({ ...c })),
+      // Note: Composite serialization deferred - store.Composite and Patch.CompositeDefinition are different types
     };
   }
 

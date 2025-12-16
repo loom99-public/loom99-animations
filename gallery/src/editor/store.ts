@@ -118,6 +118,7 @@ export class EditorStore {
   /** UI state (non-serializable) */
   uiState: EditorUIState = {
     selectedBlockId: null,
+    selectedBusId: null,
     draggingBlockType: null,
     draggingLaneKind: null,
     activeLaneId: null,
@@ -164,6 +165,7 @@ export class EditorStore {
       updateBlockParams: action,
       connect: action,
       disconnect: action,
+      selectBus: action,
       selectBlock: action,
       previewDefinition: action,
       setPlaying: action,
@@ -179,6 +181,8 @@ export class EditorStore {
       removePublisher: action,
       addListener: action,
       removeListener: action,
+      updatePublisher: action,
+      updateListener: action,
       reorderPublisher: action,
       // getBusPublishers: action,
       // getBusListeners: action,
@@ -212,11 +216,8 @@ export class EditorStore {
       selectedPortInfo: computed,
       currentLayout: computed,
       availableLayouts: computed,
-      getBusById: computed,
-      getPublishersByBus: computed,
-      getListenersByBus: computed,
-      getBusesByCategory: computed,
-      getBusEligibleBuses: computed,
+      // Note: getBusById, getPublishersByBus, etc. are methods, not getters
+      // MobX 'computed' can only be used with getters, so we don't annotate them
     });
   }
 
@@ -600,6 +601,16 @@ export class EditorStore {
     this.uiState.selectedPort = null;
     // Clear preview when selecting a placed block
     if (blockId) {
+      this.previewedDefinition = null;
+    }
+  }
+
+  selectBus(busId: string | null): void {
+    this.uiState.selectedBusId = busId;
+    // Clear block selection when selecting a bus
+    if (busId) {
+      this.uiState.selectedBlockId = null;
+      this.uiState.selectedPort = null;
       this.previewedDefinition = null;
     }
   }
@@ -1245,5 +1256,34 @@ export class EditorStore {
           p.sortKey++;
         }
         });
+  }
+  
+  /**
+   * Update publisher properties.
+   * @param publisherId Publisher ID to update
+   * @param updates Properties to update
+   */
+  updatePublisher(publisherId: string, updates: Partial<Pick<Publisher, 'enabled' | 'sortKey'>>): void {
+    const publisher = this.publishers.find(p => p.id === publisherId);
+    if (!publisher) {
+      throw new Error(`Publisher ${publisherId} not found`);
+    }
+
+    if (updates.enabled !== undefined) publisher.enabled = updates.enabled;
+    if (updates.sortKey !== undefined) publisher.sortKey = updates.sortKey;
+  }
+
+  /**
+   * Update listener properties.
+   * @param listenerId Listener ID to update
+   * @param updates Properties to update
+   */
+  updateListener(listenerId: string, updates: Partial<Pick<Listener, 'enabled'>>): void {
+    const listener = this.listeners.find(l => l.id === listenerId);
+    if (!listener) {
+      throw new Error(`Listener ${listenerId} not found`);
+    }
+
+    if (updates.enabled !== undefined) listener.enabled = updates.enabled;
   }
 }

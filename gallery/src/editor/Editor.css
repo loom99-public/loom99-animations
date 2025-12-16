@@ -220,15 +220,8 @@ body.editor-mode {
   height: 100%;
 }
 
-/* Patch container - holds both patch bay and bus board */
-.editor-patch-container {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 12px;
-  min-height: 0;
-}
-
 .editor-patch {
+  flex: 1;
   min-height: 0;
   border: 1px solid #222;
   border-radius: 10px;
@@ -245,16 +238,6 @@ body.editor-mode {
 .patch-body {
   flex: 1;
   min-height: 0;
-}
-
-/* Bus Board in center section */
-.editor-bus-board {
-  display: flex;
-  min-height: 0;
-}
-
-.editor-bus-board .bus-board {
-  width: 100%;
 }
 
 .editor-right-panel {

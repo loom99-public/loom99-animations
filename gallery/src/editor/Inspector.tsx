@@ -12,7 +12,6 @@ import type { PortRef, Block, Slot, BlockForm } from './types';
 import { getBlockDefinition, getBlockTags, getBlockDefinitions, type BlockDefinition, type BlockTags, type CompoundGraph } from './blocks';
 import { findCompatiblePorts, getConnectionsForPort, areTypesCompatible, describeSlotType, formatSlotType, slotCompatibilityHint } from './portUtils';
 import './Inspector.css';
-import { BusInspector } from './BusInspector';
 
 interface InspectorProps {
   store: EditorStore;
@@ -684,11 +683,6 @@ export const Inspector = observer(({ store }: InspectorProps) => {
   useEffect(() => {
     setShowCompositeGraph(false);
   }, [block?.type, previewedDefinition?.type]);
-
-  // Show bus inspector if a bus is selected
-  if (store.uiState.selectedBusId) {
-    return <BusInspector store={store} busId={store.uiState.selectedBusId} />;
-  }
 
   // Show port wiring panel if a port is selected
   if (selectedPortInfo) {

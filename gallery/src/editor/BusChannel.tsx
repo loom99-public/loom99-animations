@@ -5,7 +5,8 @@
  */
 
 import { observer } from 'mobx-react-lite';
-import type { Bus, BusCombineMode, CoreDomain } from './types';
+import { useState } from 'react';
+import type { Bus, BusCombineMode, CoreDomain, Publisher } from './types';
 import type { EditorStore } from './store';
 import { BusViz } from './BusViz';
 import './BusBoard.css';
@@ -69,6 +70,10 @@ export const BusChannel = observer(({ bus, store, isSelected, onSelect }: BusCha
   const domainIcon = getDomainIcon(bus.type.domain);
   const combineOptions = getCombineModeOptions(bus.type.domain);
 
+  // Drag-and-drop state
+  const [draggedPublisherId, setDraggedPublisherId] = useState<string | null>(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+
   const handleNameChange = (e: React.FocusEvent<HTMLInputElement>) => {
     const newName = e.target.value.trim();
     if (newName && newName !== bus.name) {
@@ -78,6 +83,57 @@ export const BusChannel = observer(({ bus, store, isSelected, onSelect }: BusCha
 
   const handleCombineModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     store.updateBus(bus.id, { combineMode: e.target.value as BusCombineMode });
+  };
+
+  const handleDragStart = (e: React.DragEvent, publisherId: string) => {
+    setDraggedPublisherId(publisherId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', publisherId);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedPublisherId(null);
+    setDropTargetIndex(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDropTargetIndex(targetIndex);
+  };
+
+  const handleDragLeave = () => {
+    setDropTargetIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedPublisherId) return;
+
+    const draggedIndex = publishers.findIndex(p => p.id === draggedPublisherId);
+    if (draggedIndex === -1 || draggedIndex === targetIndex) {
+      setDraggedPublisherId(null);
+      setDropTargetIndex(null);
+      return;
+    }
+
+    // Recalculate sortKeys for all publishers
+    const reordered = [...publishers];
+    const [movedPublisher] = reordered.splice(draggedIndex, 1);
+    reordered.splice(targetIndex, 0, movedPublisher);
+
+    // Assign new sortKeys with gaps (10, 20, 30, ...)
+    reordered.forEach((pub, index) => {
+      const newSortKey = (index + 1) * 10;
+      if (pub.sortKey !== newSortKey) {
+        store.updatePublisher(pub.id, { sortKey: newSortKey });
+      }
+    });
+
+    setDraggedPublisherId(null);
+    setDropTargetIndex(null);
   };
 
   return (
@@ -143,11 +199,27 @@ export const BusChannel = observer(({ bus, store, isSelected, onSelect }: BusCha
           <div className="bus-channel-empty">No publishers</div>
         ) : (
           <div className="bus-channel-publisher-list">
-            {publishers.map((pub) => {
+            {publishers.map((pub, index) => {
               const block = store.blocks.find((b) => b.id === pub.from.blockId);
               const blockLabel = block?.label ?? pub.from.blockId;
+              const isDragging = pub.id === draggedPublisherId;
+              const isDropTarget = index === dropTargetIndex;
+
               return (
-                <div key={pub.id} className="bus-channel-publisher-row">
+                <div
+                  key={pub.id}
+                  className={`bus-channel-publisher-row ${isDragging ? 'dragging' : ''} ${isDropTarget ? 'drop-target' : ''}`}
+                  draggable={true}
+                  onDragStart={(e) => handleDragStart(e, pub.id)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, index)}
+                  title={`Drag to reorder | ${blockLabel}.${pub.from.port}`}
+                >
+                  <span className="bus-publisher-drag-handle" title="Drag to reorder">
+                    ⋮⋮
+                  </span>
                   <span className="bus-publisher-label" title={`${blockLabel}.${pub.from.port}`}>
                     {blockLabel}.{pub.from.port}
                   </span>
@@ -155,9 +227,9 @@ export const BusChannel = observer(({ bus, store, isSelected, onSelect }: BusCha
                     className="bus-publisher-mute-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      // TODO: Implement mute toggle
+                      store.updatePublisher(pub.id, { enabled: !pub.enabled });
                     }}
-                    title="Mute (not implemented)"
+                    title={pub.enabled ? 'Disable publisher' : 'Enable publisher'}
                   >
                     {pub.enabled ? '◼' : '◻'}
                   </button>

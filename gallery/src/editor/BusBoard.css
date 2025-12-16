@@ -292,14 +292,59 @@
   gap: 2px;
 }
 
+/* Publisher Row - Drag and Drop */
 .bus-channel-publisher-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 4px 6px;
   background: #1f1f1f;
+  border: 1px solid transparent;
   border-radius: 4px;
   gap: 6px;
+  cursor: grab;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.bus-channel-publisher-row:hover {
+  background: #252525;
+  border-color: #333;
+}
+
+.bus-channel-publisher-row:active {
+  cursor: grabbing;
+}
+
+/* Drag handle */
+.bus-publisher-drag-handle {
+  font-size: 12px;
+  color: #555;
+  cursor: grab;
+  user-select: none;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.bus-channel-publisher-row:hover .bus-publisher-drag-handle {
+  color: #888;
+}
+
+.bus-channel-publisher-row:active .bus-publisher-drag-handle {
+  cursor: grabbing;
+}
+
+/* Dragging state */
+.bus-channel-publisher-row.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+  background: #2a2a2a;
+}
+
+/* Drop target state */
+.bus-channel-publisher-row.drop-target {
+  border-color: #4a9eff;
+  background: #1c1c28;
+  box-shadow: 0 0 6px rgba(74, 158, 255, 0.3);
 }
 
 .bus-publisher-label {
@@ -310,6 +355,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  pointer-events: none; /* Prevent text selection during drag */
 }
 
 .bus-publisher-mute-btn {
@@ -320,6 +366,7 @@
   cursor: pointer;
   padding: 2px 4px;
   transition: color 0.15s ease;
+  flex-shrink: 0;
 }
 
 .bus-publisher-mute-btn:hover {

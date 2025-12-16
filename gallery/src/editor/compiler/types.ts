@@ -307,6 +307,8 @@ export type BlockRegistry = Record<string, BlockCompiler>;
 // =============================================================================
 
 export type CompileErrorCode =
+  | 'EmptyPatch'
+  | 'NotImplemented'
   | 'BlockMissing'
   | 'CompilerMissing'
   | 'PortMissing'
@@ -322,7 +324,9 @@ export type CompileErrorCode =
   | 'InvalidBusRouting'
   | 'FeedbackLoopError'
   | 'AdapterError'
-  | 'BusEvaluationError';
+  | 'BusEvaluationError'
+  | 'FieldBusNotSupported'
+  | 'UnsupportedCombineMode';
 
 export interface CompileError {
   code: CompileErrorCode;

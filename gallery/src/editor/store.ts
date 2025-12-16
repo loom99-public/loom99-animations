@@ -1167,7 +1167,7 @@ export class EditorStore {
       from: { blockId, port },
       adapterChain,
       enabled: true,
-      sortKey: maxSortKey + 1,
+      sortKey: maxSortKey + 10,
     };
 
     this.publishers.push(publisher);

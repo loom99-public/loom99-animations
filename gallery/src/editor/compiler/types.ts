@@ -123,6 +123,12 @@ export type ValueKind =
   | 'Field:boolean'
   | 'Field:color'
   | 'Field:vec2'
+  | 'Field:Point'
+  | 'Field<Point>'
+  | 'Field:Jitter'
+  | 'Field:Spiral'
+  | 'Field:Wave'
+  | 'Field:Wobble'
 
   // Signals
   | 'Signal:Time'
@@ -134,6 +140,8 @@ export type ValueKind =
   | 'PhaseMachine'
   | 'TargetScene'
   | 'RenderTreeProgram'
+  | 'RenderNode'
+  | 'FilterDef'
 
   // Specs (structured config that compiles to Programs)
   | 'Spec:LineMorph'

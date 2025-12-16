@@ -30,6 +30,7 @@ import type {
   Publisher,
   Listener,
   AdapterStep,
+  PortRef,
 } from './types';
 import { SIMPLE_LAYOUT, DETAILED_LAYOUT, getLayoutById, PRESET_LAYOUTS, DEFAULT_LAYOUT, mapLaneToLayout } from './laneLayouts';
 import type { TypeDescriptor, BusCombineMode, BlockCategory, BlockType } from './types';
@@ -195,6 +196,16 @@ export class EditorStore {
       deleteComposite: action,
       instantiateComposite: action,
       setPreviewedDefinition: action,
+      // Missing actions restored:
+      updateBlockParams: action,
+      previewDefinition: action,
+      setPlaying: action,
+      setActiveLane: action,
+      setHoveredPort: action,
+      setSelectedPort: action,
+      openContextMenu: action,
+      closeContextMenu: action,
+      setDraggingLaneKind: action,
     });
   }
 
@@ -533,7 +544,7 @@ export class EditorStore {
   toggleLanePinned(laneId: LaneId): void {
     const lane = this.lanes.find((l) => l.id === laneId);
     if (!lane) return;
-    lane.isPinned = !lane.isPinned;
+    lane.pinned = !lane.pinned;
   }
 
   renameLane(laneId: LaneId, newName: string): void {
@@ -548,7 +559,7 @@ export class EditorStore {
 
   removeLane(laneId: LaneId): void {
     const lane = this.lanes.find((l) => l.id === laneId);
-    if (!lane || lane.isPinned) return; // Don't remove pinned lanes
+    if (!lane || lane.pinned) return; // Don't remove pinned lanes
 
     // Move blocks to first available lane
     const firstLane = this.lanes.find((l) => l.id !== laneId);
@@ -726,6 +737,73 @@ export class EditorStore {
 
   setPreviewedDefinition(definition: any): void {
     this.previewedDefinition = definition;
+  }
+
+  /**
+   * Update block parameters.
+   */
+  updateBlockParams(blockId: BlockId, params: Record<string, unknown>): void {
+    const block = this.blocks.find((b) => b.id === blockId);
+    if (block) {
+      // Use Object.assign to mutate in place for MobX reactivity
+      Object.assign(block.params, params);
+    }
+  }
+
+  /**
+   * Preview a block definition from the library (before placement).
+   */
+  previewDefinition(definition: any | null): void {
+    this.previewedDefinition = definition;
+    // Clear selected block when previewing
+    if (definition) {
+      this.uiState.selectedBlockId = null;
+    }
+  }
+
+  setPlaying(playing: boolean): void {
+    this.uiState.isPlaying = playing;
+  }
+
+  setActiveLane(laneId: LaneId | null): void {
+    this.uiState.activeLaneId = laneId;
+  }
+
+  setHoveredPort(port: PortRef | null): void {
+    this.uiState.hoveredPort = port;
+  }
+
+  setSelectedPort(port: PortRef | null): void {
+    this.uiState.selectedPort = port;
+  }
+
+  openContextMenu(x: number, y: number, portRef: PortRef): void {
+    this.uiState.contextMenu = {
+      isOpen: true,
+      x,
+      y,
+      portRef,
+    };
+  }
+
+  closeContextMenu(): void {
+    this.uiState.contextMenu = {
+      isOpen: false,
+      x: 0,
+      y: 0,
+      portRef: null,
+    };
+  }
+
+  setDraggingLaneKind(laneKind: LaneKind | null): void {
+    this.uiState.draggingLaneKind = laneKind;
+  }
+
+  /**
+   * Get bus by ID.
+   */
+  getBusById(id: string): Bus | null {
+    return this.buses.find((b) => b.id === id) ?? null;
   }
 
   // =============================================================================

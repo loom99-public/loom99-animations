@@ -48,7 +48,7 @@ export type {
   Program,
 } from './types';
 
-export { DEFAULT_INPUT } from './types';
+export { DEFAULT_INPUT, DEFAULT_CONTEXT } from './types';
 
 // Namespaced exports for function modules
 // Using *Fns suffix to distinguish from types

@@ -56,7 +56,7 @@ function NumberViz({ value, size }: { value: number; size: number }) {
       height={size}
       viewBox="0 0 20 20"
       className="bus-viz bus-viz-number"
-      title={`Number visualization (default: ${value})`}
+      aria-label={`Number visualization (default: ${value})`}
     >
       {/* Background bar */}
       <rect x="2" y="8" width="16" height="4" fill="#1f1f1f" stroke="#333" strokeWidth="0.5" rx="1" />
@@ -76,7 +76,7 @@ function Vec2Viz({ value, size }: { value: { x: number; y: number }; size: numbe
       height={size}
       viewBox="0 0 20 20"
       className="bus-viz bus-viz-vec2"
-      title={`Vec2 visualization (default: ${value.x}, ${value.y})`}
+      aria-label={`Vec2 visualization (default: ${value.x}, ${value.y})`}
     >
       {/* Crosshair */}
       <line x1="10" y1="4" x2="10" y2="16" stroke="#4a9eff" strokeWidth="1" opacity="0.6" />
@@ -101,7 +101,7 @@ function ColorViz({ value, size }: { value: { r: number; g: number; b: number; a
       height={size}
       viewBox="0 0 20 20"
       className="bus-viz bus-viz-color"
-      title={`Color visualization (default: ${rgba})`}
+      aria-label={`Color visualization (default: ${rgba})`}
     >
       {/* Checkerboard background for transparency */}
       <defs>
@@ -135,7 +135,7 @@ function PhaseViz({ value, size }: { value: number; size: number }) {
       height={size}
       viewBox="0 0 20 20"
       className="bus-viz bus-viz-phase"
-      title={`Phase visualization (default: ${value.toFixed(3)})`}
+      aria-label={`Phase visualization (default: ${value.toFixed(3)})`}
     >
       {/* Outer ring */}
       <circle cx="10" cy="10" r="7" fill="none" stroke="#333" strokeWidth="1.5" />
@@ -163,7 +163,7 @@ function TimeViz({ size }: { size: number }) {
       height={size}
       viewBox="0 0 20 20"
       className="bus-viz bus-viz-time"
-      title="Time visualization"
+      aria-label="Time visualization"
     >
       {/* Clock face */}
       <circle cx="10" cy="10" r="7" fill="none" stroke="#4a9eff" strokeWidth="1.5" opacity="0.6" />
@@ -190,7 +190,7 @@ function RateViz({ size }: { size: number }) {
       height={size}
       viewBox="0 0 20 20"
       className="bus-viz bus-viz-rate"
-      title="Rate visualization"
+      aria-label="Rate visualization"
     >
       {/* Gauge arc */}
       <path
@@ -229,7 +229,7 @@ function TriggerViz({ size }: { size: number }) {
       height={size}
       viewBox="0 0 20 20"
       className="bus-viz bus-viz-trigger"
-      title="Trigger visualization"
+      aria-label="Trigger visualization"
     >
       {/* LED housing */}
       <circle cx="10" cy="10" r="6" fill="#1f1f1f" stroke="#333" strokeWidth="1" />
@@ -250,7 +250,7 @@ function BooleanViz({ value, size }: { value: boolean; size: number }) {
       height={size}
       viewBox="0 0 20 20"
       className="bus-viz bus-viz-boolean"
-      title={`Boolean visualization (default: ${value})`}
+      aria-label={`Boolean visualization (default: ${value})`}
     >
       {/* Toggle switch background */}
       <rect
@@ -284,7 +284,7 @@ function DefaultViz({ domain, size }: { domain: string; size: number }) {
       height={size}
       viewBox="0 0 20 20"
       className="bus-viz bus-viz-default"
-      title={`${domain} visualization`}
+      aria-label={`${domain} visualization`}
     >
       <rect x="4" y="4" width="12" height="12" fill="none" stroke="#4a9eff" strokeWidth="1" opacity="0.5" rx="2" />
       <text

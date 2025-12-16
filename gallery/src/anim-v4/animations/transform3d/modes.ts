@@ -172,7 +172,7 @@ export function createTransform3DFields(config: Transform3DModeConfig): Transfor
   const isVaried = config.variance === 'varied';
 
   return {
-    delay: (seed, n, ctx) => {
+    delay: (seed, n, _ctx) => {
       const rng = createPRNG(seed);
       return Array.from({ length: n }, (_, i) => {
         const stagger = timingPreset.delayStagger * i;
@@ -181,7 +181,7 @@ export function createTransform3DFields(config: Transform3DModeConfig): Transfor
       });
     },
 
-    duration: (seed, n, ctx) => {
+    duration: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 1);
       return Array.from({ length: n }, () =>
         rng.range(
@@ -191,72 +191,72 @@ export function createTransform3DFields(config: Transform3DModeConfig): Transfor
       );
     },
 
-    entryTranslate: (seed, n, ctx) => {
+    entryTranslate: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 2);
       return Array.from({ length: n }, () => entryPreset.getTranslate(rng, isDeep));
     },
 
-    entryZ: (seed, n, ctx) => {
+    entryZ: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 3);
       return Array.from({ length: n }, () => entryPreset.getZ(rng, isDeep));
     },
 
-    entryRotXDeg: (seed, n, ctx) => {
+    entryRotXDeg: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 4);
       return Array.from({ length: n }, () => entryPreset.getRotX(rng, isVaried));
     },
 
-    entryRotYDeg: (seed, n, ctx) => {
+    entryRotYDeg: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 5);
       return Array.from({ length: n }, () => entryPreset.getRotY(rng, isVaried));
     },
 
-    entryRotZDeg: (seed, n, ctx) => {
+    entryRotZDeg: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 6);
       return Array.from({ length: n }, () => entryPreset.getRotZ(rng));
     },
 
-    entryScale: (seed, n, ctx) => {
+    entryScale: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 7);
       return Array.from({ length: n }, () => entryPreset.getScale(rng));
     },
 
-    ease: (seed, n, ctx) => {
+    ease: (seed, n, _ctx) => {
       return Array(n).fill(isVaried ? 'easeOutQuint' : 'easeOutCubic');
     },
 
-    overshoot: (seed, n, ctx) => {
+    overshoot: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 8);
       return Array.from({ length: n }, () =>
         isVaried ? rng.range(1.2, 2.0) : 1.6
       );
     },
 
-    opacity: (seed, n, ctx) => {
+    opacity: (seed, n, _ctx) => {
       return Array(n).fill(1);
     },
 
-    exitTranslate: (seed, n, ctx) => {
+    exitTranslate: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 9);
       return Array.from({ length: n }, () => exitPreset.getTranslate(rng));
     },
 
-    exitZ: (seed, n, ctx) => {
+    exitZ: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 10);
       return Array.from({ length: n }, () => exitPreset.getZ(rng));
     },
 
-    exitRotXDeg: (seed, n, ctx) => {
+    exitRotXDeg: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 11);
       return Array.from({ length: n }, () => exitPreset.getRotX(rng));
     },
 
-    exitRotYDeg: (seed, n, ctx) => {
+    exitRotYDeg: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 12);
       return Array.from({ length: n }, () => exitPreset.getRotY(rng));
     },
 
-    exitRotZDeg: (seed, n, ctx) => {
+    exitRotZDeg: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 13);
       return Array.from({ length: n }, () => exitPreset.getRotZ(rng));
     },

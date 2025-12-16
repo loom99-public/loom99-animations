@@ -51,6 +51,7 @@ export {
   runRand,
   runField,
   DEFAULT_INPUT,
+  DEFAULT_CONTEXT,
   // Easing functions
   linear,
   easeInQuad,

@@ -12,7 +12,7 @@ import {
   SwitchFns,
   ScanFns,
   RandFns,
-  DEFAULT_INPUT,
+  DEFAULT_CONTEXT,
   createPRNG,
   easeOutQuart,
   type Signal,
@@ -24,30 +24,30 @@ describe('V4 Kernel', () => {
   describe('Signal', () => {
     it('constant returns same value at any time', () => {
       const signal = SignalFns.constant(42);
-      expect(signal(0, DEFAULT_INPUT)).toBe(42);
-      expect(signal(1, DEFAULT_INPUT)).toBe(42);
-      expect(signal(100, DEFAULT_INPUT)).toBe(42);
+      expect(signal(0, DEFAULT_CONTEXT)).toBe(42);
+      expect(signal(1, DEFAULT_CONTEXT)).toBe(42);
+      expect(signal(100, DEFAULT_CONTEXT)).toBe(42);
     });
 
     it('ramp goes from 0 to 1 over duration', () => {
       const signal = SignalFns.ramp(2.0);
-      expect(signal(0, DEFAULT_INPUT)).toBe(0);
-      expect(signal(1, DEFAULT_INPUT)).toBe(0.5);
-      expect(signal(2, DEFAULT_INPUT)).toBe(1);
-      expect(signal(3, DEFAULT_INPUT)).toBe(1); // Clamped
+      expect(signal(0, DEFAULT_CONTEXT)).toBe(0);
+      expect(signal(1, DEFAULT_CONTEXT)).toBe(0.5);
+      expect(signal(2, DEFAULT_CONTEXT)).toBe(1);
+      expect(signal(3, DEFAULT_CONTEXT)).toBe(1); // Clamped
     });
 
     it('map transforms signal output', () => {
       const base = SignalFns.constant(10);
       const doubled = SignalFns.mapSignal(base, (x) => x * 2);
-      expect(doubled(0, DEFAULT_INPUT)).toBe(20);
+      expect(doubled(0, DEFAULT_CONTEXT)).toBe(20);
     });
 
     it('lerp interpolates between values', () => {
       const signal = SignalFns.lerp(0, 100, 1.0);
-      expect(signal(0, DEFAULT_INPUT)).toBe(0);
-      expect(signal(0.5, DEFAULT_INPUT)).toBe(50);
-      expect(signal(1, DEFAULT_INPUT)).toBe(100);
+      expect(signal(0, DEFAULT_CONTEXT)).toBe(0);
+      expect(signal(0.5, DEFAULT_CONTEXT)).toBe(50);
+      expect(signal(1, DEFAULT_CONTEXT)).toBe(100);
     });
   });
 
@@ -66,11 +66,11 @@ describe('V4 Kernel', () => {
       ]);
       const signal = EventFns.hold(events, 'initial');
 
-      expect(signal(0, DEFAULT_INPUT)).toBe('initial');
-      expect(signal(0.5, DEFAULT_INPUT)).toBe('initial');
-      expect(signal(1.5, DEFAULT_INPUT)).toBe('a');
-      expect(signal(2.5, DEFAULT_INPUT)).toBe('b');
-      expect(signal(10, DEFAULT_INPUT)).toBe('c');
+      expect(signal(0, DEFAULT_CONTEXT)).toBe('initial');
+      expect(signal(0.5, DEFAULT_CONTEXT)).toBe('initial');
+      expect(signal(1.5, DEFAULT_CONTEXT)).toBe('a');
+      expect(signal(2.5, DEFAULT_CONTEXT)).toBe('b');
+      expect(signal(10, DEFAULT_CONTEXT)).toBe('c');
     });
 
     it('fold accumulates events into state', () => {
@@ -81,10 +81,10 @@ describe('V4 Kernel', () => {
       ]);
       const sum = EventFns.fold(events, 0, (state, value) => state + value);
 
-      expect(sum(0, DEFAULT_INPUT)).toBe(0);
-      expect(sum(1.5, DEFAULT_INPUT)).toBe(1);
-      expect(sum(2.5, DEFAULT_INPUT)).toBe(3);
-      expect(sum(10, DEFAULT_INPUT)).toBe(6);
+      expect(sum(0, DEFAULT_CONTEXT)).toBe(0);
+      expect(sum(1.5, DEFAULT_CONTEXT)).toBe(1);
+      expect(sum(2.5, DEFAULT_CONTEXT)).toBe(3);
+      expect(sum(10, DEFAULT_CONTEXT)).toBe(6);
     });
   });
 
@@ -93,11 +93,11 @@ describe('V4 Kernel', () => {
       const signal = SignalFns.ramp(1.0);
       const delayed = TimeFns.delay(signal, 2.0);
 
-      expect(delayed(0, DEFAULT_INPUT)).toBe(0);
-      expect(delayed(1, DEFAULT_INPUT)).toBe(0);
-      expect(delayed(2, DEFAULT_INPUT)).toBe(0);
-      expect(delayed(2.5, DEFAULT_INPUT)).toBe(0.5);
-      expect(delayed(3, DEFAULT_INPUT)).toBe(1);
+      expect(delayed(0, DEFAULT_CONTEXT)).toBe(0);
+      expect(delayed(1, DEFAULT_CONTEXT)).toBe(0);
+      expect(delayed(2, DEFAULT_CONTEXT)).toBe(0);
+      expect(delayed(2.5, DEFAULT_CONTEXT)).toBe(0.5);
+      expect(delayed(3, DEFAULT_CONTEXT)).toBe(1);
     });
 
     it('stretch scales signal duration', () => {
@@ -105,28 +105,28 @@ describe('V4 Kernel', () => {
       const stretched = TimeFns.stretch(signal, 2.0);
 
       // Stretched by 2x means it takes twice as long
-      expect(stretched(0, DEFAULT_INPUT)).toBe(0);
-      expect(stretched(1, DEFAULT_INPUT)).toBe(0.5);
-      expect(stretched(2, DEFAULT_INPUT)).toBe(1);
+      expect(stretched(0, DEFAULT_CONTEXT)).toBe(0);
+      expect(stretched(1, DEFAULT_CONTEXT)).toBe(0.5);
+      expect(stretched(2, DEFAULT_CONTEXT)).toBe(1);
     });
 
     it('easedRamp applies easing function', () => {
       const signal = TimeFns.easedRamp(1.0, easeOutQuart);
 
-      expect(signal(0, DEFAULT_INPUT)).toBe(0);
-      expect(signal(1, DEFAULT_INPUT)).toBe(1);
+      expect(signal(0, DEFAULT_CONTEXT)).toBe(0);
+      expect(signal(1, DEFAULT_CONTEXT)).toBe(1);
       // Eased value at 0.5 should be > 0.5 (easeOut accelerates then decelerates)
-      expect(signal(0.5, DEFAULT_INPUT)).toBeGreaterThan(0.5);
+      expect(signal(0.5, DEFAULT_CONTEXT)).toBeGreaterThan(0.5);
     });
 
     it('loop repeats signal', () => {
       const signal = SignalFns.ramp(1.0);
       const looped = TimeFns.loop(signal, 1.0);
 
-      expect(looped(0, DEFAULT_INPUT)).toBe(0);
-      expect(looped(0.5, DEFAULT_INPUT)).toBe(0.5);
-      expect(looped(1.0, DEFAULT_INPUT)).toBe(0); // Wrapped
-      expect(looped(1.5, DEFAULT_INPUT)).toBe(0.5);
+      expect(looped(0, DEFAULT_CONTEXT)).toBe(0);
+      expect(looped(0.5, DEFAULT_CONTEXT)).toBe(0.5);
+      expect(looped(1.0, DEFAULT_CONTEXT)).toBe(0); // Wrapped
+      expect(looped(1.5, DEFAULT_CONTEXT)).toBe(0.5);
     });
   });
 
@@ -136,10 +136,10 @@ describe('V4 Kernel', () => {
       const after = SignalFns.constant('after');
       const signal = SwitchFns.switchAt(before, after, 2.0);
 
-      expect(signal(0, DEFAULT_INPUT)).toBe('before');
-      expect(signal(1.9, DEFAULT_INPUT)).toBe('before');
-      expect(signal(2.0, DEFAULT_INPUT)).toBe('after');
-      expect(signal(10, DEFAULT_INPUT)).toBe('after');
+      expect(signal(0, DEFAULT_CONTEXT)).toBe('before');
+      expect(signal(1.9, DEFAULT_CONTEXT)).toBe('before');
+      expect(signal(2.0, DEFAULT_CONTEXT)).toBe('after');
+      expect(signal(10, DEFAULT_CONTEXT)).toBe('after');
     });
 
     it('phaseInfo reports phase progress', () => {
@@ -149,19 +149,19 @@ describe('V4 Kernel', () => {
         { name: 'exit', duration: 1.0 },
       ]);
 
-      const t0 = info(0, DEFAULT_INPUT);
+      const t0 = info(0, DEFAULT_CONTEXT);
       expect(t0.name).toBe('entrance');
       expect(t0.progress).toBe(0);
 
-      const t05 = info(0.5, DEFAULT_INPUT);
+      const t05 = info(0.5, DEFAULT_CONTEXT);
       expect(t05.name).toBe('entrance');
       expect(t05.progress).toBe(0.5);
 
-      const t15 = info(1.5, DEFAULT_INPUT);
+      const t15 = info(1.5, DEFAULT_CONTEXT);
       expect(t15.name).toBe('hold');
       expect(t15.progress).toBe(0.25);
 
-      const t35 = info(3.5, DEFAULT_INPUT);
+      const t35 = info(3.5, DEFAULT_CONTEXT);
       expect(t35.name).toBe('exit');
       expect(t35.progress).toBe(0.5);
     });
@@ -176,18 +176,18 @@ describe('V4 Kernel', () => {
         1 / 60
       );
 
-      expect(counter(0, DEFAULT_INPUT)).toBe(0);
+      expect(counter(0, DEFAULT_CONTEXT)).toBe(0);
       // After 1 second, should be approximately 1
-      expect(counter(1, DEFAULT_INPUT)).toBeCloseTo(1, 1);
+      expect(counter(1, DEFAULT_CONTEXT)).toBeCloseTo(1, 1);
     });
 
     it('integrate produces position from velocity', () => {
       const velocity = SignalFns.constant(10); // 10 units/second
       const position = ScanFns.integrate(velocity, 0, 1 / 60);
 
-      expect(position(0, DEFAULT_INPUT)).toBe(0);
-      expect(position(1, DEFAULT_INPUT)).toBeCloseTo(10, 1);
-      expect(position(2, DEFAULT_INPUT)).toBeCloseTo(20, 1);
+      expect(position(0, DEFAULT_CONTEXT)).toBe(0);
+      expect(position(1, DEFAULT_CONTEXT)).toBeCloseTo(10, 1);
+      expect(position(2, DEFAULT_CONTEXT)).toBeCloseTo(20, 1);
     });
   });
 
@@ -299,17 +299,17 @@ describe('V4 Kernel', () => {
       };
 
       // Test at different times
-      const t0 = animation(0, DEFAULT_INPUT);
+      const t0 = animation(0, DEFAULT_CONTEXT);
       expect(t0.root.style?.opacity).toBe(0);
 
-      const t05 = animation(0.5, DEFAULT_INPUT);
+      const t05 = animation(0.5, DEFAULT_CONTEXT);
       expect(t05.root.style?.opacity).toBeGreaterThan(0);
       expect(t05.root.style?.opacity).toBeLessThan(1);
 
-      const t2 = animation(2, DEFAULT_INPUT);
+      const t2 = animation(2, DEFAULT_CONTEXT);
       expect(t2.root.style?.opacity).toBe(1);
 
-      const t35 = animation(3.5, DEFAULT_INPUT);
+      const t35 = animation(3.5, DEFAULT_CONTEXT);
       expect(t35.root.style?.opacity).toBe(0.5);
     });
   });

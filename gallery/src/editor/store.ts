@@ -22,6 +22,7 @@ import type {
   Lane,
   BlockId,
   LaneId,
+  LaneKind,
   LaneLayout,
   Patch,
   Composite,
@@ -30,8 +31,8 @@ import type {
   Listener,
   AdapterStep,
 } from './types';
-import { SIMPLE_LAYOUT, DETAILED_LAYOUT, getLayoutById } from './laneLayouts';
-import type { TypeDescriptor, BusCombineMode, LaneKind, BlockCategory, BlockType } from './types';
+import { SIMPLE_LAYOUT, DETAILED_LAYOUT, getLayoutById, PRESET_LAYOUTS, DEFAULT_LAYOUT, mapLaneToLayout } from './laneLayouts';
+import type { TypeDescriptor, BusCombineMode, BlockCategory, BlockType } from './types';
 import { getBlockDefinition } from './blocks';
 import { getMacroKey, getMacroExpansion, type MacroExpansion } from './macros';
 
@@ -65,16 +66,32 @@ export class EditorStore {
 
   blocks: Block[] = [];
   connections: Connection[] = [];
-  lanes: Lane[] = this.createLanesFromLayout(SIMPLE_LAYOUT); // Default to Simple layout
   buses: Bus[] = [];
   publishers: Publisher[] = [];
   listeners: Listener[] = [];
+
+  /** Current lane layout ID */
+  currentLayoutId: string = DEFAULT_LAYOUT.id;
+
+  /** Lane definitions with block assignments */
+  lanes: Lane[] = this.createLanesFromLayout(DEFAULT_LAYOUT);
 
   composites: Composite[] = []; // Saved macros
 
   uiState = {
     selectedBlockId: null as BlockId | null,
     selectedBusId: null as string | null,
+    draggingBlockType: null as string | null,
+    draggingLaneKind: null as LaneKind | null,
+    activeLaneId: null as LaneId | null,
+    hoveredPort: null as { blockId: BlockId; slotId: string; direction: 'input' | 'output' } | null,
+    selectedPort: null as { blockId: BlockId; slotId: string; direction: 'input' | 'output' } | null,
+    contextMenu: {
+      isOpen: false,
+      x: 0,
+      y: 0,
+      portRef: null as { blockId: BlockId; slotId: string; direction: 'input' | 'output' } | null,
+    },
     isPlaying: false,
     currentTime: 0, // seconds
   };
@@ -110,9 +127,18 @@ export class EditorStore {
       publishers: observable,
       listeners: observable,
       composites: observable,
+      currentLayoutId: observable,
       uiState: observable,
       settings: observable,
       previewedDefinition: observable,
+      // Computed getters
+      selectedBlock: computed,
+      selectedBus: computed,
+      activeLane: computed,
+      selectedPortInfo: computed,
+      currentLayout: computed,
+      availableLayouts: computed,
+      // Actions
       addBlock: action,
       expandMacro: action,
       updateBlock: action,
@@ -169,9 +195,6 @@ export class EditorStore {
       deleteComposite: action,
       instantiateComposite: action,
       setPreviewedDefinition: action,
-      // Computed properties
-      selectedBlock: computed,
-      selectedBus: computed,
     });
   }
 
@@ -187,6 +210,37 @@ export class EditorStore {
   get selectedBus(): Bus | null {
     if (!this.uiState.selectedBusId) return null;
     return this.buses.find((b) => b.id === this.uiState.selectedBusId) ?? null;
+  }
+
+  /** Get active lane (for palette filtering) */
+  get activeLane(): Lane | null {
+    if (!this.uiState.activeLaneId) return null;
+    return this.lanes.find((l) => l.id === this.uiState.activeLaneId) ?? null;
+  }
+
+  /** Get selected port with full block/slot info */
+  get selectedPortInfo(): { block: Block; slot: { id: string; label: string; type: string; direction: string }; direction: 'input' | 'output' } | null {
+    const portRef = this.uiState.selectedPort;
+    if (!portRef) return null;
+
+    const block = this.blocks.find((b) => b.id === portRef.blockId);
+    if (!block) return null;
+
+    const slots = portRef.direction === 'input' ? block.inputs : block.outputs;
+    const slot = slots.find((s) => s.id === portRef.slotId);
+    if (!slot) return null;
+
+    return { block, slot, direction: portRef.direction };
+  }
+
+  /** Get current lane layout */
+  get currentLayout(): LaneLayout {
+    return getLayoutById(this.currentLayoutId) ?? DEFAULT_LAYOUT;
+  }
+
+  /** Get all available layouts */
+  get availableLayouts(): readonly LaneLayout[] {
+    return PRESET_LAYOUTS;
   }
 
   // =============================================================================
@@ -536,26 +590,39 @@ export class EditorStore {
   // Actions - Layout Management
   // =============================================================================
 
+  /**
+   * Switch to a different lane layout.
+   * Blocks are migrated to appropriate lanes based on kind matching.
+   */
   switchLayout(layoutId: string): void {
     const newLayout = getLayoutById(layoutId);
-    if (!newLayout) return;
+    if (!newLayout || layoutId === this.currentLayoutId) return;
 
-    const newLanes = [...newLayout.lanes];
+    const oldLayout = this.currentLayout;
 
-    // Preserve existing blocks by moving them to compatible lanes
-    const existingBlocks = new Set<BlockId>();
+    // Collect all blocks with their current lane assignments
+    const blockAssignments: Array<{ blockId: BlockId; oldLaneId: string }> = [];
     for (const lane of this.lanes) {
       for (const blockId of lane.blockIds) {
-        existingBlocks.add(blockId);
+        blockAssignments.push({ blockId, oldLaneId: lane.id });
       }
     }
 
-    // Move blocks to first lane in new layout
-    if (existingBlocks.size > 0 && newLanes.length > 0) {
-      newLanes[0].blockIds.push(...existingBlocks);
-    }
+    // Create new lanes from the new layout
+    this.lanes = this.createLanesFromLayout(newLayout);
+    this.currentLayoutId = layoutId;
 
-    this.lanes = newLanes;
+    // Migrate blocks to new lanes
+    for (const { blockId, oldLaneId } of blockAssignments) {
+      const newLaneId = mapLaneToLayout(oldLaneId, oldLayout, newLayout);
+      const newLane = this.lanes.find((l) => l.id === newLaneId);
+      if (newLane) {
+        newLane.blockIds.push(blockId);
+      } else {
+        // Fallback: put in first lane
+        this.lanes[0]?.blockIds.push(blockId);
+      }
+    }
   }
 
   // =============================================================================

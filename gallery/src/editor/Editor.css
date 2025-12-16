@@ -220,15 +220,48 @@ body.editor-mode {
   height: 100%;
 }
 
-.editor-patch {
-  flex: 1;
+/* Bay area - horizontal split for PatchBay and BusBoard */
+.editor-bay {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
   min-height: 0;
-  border: 1px solid #222;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #111;
+  min-width: 0;
+}
+
+.bay-panel {
   display: flex;
   flex-direction: column;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 10px;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.bay-panel.collapsed {
+  flex: 0 0 auto !important;
+}
+
+.bay-panel.collapsed > *:not(.panel-header) {
+  display: none;
+}
+
+.bay-resizer {
+  width: 10px;
+  border: 1px solid #222;
+  border-radius: 6px;
+  background: #1f1f1f;
+  cursor: col-resize;
+  margin: 2px 4px;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.editor.dragging .bay-resizer {
+  background: #2b4a90;
+  border-color: #345bb5;
 }
 
 .patch-header {
@@ -238,6 +271,18 @@ body.editor-mode {
 .patch-body {
   flex: 1;
   min-height: 0;
+  min-width: 0;
+}
+
+.busboard-header {
+  border-bottom: 1px solid #222;
+}
+
+.busboard-body {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
 }
 
 .editor-right-panel {

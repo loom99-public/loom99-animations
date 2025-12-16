@@ -21,6 +21,7 @@ import {
 import { EditorStore } from './store';
 import { BlockLibrary } from './BlockLibrary';
 import { PatchBay } from './PatchBay';
+import { BusBoard } from './BusBoard';
 import { Inspector } from './Inspector';
 import { LogWindow } from './LogWindow';
 import { PreviewPanel } from './PreviewPanel';
@@ -407,10 +408,14 @@ export const Editor = observer(() => {
   const [libraryCollapsed, setLibraryCollapsed] = useState(false);
   const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
   const [leftSplit, setLeftSplit] = useState(0.5); // library vs inspector
-  const [centerSplit, setCenterSplit] = useState(0.4); // preview vs patch bay
-  const [dragging, setDragging] = useState<null | 'left-split' | 'center-split'>(null);
+  const [centerSplit, setCenterSplit] = useState(0.4); // preview vs bay
+  const [patchBayCollapsed, setPatchBayCollapsed] = useState(false);
+  const [busBoardCollapsed, setBusBoardCollapsed] = useState(false);
+  const [baySplit, setBaySplit] = useState(0.5); // patchbay vs busboard
+  const [dragging, setDragging] = useState<null | 'left-split' | 'center-split' | 'bay-split'>(null);
   const leftColumnRef = useRef<HTMLDivElement | null>(null);
   const centerColumnRef = useRef<HTMLDivElement | null>(null);
+  const bayRef = useRef<HTMLDivElement | null>(null);
   const [helpTopic, setHelpTopic] = useState<HelpTopic | null>(null);
   const [hasCompletedTour, setHasCompletedTour] = useState(false);
   const [showHelpNudge, setShowHelpNudge] = useState(false);
@@ -484,6 +489,11 @@ export const Editor = observer(() => {
         const rect = centerColumnRef.current.getBoundingClientRect();
         const ratio = (e.clientY - rect.top) / rect.height;
         setCenterSplit(Math.max(0.2, Math.min(0.8, ratio)));
+      }
+      if (dragging === 'bay-split' && bayRef.current) {
+        const rect = bayRef.current.getBoundingClientRect();
+        const ratio = (e.clientX - rect.left) / rect.width;
+        setBaySplit(Math.max(0.2, Math.min(0.8, ratio)));
       }
     };
 
@@ -580,10 +590,10 @@ export const Editor = observer(() => {
 
       if (sourceLaneId === targetLaneId) {
         if (activeData.sourceIndex !== targetIndex) {
-          store.reorderBlockInLane(blockId, targetIndex);
+          store.reorderBlockInLane(sourceLaneId as LaneId, blockId, targetIndex);
         }
       } else {
-        store.moveBlockToLane(blockId, targetLaneId, targetIndex);
+        store.moveBlockToLane(blockId, targetLaneId);
       }
       return;
     }
@@ -738,27 +748,97 @@ export const Editor = observer(() => {
             <div
               className="horizontal-resizer"
               onMouseDown={() => setDragging('center-split')}
-              title="Drag to resize Preview / Patch"
+              title="Drag to resize Preview / Bay"
             />
 
-            <div className="editor-patch" style={{ flex: 1 - centerSplit }}>
-              <div className="panel-header patch-header">
-                <span className="panel-title">Patch</span>
-                <div className="panel-header-actions">
-                  <button
-                    className="panel-help-btn"
-                    onClick={() => {
-                      setHelpCenterOpen(true);
-                      setHelpTopic(null);
-                    }}
-                    title="What is the Patch?"
-                  >
-                    ?
-                  </button>
+            <div className="editor-bay" ref={bayRef} style={{ flex: 1 - centerSplit }}>
+              {/* PatchBay Panel */}
+              <div
+                className={`bay-panel patch-panel ${patchBayCollapsed ? 'collapsed' : ''}`}
+                style={{
+                  flex: patchBayCollapsed
+                    ? '0 0 auto'
+                    : busBoardCollapsed
+                      ? '1 1 0'
+                      : `${baySplit} 1 0`,
+                }}
+              >
+                <div className="panel-header patch-header">
+                  <span className="panel-title">Patch</span>
+                  <div className="panel-header-actions">
+                    <button
+                      className="panel-help-btn"
+                      onClick={() => {
+                        setHelpCenterOpen(true);
+                        setHelpTopic(null);
+                      }}
+                      title="What is the Patch?"
+                    >
+                      ?
+                    </button>
+                    <button
+                      className="panel-toggle-btn"
+                      onClick={() => setPatchBayCollapsed((v) => !v)}
+                      title={patchBayCollapsed ? 'Show patch' : 'Hide patch'}
+                    >
+                      {patchBayCollapsed ? 'Show' : 'Hide'}
+                    </button>
+                  </div>
                 </div>
+                {!patchBayCollapsed && (
+                  <div className="patch-body">
+                    <PatchBay store={store} />
+                  </div>
+                )}
               </div>
-              <div className="patch-body">
-                <PatchBay store={store} />
+
+              {/* Bay Resizer */}
+              {!patchBayCollapsed && !busBoardCollapsed && (
+                <div
+                  className="bay-resizer"
+                  onMouseDown={() => setDragging('bay-split')}
+                  title="Drag to resize Patch / Bus Board"
+                />
+              )}
+
+              {/* BusBoard Panel */}
+              <div
+                className={`bay-panel busboard-panel ${busBoardCollapsed ? 'collapsed' : ''}`}
+                style={{
+                  flex: busBoardCollapsed
+                    ? '0 0 auto'
+                    : patchBayCollapsed
+                      ? '1 1 0'
+                      : `${1 - baySplit} 1 0`,
+                }}
+              >
+                <div className="panel-header busboard-header">
+                  <span className="panel-title">Bus Board</span>
+                  <div className="panel-header-actions">
+                    <button
+                      className="panel-help-btn"
+                      onClick={() => {
+                        setHelpCenterOpen(true);
+                        setHelpTopic(null);
+                      }}
+                      title="What is the Bus Board?"
+                    >
+                      ?
+                    </button>
+                    <button
+                      className="panel-toggle-btn"
+                      onClick={() => setBusBoardCollapsed((v) => !v)}
+                      title={busBoardCollapsed ? 'Show bus board' : 'Hide bus board'}
+                    >
+                      {busBoardCollapsed ? 'Show' : 'Hide'}
+                    </button>
+                  </div>
+                </div>
+                {!busBoardCollapsed && (
+                  <div className="busboard-body">
+                    <BusBoard store={store} />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -807,7 +887,7 @@ export const Editor = observer(() => {
           onClose={() => {
             setHelpTopic(null);
             // Mark tour complete if we just finished the intro tour
-            if (!hasCompletedTour && topic === 'intro') {
+            if (!hasCompletedTour && helpTopic === 'intro') {
               setHasCompletedTour(true);
               try {
                 if (typeof window !== 'undefined') {

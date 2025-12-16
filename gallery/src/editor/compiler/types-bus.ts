@@ -230,3 +230,87 @@ export interface BusCompileResult {
   dependencyGraph?: DependencyGraph;
   sccs?: StronglyConnectedComponent[];
 }
+// =============================================================================
+// Element Domain System (Phase 2 Preparation)
+// =============================================================================
+
+/**
+ * Element Domain: authoritative set of elements that a Field refers to.
+ * 
+ * Key concepts from ELEMENT-DOMAIN-CONTRACT.md:
+ * - ID: stable identity for deterministic per-element variation and state
+ * - Index: 0..N-1 evaluation slot in current frame (where to write output)
+ * - These are NOT the same
+ * 
+ * @see ELEMENT-DOMAIN-CONTRACT.md for full specification
+ */
+export interface ElementDomain {
+  /** 
+   * Domain identifier for type checking.
+   * Format: "type:instanceId" (e.g., "svg-path:abc123")
+   */
+  readonly domainTag: string;
+
+  /** Number of elements in this domain (right now) */
+  readonly count: number;
+
+  /**
+   * Get stable IDs for all elements.
+   * These IDs are used for:
+   * - Deterministic per-element variation (seeding)
+   * - State lookup (delays, integrators)
+   * - Per-element configuration
+   * 
+   * NOT used for output buffer position (use index for that).
+   */
+  getIds(): Uint32Array;
+
+  /**
+   * Get deterministic iteration order.
+   * Usually same as ids array order, but separated for future optimization.
+   * This is the order in which dense fields are evaluated.
+   */
+  getOrder(): Uint32Array;
+
+  /**
+   * Optional: Get stable key for an element (used in ID generation).
+   * Implementation-specific, defined by domain owner.
+   */
+  getStableKey?(elementIndex: number): number | string;
+}
+
+/**
+ * Arc-Length Domain: specialized for sampled geometry (SVG paths, curves).
+ * Uses arc-length bucket scheme to preserve identity across resampling.
+ */
+export interface ArcLengthDomain extends ElementDomain {
+  /**
+   * Canonical parameterization: normalized arc-length s ∈ [0,1).
+   * Points defined as k/N buckets preserve identity under resolution changes.
+   */
+  readonly resolution: number;
+
+  /**
+   * Get bucket index for an element.
+   * Used for stable ID generation across resampling.
+   */
+  getBucketIndex(elementIndex: number): number;
+}
+
+/**
+ * Domain Owner: declares ownership of an element population.
+ * Every element population has a single, declared owner.
+ */
+export interface DomainOwner {
+  /** Unique instance identifier (stable across frames) */
+  readonly instanceId: string;
+
+  /** Domain type for compatibility checking */
+  readonly domainType: 'svg-path' | 'text-glyphs' | 'particles' | 'custom';
+
+  /** Get element domain for current context */
+  getDomain(ctx: any): ElementDomain;
+
+  /** Get stable key for element (required for ID generation) */
+  getStableKey(elementIndex: number): number;
+}

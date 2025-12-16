@@ -6,7 +6,7 @@
  */
 
 import { HtmlAnimatedLine, type HtmlLineConfig } from './HtmlAnimatedLine';
-import { LOGO_PATHS, TEXT_PATHS, type LineData } from '../data/pathData';
+import { LOGO_PATHS, TEXT_PATHS } from '../data/pathData';
 
 /**
  * Seeded random number generator (mulberry32)

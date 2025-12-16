@@ -93,6 +93,12 @@ export interface TypeDesc {
 export type BusCombineMode = 'sum' | 'average' | 'max' | 'min' | 'last' | 'layer';
 
 /**
+ * Legacy alias for TypeDesc.
+ * @deprecated Use TypeDesc instead
+ */
+export type TypeDescriptor = TypeDesc;
+
+/**
  * Format a TypeDesc for display.
  */
 export function formatTypeDesc(typeDesc: TypeDesc): string {
@@ -104,7 +110,7 @@ export function formatTypeDesc(typeDesc: TypeDesc): string {
  */
 export function getCombineModesForDomain(domain: Domain): BusCombineMode[] {
   // Numeric domains support all combine modes
-  if (domain === 'number' || domain === 'duration' || domain === 'unit') {
+  if (domain === 'number' || domain === 'duration' || domain === 'time' || domain === 'rate') {
     return ['sum', 'average', 'max', 'min', 'last'];
   }
   // Point/vec2 domains support vector operations
@@ -408,6 +414,44 @@ export interface Connection {
   readonly to: {
     readonly blockId: BlockId;
     readonly slotId: string;
+  };
+}
+
+/**
+ * Composite - a saved group of blocks and connections that can be instantiated.
+ * Similar to a "macro" or "subgraph" in other node editors.
+ */
+export interface Composite {
+  /** Unique identifier */
+  readonly id: string;
+
+  /** Human-readable name */
+  name: string;
+
+  /** Blocks within this composite */
+  blocks: Block[];
+
+  /** Internal connections between blocks */
+  connections: CompositeConnection[];
+}
+
+/**
+ * Connection within a composite (has port instead of slotId).
+ */
+export interface CompositeConnection {
+  /** Connection identifier */
+  readonly id: string;
+
+  /** Source endpoint */
+  readonly from: {
+    readonly blockId: BlockId;
+    readonly port: string;
+  };
+
+  /** Destination endpoint */
+  readonly to: {
+    readonly blockId: BlockId;
+    readonly port: string;
   };
 }
 

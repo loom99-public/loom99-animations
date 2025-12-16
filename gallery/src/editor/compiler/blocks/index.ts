@@ -32,6 +32,13 @@ import {
   WaveStaggerBlock,
   SizeVariationBlock,
   ColorFieldBlock,
+  ElementIndexFieldBlock,
+  RandomJitterFieldBlock,
+  SinFieldBlock,
+  SubFieldNumberBlock,
+  DivFieldNumberBlock,
+  FloorFieldNumberBlock,
+  MakePointFieldBlock,
   // Timing/Stagger fields
   RandomStaggerBlock,
   IndexStaggerBlock,
@@ -97,6 +104,11 @@ import {
   SceneToTargetsBlock,
   FieldToSignalBlock,
   LiftScalarToFieldNumberBlock,
+  ScalarToSignalNumberBlock,
+  SignalToScalarNumberBlock,
+  TimeToPhaseBlock,
+  PhaseToTimeBlock,
+  WrapPhaseBlock,
   ElementCountBlock,
 } from './adapters';
 
@@ -129,6 +141,13 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   noiseField: NoiseFieldBlock,
   regionField: RegionFieldBlock,
   constantFieldDuration: ConstantFieldDurationBlock,
+  elementIndexField: ElementIndexFieldBlock,
+  randomJitterField: RandomJitterFieldBlock,
+  sinFieldNumber: SinFieldBlock,
+  subFieldNumber: SubFieldNumberBlock,
+  divFieldNumber: DivFieldNumberBlock,
+  floorFieldNumber: FloorFieldNumberBlock,
+  makePointField: MakePointFieldBlock,
   WaveStagger: WaveStaggerBlock,
   SizeVariation: SizeVariationBlock,
   ColorField: ColorFieldBlock,
@@ -195,6 +214,11 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   SceneToTargets: SceneToTargetsBlock,
   FieldToSignal: FieldToSignalBlock,
   'lift.scalarToFieldNumber': LiftScalarToFieldNumberBlock,
+  scalarToSignalNumber: ScalarToSignalNumberBlock,
+  signalToScalarNumber: SignalToScalarNumberBlock,
+  timeToPhase: TimeToPhaseBlock,
+  phaseToTime: PhaseToTimeBlock,
+  wrapPhase: WrapPhaseBlock,
   elementCount: ElementCountBlock,
 
   // Sinks
@@ -203,10 +227,17 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
 };
 
 /**
- * Create a registry with additional custom blocks.
+ * Mutable registry allowing dynamic additions (composites/macros).
+ * Starts from DEFAULT_BLOCK_REGISTRY.
  */
-export function createBlockRegistry(custom: BlockRegistry = {}): BlockRegistry {
-  return { ...DEFAULT_BLOCK_REGISTRY, ...custom };
+const dynamicRegistry: BlockRegistry = { ...DEFAULT_BLOCK_REGISTRY };
+
+export function createBlockRegistry(): BlockRegistry {
+  return dynamicRegistry;
+}
+
+export function registerDynamicBlock(type: string, compiler: any): void {
+  dynamicRegistry[type] = compiler;
 }
 
 // =============================================================================

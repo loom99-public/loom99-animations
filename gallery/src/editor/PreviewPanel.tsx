@@ -33,6 +33,7 @@ interface PreviewPanelProps {
   compilerService?: CompilerService;
   isPlaying?: boolean;
   store?: EditorStore;
+  onShowHelp?: () => void;
 }
 
 /**
@@ -45,7 +46,7 @@ const DEFAULT_SCENE: Scene = {
 
 const DEFAULT_VIEWPORT: Viewport = { width: 800, height: 600 };
 
-export const PreviewPanel = observer(({ compilerService, isPlaying, store }: PreviewPanelProps) => {
+export const PreviewPanel = observer(({ compilerService, isPlaying, store, onShowHelp }: PreviewPanelProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const playerRef = useRef<Player | null>(null);
   const rendererRef = useRef<SvgRenderer | null>(null);
@@ -227,9 +228,18 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, store }: Pre
     <div className="preview-panel">
       <div className="preview-header">
         <span className="preview-title">Preview</span>
-        <span className="preview-status">
-          {hasCompiledProgram ? '● Live' : '○ No program'}
-        </span>
+        <div className="preview-header-actions">
+          <button
+            className="preview-help-btn"
+            onClick={() => onShowHelp?.()}
+            title="What is the Preview?"
+          >
+            ?
+          </button>
+          <span className="preview-status">
+            {hasCompiledProgram ? '● Live' : '○ No program'}
+          </span>
+        </div>
       </div>
 
       <div className="preview-canvas" style={{ width: '100%', height: '100%' }}>

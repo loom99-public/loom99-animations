@@ -17,6 +17,16 @@ export interface ParseResult {
   errors: string[];
 }
 
+function deriveViewBoxFromSize(widthRaw?: string | null, heightRaw?: string | null): string | undefined {
+  if (!widthRaw || !heightRaw) return undefined;
+  const width = parseFloat(widthRaw);
+  const height = parseFloat(heightRaw);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return undefined;
+  }
+  return `0 0 ${width} ${height}`;
+}
+
 /**
  * Parse a complete SVG string to LineData[]
  */
@@ -27,7 +37,13 @@ export function parseSVGString(svgString: string): ParseResult {
   try {
     // Extract viewBox
     const viewBoxMatch = svgString.match(/viewBox=["']([^"']+)["']/i);
-    const viewBox = viewBoxMatch?.[1];
+    let viewBox = viewBoxMatch?.[1];
+
+    if (!viewBox) {
+      const widthMatch = svgString.match(/width=["']([^"']+)["']/i);
+      const heightMatch = svgString.match(/height=["']([^"']+)["']/i);
+      viewBox = deriveViewBoxFromSize(widthMatch?.[1], heightMatch?.[1]);
+    }
 
     // Find all path elements
     const pathRegex = /<path[^>]*\sd=["']([^"']+)["'][^>]*>/gi;

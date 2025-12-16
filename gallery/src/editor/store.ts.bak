@@ -1,0 +1,1313 @@
+/**
+ * Editor Store (MobX)
+ *
+ * Observable state for the patch bay graph.
+ * Designed for serialization (clean JSON export).
+ */
+
+import { makeObservable, observable, action, computed } from 'mobx';
+import type {
+  Block,
+  BlockId,
+  Connection,
+  Lane,
+  LaneId,
+  LaneKind,
+  LaneLayout,
+  Patch,
+  EditorUIState,
+  BlockType,
+  BlockCategory,
+  PortRef,
+  Bus,
+  Publisher,
+  Listener,
+  TypeDesc,
+} from './types';
+import { isBusEligible, CORE_DOMAIN_DEFAULTS } from './types';
+import { getBlockDefinition, type BlockDefinition } from './blocks';
+import {
+  DEFAULT_LAYOUT,
+  getLayoutById,
+  mapLaneToLayout,
+  PRESET_LAYOUTS,
+} from './laneLayouts';
+import { getMacroKey, getMacroExpansion, type MacroExpansion } from './macros';
+import {
+  upsertComposite,
+  removeComposite,
+  listCompositeDefinitions,
+  type CompositeDefinition,
+} from './composites';
+
+// =============================================================================
+// Migration Helpers
+// =============================================================================
+
+/**
+ * Migrate SVGPathSource target values from old format to new library ID format.
+ * Old: 'logo', 'text', 'heart'
+ * New: 'builtin:logo', 'builtin:text', 'builtin:heart'
+ */
+function migrateBlockParams(type: string, params: Record<string, unknown>): Record<string, unknown> {
+  if (type === 'SVGPathSource' && params.target) {
+    const target = String(params.target);
+    // Migrate old format to new
+    if (target === 'logo') return { ...params, target: 'builtin:logo' };
+    if (target === 'text') return { ...params, target: 'builtin:text' };
+    if (target === 'heart') return { ...params, target: 'builtin:heart' };
+  }
+  return params;
+}
+import { computeAutoWire, findPrevBlockInLane, type AutoWireContext } from './autowire';
+import { logStore } from './logStore';
+
+/**
+ * EditorStore manages the patch bay graph state.
+ *
+ * Design:
+ * - Observable mutable graph (blocks, connections, lanes)
+ * - Actions for all mutations (MobX best practice)
+ * - Computed values for derived state
+ * - Serialization to clean JSON (toJSON/fromJSON)
+ */
+export class EditorStore {
+  // =============================================================================
+  // Observable State
+  // =============================================================================
+
+  /** All blocks in the patch */
+  blocks: Block[] = [];
+
+  /** All connections between blocks */
+  connections: Connection[] = [];
+
+  /** Bus definitions */
+  buses: Bus[] = [];
+
+  /** Bus routing - publishers from blocks to buses */
+  publishers: Publisher[] = [];
+
+  /** Bus routing - listeners from buses to blocks */
+  listeners: Listener[] = [];
+
+  /** Current lane layout ID */
+  currentLayoutId: string = DEFAULT_LAYOUT.id;
+
+  /** Lane definitions with block assignments */
+  lanes: Lane[] = this.createLanesFromLayout(DEFAULT_LAYOUT);
+
+  /** Global settings */
+  settings = {
+    seed: 42,
+    speed: 1.0,
+    // Lane mode settings
+    advancedLaneMode: false, // Advanced mode unlocks lane customization
+    // Connection settings
+    autoConnect: true, // Auto-wire obvious connections when blocks are added
+    showTypeHints: true, // Show port types on hover
+    highlightCompatible: true, // Highlight compatible ports when dragging
+    warnBeforeDisconnect: true, // Show confirmation before disconnecting
+    // Palette filtering settings
+    filterByLane: true, // Filter palette to blocks matching lane type
+    filterByConnection: false, // Filter to blocks compatible with selection
+  };
+
+  /** UI state (non-serializable) */
+  uiState: EditorUIState = {
+    selectedBlockId: null,
+    draggingBlockType: null,
+    draggingLaneKind: null,
+    activeLaneId: null,
+    hoveredPort: null,
+    selectedPort: null,
+    contextMenu: {
+      isOpen: false,
+      x: 0,
+      y: 0,
+      portRef: null,
+    },
+    isPlaying: true,
+  };
+
+  /** Previewed block definition (from library, before placement) */
+  previewedDefinition: BlockDefinition | null = null;
+
+  /** Composite definitions */
+  composites: CompositeDefinition[] = [];
+
+  /** ID counter for blocks/connections */
+  private nextId = 1;
+
+  // =============================================================================
+  // Constructor
+  // =============================================================================
+
+  constructor() {
+    makeObservable(this, {
+      blocks: observable,
+      connections: observable,
+      buses: observable,
+      publishers: observable,
+      listeners: observable,
+      currentLayoutId: observable,
+      lanes: observable,
+      settings: observable,
+      uiState: observable,
+      previewedDefinition: observable,
+      composites: observable,
+      addBlock: action,
+      expandMacro: action,
+      removeBlock: action,
+      updateBlockParams: action,
+      connect: action,
+      disconnect: action,
+      selectBlock: action,
+      previewDefinition: action,
+      setPlaying: action,
+      setSeed: action,
+      setSpeed: action,
+      loadPatch: action,
+      loadDemoAnimation: action,
+      clearPatch: action,
+      createBus: action,
+      deleteBus: action,
+      updateBus: action,
+      addPublisher: action,
+      removePublisher: action,
+      addListener: action,
+      removeListener: action,
+      reorderPublisher: action,
+      getBusPublishers: action,
+      getBusListeners: action,
+      getPortRouting: action,
+      findBusesByTypeDesc: action,
+      isBusBound: action,
+      getNextSortKey: action,
+      toggleLaneCollapsed: action,
+      toggleLanePinned: action,
+      renameLane: action,
+      addLane: action,
+      removeLane: action,
+      moveBlockToLane: action,
+      reorderBlockInLane: action,
+      switchLayout: action,
+      setAdvancedLaneMode: action,
+      setAutoConnect: action,
+      setShowTypeHints: action,
+      setHighlightCompatible: action,
+      setFilterByLane: action,
+      setFilterByConnection: action,
+      setWarnBeforeDisconnect: action,
+      setActiveLane: action,
+      setHoveredPort: action,
+      setSelectedPort: action,
+      openContextMenu: action,
+      closeContextMenu: action,
+      setDraggingLaneKind: action,
+      selectedBlock: computed,
+      activeLane: computed,
+      selectedPortInfo: computed,
+      currentLayout: computed,
+      availableLayouts: computed,
+      getBusById: computed,
+      getPublishersByBus: computed,
+      getListenersByBus: computed,
+      getBusesByCategory: computed,
+      getBusEligibleBuses: computed,
+    });
+  }
+
+  // =============================================================================
+  // Computed Values
+  // =============================================================================
+
+  /** Get currently selected block */
+  get selectedBlock(): Block | null {
+    if (!this.uiState.selectedBlockId) return null;
+    return this.blocks.find((b) => b.id === this.uiState.selectedBlockId) ?? null;
+  }
+
+  /** Get active lane (for palette filtering) */
+  get activeLane(): Lane | null {
+    if (!this.uiState.activeLaneId) return null;
+    return this.lanes.find((l) => l.id === this.uiState.activeLaneId) ?? null;
+  }
+
+  /** Get selected port with full block/slot info */
+  get selectedPortInfo(): { block: Block; slot: import('./types').Slot; direction: 'input' | 'output' } | null {
+    const portRef = this.uiState.selectedPort;
+    if (!portRef) return null;
+
+    const block = this.blocks.find((b) => b.id === portRef.blockId);
+    if (!block) return null;
+
+    const slots = portRef.direction === 'input' ? block.inputs : block.outputs;
+    const slot = slots.find((s) => s.id === portRef.slotId);
+    if (!slot) return null;
+
+    return { block, slot, direction: portRef.direction };
+  }
+
+  /** Get current lane layout */
+  get currentLayout(): LaneLayout {
+    return getLayoutById(this.currentLayoutId) ?? DEFAULT_LAYOUT;
+  }
+
+  /** Get all available layouts */
+  get availableLayouts(): readonly LaneLayout[] {
+    return PRESET_LAYOUTS;
+  }
+
+  // =============================================================================
+  // Bus Computed Properties
+  // =============================================================================
+
+  /** Get bus by ID */
+  getBusById(id: string): Bus | null {
+    return this.buses.find((b) => b.id === id) ?? null;
+  }
+
+  /** Get all publishers for a bus */
+  getPublishersByBus(busId: string): Publisher[] {
+    return this.publishers
+      .filter((p) => p.busId === busId && p.enabled)
+      .sort((a, b) => a.sortKey - b.sortKey);
+  }
+
+  /** Get all listeners for a bus */
+  getListenersByBus(busId: string): Listener[] {
+    return this.listeners.filter((l) => l.busId === busId && l.enabled);
+  }
+
+  /** Get buses by category (core vs internal) */
+  getBusesByCategory(category: 'core' | 'internal'): Bus[] {
+    return this.buses.filter((b) => b.type.category === category);
+  }
+
+  /** Get only bus-eligible buses (core types) */
+  getBusEligibleBuses(): Bus[] {
+    return this.buses.filter((b) => isBusEligible(b.type));
+  }
+
+  // =============================================================================
+  // Actions - Block Management
+  // =============================================================================
+
+  /**
+   * Add a new block to the patch.
+   * If the block type is a macro (like demoProgram), it expands into multiple
+   * primitive blocks with connections - the user sees all individual blocks.
+   *
+   * After adding, auto-wire to compatible ports if unambiguous.
+   *
+   * @param type Block type (e.g., 'RadialOrigin')
+   * @param laneId Lane ID to add block to
+   * @param params Optional initial parameters
+   * @returns Created block ID (or first block ID if macro expanded)
+   */
+  addBlock(type: BlockType, laneId: LaneId, params?: Record<string, unknown>): BlockId {
+    // Check if this is a macro that should expand
+    const macroKey = getMacroKey(type, params);
+    if (macroKey) {
+      const expansion = getMacroExpansion(macroKey);
+      if (expansion) {
+        return this.expandMacro(expansion);
+      }
+    }
+
+    // Regular block addition
+    const id = `block-${this.nextId++}`;
+
+    // Look up block definition from registry
+    const definition = getBlockDefinition(type);
+
+    // Find lane to infer category
+    const laneObj = this.lanes.find((l) => l.id === laneId);
+
+    // Merge params with defaults and migrate old values
+    const rawParams = params ?? definition?.defaultParams ?? {};
+    const migratedParams = migrateBlockParams(type, rawParams);
+
+    const block: Block = {
+      id,
+      type,
+      label: definition?.label ?? type,
+      inputs: definition?.inputs ?? [],
+      outputs: definition?.outputs ?? [],
+      params: migratedParams,
+      category: definition?.category ?? this.inferCategory(laneObj?.kind ?? 'Program'),
+      description: definition?.description ?? `${type} block`,
+    };
+
+    this.blocks.push(block);
+
+    // Add to lane - use array spread to ensure MobX detects the change
+    if (laneObj) {
+      laneObj.blockIds = [...laneObj.blockIds, id];
+    }
+
+    // Auto-wire if enabled and definition exists
+    if (this.settings.autoConnect && definition && laneObj) {
+      this.autoWireNewBlock(id, definition, laneObj);
+    }
+
+    return id;
+  }
+
+  /**
+   * Auto-wire a newly added block to compatible ports.
+   * Uses the previous block in the same lane as the wiring source.
+   */
+  private autoWireNewBlock(
+    newBlockId: BlockId,
+    newBlockDef: import('./blocks').BlockDefinition,
+    lane: Lane
+  ): void {
+    // Find the index of the new block in the lane
+    const newBlockIndex = lane.blockIds.indexOf(newBlockId);
+
+    // Find the previous block in the lane
+    const prevBlockInLane = findPrevBlockInLane(
+      lane.blockIds,
+      newBlockIndex,
+      this.blocks,
+      getBlockDefinition
+    );
+
+    // Build autowire context
+    const ctx: AutoWireContext = {
+      blocks: this.blocks,
+      connections: this.connections,
+      newBlockId,
+      newBlockDef,
+      getDefinition: getBlockDefinition,
+      prevBlockInLane,
+    };
+
+    // Compute autowire connections
+    const result = computeAutoWire(ctx);
+
+    // Create the connections
+    for (const conn of result.connections) {
+      this.connect(conn.fromBlockId, conn.fromSlotId, conn.toBlockId, conn.toSlotId);
+    }
+  }
+
+  /**
+   * Expand a macro into multiple visible primitive blocks with connections.
+   * This is the "recipe starter" - users see all the individual modules and cables.
+   * REPLACES the current patch (clears everything first).
+   *
+   * @param expansion The macro expansion definition
+   * @returns The ID of the first block created
+   */
+  expandMacro(expansion: MacroExpansion): BlockId {
+    // Clear the patch first - macros replace everything
+    this.clearPatch();
+
+    // Map from macro ref IDs to actual block IDs
+    const refToId = new Map<string, BlockId>();
+
+    // Create all blocks
+    for (const macroBlock of expansion.blocks) {
+      // Find the appropriate lane for this block's kind
+      const lane = this.lanes.find((l) => l.kind === macroBlock.laneKind);
+      if (!lane) continue;
+
+      const id = `block-${this.nextId++}`;
+      const definition = getBlockDefinition(macroBlock.type);
+
+      const block: Block = {
+        id,
+        type: macroBlock.type,
+        label: macroBlock.label ?? definition?.label ?? macroBlock.type,
+        inputs: definition?.inputs ?? [],
+        outputs: definition?.outputs ?? [],
+        params: { ...(definition?.defaultParams ?? {}), ...(macroBlock.params ?? {}) },
+        category: definition?.category ?? this.inferCategory(lane.kind),
+        description: definition?.description ?? `${macroBlock.type} block`,
+      };
+
+      this.blocks.push(block);
+      lane.blockIds = [...lane.blockIds, id];
+      refToId.set(macroBlock.ref, id);
+    }
+
+    // Create all connections
+    for (const conn of expansion.connections) {
+      const fromId = refToId.get(conn.fromRef);
+      const toId = refToId.get(conn.toRef);
+      if (fromId && toId) {
+        this.connect(fromId, conn.fromSlot, toId, conn.toSlot);
+      }
+    }
+
+    // Auto-start playback if not already playing
+    if (!this.uiState.isPlaying) {
+      this.uiState.isPlaying = true;
+    }
+
+    // Auto-clear logs if enabled
+    if (logStore.autoClearOnMacro) {
+      logStore.clear();
+    }
+
+    // Return the first block ID (for selection purposes)
+    const firstRef = expansion.blocks[0]?.ref;
+    return firstRef ? refToId.get(firstRef) ?? '' : '';
+  }
+
+  /**
+   * Remove a block and all its connections.
+   */
+  removeBlock(blockId: BlockId): void {
+    // Remove connections (in-place mutation for MobX)
+    const connToRemove = this.connections.filter(
+      (c) => c.from.blockId === blockId || c.to.blockId === blockId
+    );
+    connToRemove.forEach((c) => {
+      const idx = this.connections.indexOf(c);
+      if (idx !== -1) this.connections.splice(idx, 1);
+    });
+
+    // Remove from blocks (in-place mutation for MobX)
+    const blockIdx = this.blocks.findIndex((b) => b.id === blockId);
+    if (blockIdx !== -1) {
+      this.blocks.splice(blockIdx, 1);
+    }
+
+    // Remove from lanes - use filter to ensure MobX detects the change
+    for (const lane of this.lanes) {
+      if (lane.blockIds.includes(blockId)) {
+        lane.blockIds = lane.blockIds.filter((id) => id !== blockId);
+      }
+    }
+
+    // Deselect if selected
+    if (this.uiState.selectedBlockId === blockId) {
+      this.uiState.selectedBlockId = null;
+    }
+  }
+
+  /**
+   * Update block parameters.
+   */
+  updateBlockParams(blockId: BlockId, params: Record<string, unknown>): void {
+    const block = this.blocks.find((b) => b.id === blockId);
+    if (block) {
+      // Use Object.assign to mutate in place for MobX reactivity
+      Object.assign(block.params, params);
+    }
+  }
+
+  /**
+   * Move a block to a different lane (or same lane at different position).
+   * @param blockId Block to move
+   * @param targetLaneId Destination lane
+   * @param targetIndex Position in destination lane (default: end)
+   */
+  moveBlockToLane(blockId: BlockId, targetLaneId: LaneId, targetIndex?: number): void {
+    // Remove from current lane
+    for (const lane of this.lanes) {
+      if (lane.blockIds.includes(blockId)) {
+        lane.blockIds = lane.blockIds.filter((id) => id !== blockId);
+        break;
+      }
+    }
+
+    // Add to target lane
+    const targetLane = this.lanes.find((l) => l.id === targetLaneId);
+    if (targetLane) {
+      const insertIdx = targetIndex ?? targetLane.blockIds.length;
+      const newBlockIds = [...targetLane.blockIds];
+      newBlockIds.splice(insertIdx, 0, blockId);
+      targetLane.blockIds = newBlockIds;
+    }
+  }
+
+  /**
+   * Reorder a block within its current lane.
+   * @param blockId Block to reorder
+   * @param newIndex New position index
+   */
+  reorderBlockInLane(blockId: BlockId, newIndex: number): void {
+    for (const lane of this.lanes) {
+      const currentIdx = lane.blockIds.indexOf(blockId);
+      if (currentIdx !== -1) {
+        // Create new array without the block
+        const newBlockIds = lane.blockIds.filter((id) => id !== blockId);
+        // Insert at new position (clamped to valid range)
+        const clampedIdx = Math.max(0, Math.min(newIndex, newBlockIds.length));
+        newBlockIds.splice(clampedIdx, 0, blockId);
+        lane.blockIds = newBlockIds;
+        break;
+      }
+    }
+  }
+
+  // =============================================================================
+  // Actions - Connection Management
+  // =============================================================================
+
+  /**
+   * Create a connection between two slots.
+   * TODO Phase 3: Add type checking
+   */
+  connect(
+    fromBlockId: BlockId,
+    fromSlotId: string,
+    toBlockId: BlockId,
+    toSlotId: string
+  ): void {
+    // Prevent duplicate connections between the same ports
+    const exists = this.connections.some(
+      (c) =>
+        c.from.blockId === fromBlockId &&
+        c.from.slotId === fromSlotId &&
+        c.to.blockId === toBlockId &&
+        c.to.slotId === toSlotId
+    );
+    if (exists) return;
+
+    const id = `conn-${this.nextId++}`;
+
+    const connection: Connection = {
+      id,
+      from: { blockId: fromBlockId, slotId: fromSlotId },
+      to: { blockId: toBlockId, slotId: toSlotId },
+    };
+
+    this.connections.push(connection);
+  }
+
+  /**
+   * Remove a connection.
+   */
+  disconnect(connectionId: string): void {
+    this.connections = this.connections.filter((c) => c.id !== connectionId);
+  }
+
+  // =============================================================================
+  // Actions - UI State
+  // =============================================================================
+
+  selectBlock(blockId: BlockId | null): void {
+    this.uiState.selectedBlockId = blockId;
+    // Clear port selection when selecting a block
+    this.uiState.selectedPort = null;
+    // Clear preview when selecting a placed block
+    if (blockId) {
+      this.previewedDefinition = null;
+    }
+  }
+
+  /**
+   * Preview a block definition from the library (before placement).
+   */
+  previewDefinition(definition: BlockDefinition | null): void {
+    this.previewedDefinition = definition;
+    // Clear selected block when previewing
+    if (definition) {
+      this.uiState.selectedBlockId = null;
+    }
+  }
+
+  setPlaying(playing: boolean): void {
+    this.uiState.isPlaying = playing;
+  }
+
+  setSeed(seed: number): void {
+    this.settings.seed = seed;
+  }
+
+  setSpeed(speed: number): void {
+    this.settings.speed = speed;
+  }
+
+  // =============================================================================
+  // Actions - Editor Settings
+  // =============================================================================
+
+  setAdvancedLaneMode(enabled: boolean): void {
+    this.settings.advancedLaneMode = enabled;
+  }
+
+  setAutoConnect(enabled: boolean): void {
+    this.settings.autoConnect = enabled;
+  }
+
+  setShowTypeHints(enabled: boolean): void {
+    this.settings.showTypeHints = enabled;
+  }
+
+  setHighlightCompatible(enabled: boolean): void {
+    this.settings.highlightCompatible = enabled;
+  }
+
+  setFilterByLane(enabled: boolean): void {
+    this.settings.filterByLane = enabled;
+  }
+
+  setFilterByConnection(enabled: boolean): void {
+    this.settings.filterByConnection = enabled;
+  }
+
+  setWarnBeforeDisconnect(enabled: boolean): void {
+    this.settings.warnBeforeDisconnect = enabled;
+  }
+
+  setActiveLane(laneId: LaneId | null): void {
+    this.uiState.activeLaneId = laneId;
+  }
+
+  setHoveredPort(port: PortRef | null): void {
+    this.uiState.hoveredPort = port;
+  }
+
+  setSelectedPort(port: PortRef | null): void {
+    this.uiState.selectedPort = port;
+  }
+
+  openContextMenu(x: number, y: number, portRef: PortRef): void {
+    this.uiState.contextMenu = {
+      isOpen: true,
+      x,
+      y,
+      portRef,
+    };
+  }
+
+  closeContextMenu(): void {
+    this.uiState.contextMenu = {
+      isOpen: false,
+      x: 0,
+      y: 0,
+      portRef: null,
+    };
+  }
+
+  setDraggingLaneKind(laneKind: import('./types').LaneKind | null): void {
+    this.uiState.draggingLaneKind = laneKind;
+  }
+
+  // =============================================================================
+  // Serialization
+  // =============================================================================
+
+  /**
+   * Serialize to JSON (for save/export).
+   * Clean, version-controlled format.
+   */
+  toJSON(): Patch {
+    const hasBuses = this.buses.length > 0 || this.publishers.length > 0 || this.listeners.length > 0;
+
+    return {
+      version: hasBuses ? 2 : 1,
+      features: hasBuses ? { buses: true } : undefined,
+      blocks: this.blocks.map((b) => ({ ...b })), // Clone to plain objects
+      connections: this.connections.map((c) => ({ ...c })),
+      lanes: this.lanes.map((l) => ({ ...l })),
+      // Only include bus arrays if we have them (v2 patches)
+      ...(hasBuses && {
+        buses: this.buses.map((b) => ({ ...b })),
+        publishers: this.publishers.map((p) => ({ ...p })),
+        listeners: this.listeners.map((l) => ({ ...l })),
+      }),
+      settings: { ...this.settings },
+      composites: this.composites.map((c) => ({ ...c })),
+    };
+  }
+
+  /**
+   * Deserialize from JSON (for load).
+   * NOTE: Preserves playback state for live updates.
+   */
+  loadPatch(patch: Patch): void {
+    // Migrate block params from old formats
+    const migratedBlocks = patch.blocks.map(block => ({
+      ...block,
+      params: migrateBlockParams(block.type, block.params),
+    }));
+
+    this.blocks = migratedBlocks;
+    this.connections = patch.connections;
+    this.lanes = patch.lanes;
+    this.settings = patch.settings;
+
+    // Handle v2 patch format with buses
+    if (patch.version >= 2 || (patch.features?.buses)) {
+      this.buses = patch.buses || [];
+      this.publishers = patch.publishers || [];
+      this.listeners = patch.listeners || [];
+    } else {
+      // Legacy v1 patch - ensure empty bus arrays
+      this.buses = [];
+      this.publishers = [];
+      this.listeners = [];
+    }
+
+    if ('composites' in patch && Array.isArray((patch as any).composites)) {
+      this.composites = (patch as any).composites;
+    } else {
+      this.composites = [];
+    }
+    this.uiState.selectedBlockId = null;
+    // NOTE: Do NOT reset isPlaying - preserve playback state
+
+    // Update ID counter to avoid collisions
+    const maxId = Math.max(
+      ...this.blocks.map((b) => parseInt(b.id.split('-')[1]) || 0),
+      ...this.connections.map((c) => parseInt(c.id.split('-')[1]) || 0)
+    );
+    this.nextId = maxId + 1;
+  }
+
+  /**
+   * Clear all blocks and connections.
+   * NOTE: Preserves playback state (isPlaying) for live updates.
+   */
+  clearPatch(): void {
+    this.blocks = [];
+    this.connections = [];
+    this.buses = [];
+    this.publishers = [];
+    this.listeners = [];
+    this.uiState.selectedBlockId = null;
+    // NOTE: Do NOT reset isPlaying - preserve playback state
+    this.previewedDefinition = null;
+
+    // Reset lane block assignments
+    for (const lane of this.lanes) {
+      lane.blockIds = [];
+    }
+  }
+
+  /**
+   * Load a demo animation with pre-wired blocks.
+   * @param variant Which demo to load
+   */
+  loadDemoAnimation(variant: 'lineDrawing' | 'particles' | 'oscillator' | 'math' | 'fullPipeline'): void {
+    // Clear existing patch
+    this.clearPatch();
+
+    // Find appropriate lanes
+    const sceneLane = this.lanes.find((l) => l.kind === 'Scene') ?? this.lanes[0];
+    const phaseLane = this.lanes.find((l) => l.kind === 'Phase') ?? this.lanes[1];
+    const fieldsLane = this.lanes.find((l) => l.kind === 'Fields') ?? this.lanes[2];
+    const specLane = this.lanes.find((l) => l.kind === 'Spec') ?? this.lanes[3];
+    const programLane = this.lanes.find((l) => l.kind === 'Program') ?? this.lanes[4];
+    const scalarLane = this.lanes.find((l) => l.kind === 'Scalars') ?? this.lanes[2];
+
+    if (variant === 'fullPipeline') {
+      // Full Pipeline demo: SVGPathSource → Fields → Phase → PerElementTransport → Output
+      // This demonstrates the complete modular animation system
+
+      // Scene: Load SVG paths
+      const sceneId = this.addBlock('SVGPathSource', sceneLane?.id ?? 'scene', { target: 'builtin:logo' });
+
+      // Fields: Start positions (radial) and delays (staggered)
+      const positionsId = this.addBlock('RadialOrigin', fieldsLane?.id ?? 'fields', {
+        centerX: 300,
+        centerY: 100,
+        minRadius: 150,
+        maxRadius: 350,
+        spread: 1.0,
+      });
+      const delaysId = this.addBlock('LinearStagger', fieldsLane?.id ?? 'fields', {
+        baseStagger: 0.03,
+        jitter: 0.15,
+      });
+
+      // Phase: Animation timing
+      const phaseId = this.addBlock('PhaseMachine', phaseLane?.id ?? 'phase', {
+        entranceDuration: 2.5,
+        holdDuration: 1.5,
+        exitDuration: 0.8,
+      });
+
+      // Compose: Per-element transport animation
+      const transportId = this.addBlock('PerElementTransport', specLane?.id ?? 'spec', {});
+
+      // Output: Mark as patch output
+      const outputId = this.addBlock('outputProgram', programLane?.id ?? 'program', {});
+
+      // Wire everything together:
+      // scene.scene → transport.targets
+      this.connect(sceneId, 'scene', transportId, 'targets');
+      // positions.positions → transport.positions
+      this.connect(positionsId, 'positions', transportId, 'positions');
+      // delays.delays → transport.delays
+      this.connect(delaysId, 'delays', transportId, 'delays');
+      // phase.phase → transport.phase
+      this.connect(phaseId, 'phase', transportId, 'phase');
+      // transport.program → output.program
+      this.connect(transportId, 'program', outputId, 'program');
+
+      // Update labels for clarity
+      const sceneBlock = this.blocks.find((b) => b.id === sceneId);
+      if (sceneBlock) sceneBlock.label = 'Logo Paths';
+      const posBlock = this.blocks.find((b) => b.id === positionsId);
+      if (posBlock) posBlock.label = 'Start Positions';
+      const delayBlock = this.blocks.find((b) => b.id === delaysId);
+      if (delayBlock) delayBlock.label = 'Stagger Delays';
+      const phaseBlock = this.blocks.find((b) => b.id === phaseId);
+      if (phaseBlock) phaseBlock.label = 'Animation Phases';
+      const transportBlock = this.blocks.find((b) => b.id === transportId);
+      if (transportBlock) transportBlock.label = 'Particle Transport';
+
+      // Select the transport block
+      this.selectBlock(transportId);
+    } else if (variant === 'math') {
+      // Math demo: use oscillator macro expansion
+      const macroKey = `macro:oscillator`;
+      const expansion = getMacroExpansion(macroKey);
+      if (expansion) {
+        const firstBlockId = this.expandMacro(expansion);
+        this.selectBlock(firstBlockId);
+      }
+    } else {
+      // Simple demos: use macro expansion for full visibility
+      // When the macro expands, user sees all primitive blocks + connections
+      const macroKey = `macro:${variant}`;
+      const expansion = getMacroExpansion(macroKey);
+      if (expansion) {
+        const firstBlockId = this.expandMacro(expansion);
+        this.selectBlock(firstBlockId);
+      }
+    }
+  }
+
+  // =============================================================================
+  // Actions - Lane Management
+  // =============================================================================
+
+  /**
+   * Toggle lane collapsed state.
+   */
+  toggleLaneCollapsed(laneId: LaneId): void {
+    const lane = this.lanes.find((l) => l.id === laneId);
+    if (lane) {
+      lane.collapsed = !lane.collapsed;
+    }
+  }
+
+  /**
+   * Toggle lane pinned state.
+   */
+  toggleLanePinned(laneId: LaneId): void {
+    const lane = this.lanes.find((l) => l.id === laneId);
+    if (lane) {
+      lane.pinned = !lane.pinned;
+    }
+  }
+
+  /**
+   * Rename a lane.
+   */
+  renameLane(laneId: LaneId, newLabel: string): void {
+    const lane = this.lanes.find((l) => l.id === laneId);
+    if (lane) {
+      lane.label = newLabel;
+    }
+  }
+
+  /**
+   * Add a new lane of given kind.
+   * Multiple lanes of the same kind are allowed.
+   */
+  addLane(kind: LaneKind, label?: string): LaneId {
+    const id = `lane-${this.nextId++}`;
+    const defaults = this.getLaneKindDefaults(kind);
+
+    const lane: Lane = {
+      id,
+      name: id, // Legacy compatibility
+      kind,
+      label: label ?? defaults.label,
+      description: defaults.description,
+      flowStyle: defaults.flowStyle,
+      blockIds: [],
+      collapsed: false,
+      pinned: false,
+    };
+
+    this.lanes.push(lane);
+    return id;
+  }
+
+  /**
+   * Remove a lane (blocks are orphaned, not deleted).
+   */
+  removeLane(laneId: LaneId): void {
+    const idx = this.lanes.findIndex((l) => l.id === laneId);
+    if (idx !== -1) {
+      this.lanes.splice(idx, 1);
+    }
+  }
+
+  /**
+   * Switch to a different lane layout.
+   * Blocks are migrated to appropriate lanes based on kind matching.
+   */
+  switchLayout(layoutId: string): void {
+    const newLayout = getLayoutById(layoutId);
+    if (!newLayout || layoutId === this.currentLayoutId) return;
+
+    const oldLayout = this.currentLayout;
+
+    // Collect all blocks with their current lane assignments
+    const blockAssignments: Array<{ blockId: BlockId; oldLaneId: string }> = [];
+    for (const lane of this.lanes) {
+      for (const blockId of lane.blockIds) {
+        blockAssignments.push({ blockId, oldLaneId: lane.id });
+      }
+    }
+
+    // Create new lanes from the new layout
+    this.lanes = this.createLanesFromLayout(newLayout);
+    this.currentLayoutId = layoutId;
+
+    // Migrate blocks to new lanes
+    for (const { blockId, oldLaneId } of blockAssignments) {
+      const newLaneId = mapLaneToLayout(oldLaneId, oldLayout, newLayout);
+      const newLane = this.lanes.find((l) => l.id === newLaneId);
+      if (newLane) {
+        newLane.blockIds.push(blockId);
+      } else {
+        // Fallback: put in first lane
+        this.lanes[0]?.blockIds.push(blockId);
+      }
+    }
+  }
+
+  // =============================================================================
+  // Helpers
+  // =============================================================================
+
+  /**
+   * Create lanes from a layout template.
+   */
+  private createLanesFromLayout(layout: LaneLayout): Lane[] {
+    return layout.lanes.map((template) => ({
+      id: template.id,
+      name: template.id, // Legacy compatibility
+      kind: template.kind,
+      label: template.label,
+      description: template.description,
+      flavor: template.flavor,
+      flowStyle: template.flowStyle,
+      blockIds: [],
+      collapsed: false,
+      pinned: false,
+    }));
+  }
+
+  /**
+   * Get default properties for a lane kind.
+   */
+  private getLaneKindDefaults(kind: LaneKind): {
+    label: string;
+    description: string;
+    flowStyle: 'chain' | 'patchbay';
+  } {
+    const defaults: Record<LaneKind, { label: string; description: string; flowStyle: 'chain' | 'patchbay' }> = {
+      Scene: { label: 'Scene', description: 'Geometry, text, assets', flowStyle: 'patchbay' },
+      Phase: { label: 'Phase', description: 'Phase machines', flowStyle: 'patchbay' },
+      Fields: { label: 'Fields', description: 'Per-element values', flowStyle: 'patchbay' },
+      Scalars: { label: 'Scalars', description: 'Constants and params', flowStyle: 'patchbay' },
+      Spec: { label: 'Spec', description: 'Animation intent', flowStyle: 'chain' },
+      Program: { label: 'Program', description: 'Compiled behavior', flowStyle: 'chain' },
+      Output: { label: 'Output', description: 'Render output', flowStyle: 'chain' },
+    };
+    return defaults[kind];
+  }
+
+  /**
+   * Map lane kind to block category.
+   */
+  private inferCategory(kind: LaneKind): BlockCategory {
+    const mapping: Record<LaneKind, BlockCategory> = {
+      Scene: 'Scene',
+      Phase: 'Time',
+      Fields: 'Fields',
+      Scalars: 'Math',
+      Spec: 'Compose',
+      Program: 'Compose',
+      Output: 'Render',
+    };
+    return mapping[kind];
+  }
+
+  /**
+   * Composite management
+   */
+  addComposite(def: CompositeDefinition): void {
+    upsertComposite(def);
+    this.composites = listCompositeDefinitions().slice();
+  }
+
+  deleteComposite(id: string): void {
+    removeComposite(id);
+    this.composites = listCompositeDefinitions().slice();
+  }
+
+  // =============================================================================
+  // Actions - Bus Management
+  // =============================================================================
+
+  /**
+   * Create a new bus.
+   * @param typeDesc Type descriptor for the bus
+   * @param name Optional human-readable name
+   * @param combineMode How to combine multiple publishers
+   * @returns Created bus ID
+   */
+  createBus(
+    typeDesc: TypeDesc,
+    name?: string,
+    combineMode: BusCombineMode = 'last'
+  ): string {
+    if (!isBusEligible(typeDesc)) {
+      throw new Error(`Type ${typeDesc.domain} is not eligible for buses`);
+    }
+
+    const defaultValue = CORE_DOMAIN_DEFAULTS[typeDesc.domain as keyof typeof CORE_DOMAIN_DEFAULTS];
+    if (defaultValue === undefined) {
+      throw new Error(`No default value for domain ${typeDesc.domain}`);
+    }
+
+    const bus: Bus = {
+      id: `bus-${this.nextId++}`,
+      name: name ?? `Bus ${typeDesc.domain}`,
+      type: typeDesc,
+      combineMode,
+      defaultValue,
+      sortKey: 0,
+    };
+
+    this.buses.push(bus);
+    return bus.id;
+  }
+
+  /**
+   * Delete a bus and clean up all related routing.
+   * @param busId Bus ID to delete
+   */
+  deleteBus(busId: string): void {
+    // Remove the bus
+    this.buses = this.buses.filter(b => b.id !== busId);
+
+    // Remove all publishers to this bus
+    this.publishers = this.publishers.filter(p => p.busId !== busId);
+
+    // Remove all listeners from this bus
+    this.listeners = this.listeners.filter(l => l.busId !== busId);
+  }
+
+  /**
+   * Update bus properties.
+   * @param busId Bus ID to update
+   * @param updates Properties to update
+   */
+  updateBus(busId: string, updates: Partial<Pick<Bus, 'name' | 'combineMode' | 'defaultValue'>>): void {
+    const bus = this.buses.find(b => b.id === busId);
+    if (!bus) {
+      throw new Error(`Bus ${busId} not found`);
+    }
+
+    if (updates.name !== undefined) bus.name = updates.name;
+    if (updates.combineMode !== undefined) bus.combineMode = updates.combineMode;
+    if (updates.defaultValue !== undefined) bus.defaultValue = updates.defaultValue;
+  }
+
+  // =============================================================================
+  // Actions - Routing Management
+  // =============================================================================
+
+  /**
+   * Add a publisher from an output to a bus.
+   * @param busId Bus ID to publish to
+   * @param blockId Block ID with output
+   * @param port Output port name
+   * @param adapterChain Optional adapter chain
+   * @returns Created publisher ID
+   */
+  addPublisher(
+    busId: string,
+    blockId: BlockId,
+    port: string,
+    adapterChain?: AdapterStep[]
+  ): string {
+    const bus = this.buses.find(b => b.id === busId);
+    if (!bus) {
+      throw new Error(`Bus ${busId} not found`);
+    }
+
+    // Get next sort key
+    const maxSortKey = this.publishers
+      .filter(p => p.busId === busId)
+      .reduce((max, p) => Math.max(max, p.sortKey), 0);
+
+    const publisher: Publisher = {
+      id: `pub-${this.nextId++}`,
+      busId,
+      from: { blockId, port },
+      adapterChain,
+      enabled: true,
+      sortKey: maxSortKey + 1,
+    };
+
+    this.publishers.push(publisher);
+    return publisher.id;
+  }
+
+  /**
+   * Remove a publisher.
+   * @param publisherId Publisher ID to remove
+   */
+  removePublisher(publisherId: string): void {
+    this.publishers = this.publishers.filter(p => p.id !== publisherId);
+  }
+
+  /**
+   * Add a listener from a bus to an input.
+   * @param busId Bus ID to listen from
+   * @param blockId Block ID with input
+   * @param port Input port name
+   * @param adapterChain Optional adapter chain
+   * @returns Created listener ID
+   */
+  addListener(
+    busId: string,
+    blockId: BlockId,
+    port: string,
+    adapterChain?: AdapterStep[]
+  ): string {
+    const bus = this.buses.find(b => b.id === busId);
+    if (!bus) {
+      throw new Error(`Bus ${busId} not found`);
+    }
+
+    const listener: Listener = {
+      id: `list-${this.nextId++}`,
+      busId,
+      to: { blockId, port },
+      adapterChain,
+      enabled: true,
+    };
+
+    this.listeners.push(listener);
+    return listener.id;
+  }
+
+  /**
+   * Remove a listener.
+   * @param listenerId Listener ID to remove
+   */
+  removeListener(listenerId: string): void {
+    this.listeners = this.listeners.filter(l => l.id !== listenerId);
+  }
+
+  /**
+   * Reorder publishers within a bus.
+   * @param publisherId Publisher to reorder
+   * @param newSortKey New sort key position
+   */
+  reorderPublisher(publisherId: string, newSortKey: number): void {
+    const publisher = this.publishers.find(p => p.id === publisherId);
+    if (!publisher) {
+      throw new Error(`Publisher ${publisherId} not found`);
+    }
+
+    const oldSortKey = publisher.sortKey;
+    publisher.sortKey = newSortKey;
+
+    // Adjust other publishers in the same bus
+    this.publishers
+      .filter(p => p.busId === publisher.busId && p.id !== publisherId)
+      .forEach(p => {
+        if (oldSortKey < newSortKey && p.sortKey > oldSortKey && p.sortKey <= newSortKey) {
+          p.sortKey--;
+        } else if (oldSortKey > newSortKey && p.sortKey < oldSortKey && p.sortKey >= newSortKey) {
+          p.sortKey++;
+        }
+      });
+
+  // =============================================================================
+  // Actions - Bus Inspection and Discovery
+  // =============================================================================
+
+  /**
+   * Get all publishers for a bus (method version of computed).
+   * @param busId Bus ID
+   * @returns Array of publishers
+   */
+  // getBusPublishers(busId: string) {
+  //   return this.getPublishersByBus(busId);
+  // }
+
+  /**
+   * Get all listeners for a bus (method version of computed).
+   * @param busId Bus ID
+   * @returns Array of listeners
+   */
+  getBusListeners(busId: string) {
+    return this.getListenersByBus(busId);
+  }
+
+  /**
+   * Get routing information for a specific port.
+   * @param blockId Block ID
+   * @param port Port name
+   * @returns Object with publishesAs and listensTo arrays
+   */
+  getPortRouting(blockId: BlockId, port: string) {
+    const publishesAs = this.publishers.filter(
+      p => p.from.blockId === blockId && p.from.port === port
+    );
+
+    const listensTo = this.listeners.filter(
+      l => l.to.blockId === blockId && l.to.port === port
+    );
+
+    return { publishesAs, listensTo };
+  }
+
+  /**
+   * Find buses compatible with a TypeDesc.
+   * @param typeDesc Type descriptor to match
+   * @returns Array of compatible buses
+   */
+  findBusesByTypeDesc(typeDesc: TypeDesc) {
+    return this.buses.filter(bus => {
+      if (!isBusEligible(bus.type) || !isBusEligible(typeDesc)) {
+        return false;
+      }
+      return isDirectlyCompatible(bus.type, typeDesc);
+    });
+  }
+
+  /**
+   * Check if a bus has any publishers or listeners.
+   * @param busId Bus ID
+   * @returns True if bus is bound (has routing)
+   */
+  isBusBound(busId: string) {
+    const publishers = this.publishers.filter(p => p.busId === busId);
+    const listeners = this.listeners.filter(l => l.busId === busId);
+    return publishers.length > 0 || listeners.length > 0;
+  }
+
+  /**
+   * Get the next sort key for a bus.
+   * @param busId Bus ID
+   * @returns Next sort key value
+   */
+  getNextSortKey(busId: string) {
+    const maxSortKey = this.publishers
+      .filter(p => p.busId === busId)
+      .reduce((max, p) => Math.max(max, p.sortKey), 0);
+    return maxSortKey + 1;
+  }
+}

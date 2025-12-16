@@ -16,6 +16,10 @@ import './SettingsToolbar.css';
 
 interface SettingsToolbarProps {
   store: EditorStore;
+  onShowHelp?: () => void;
+  onOpenPaths: () => void;
+  isPathsModalOpen: boolean;
+  showHelpNudge?: boolean;
 }
 
 /**
@@ -158,14 +162,28 @@ function FilterIcon() {
 }
 
 /**
- * Play/Demo icon.
+ * Paths icon.
  */
-function DemoIcon() {
+function PathsIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path
-        d="M4 3L13 8L4 13V3Z"
-        fill="currentColor"
+        d="M3 4.5C3 4.22386 3.22386 4 3.5 4H7.5L8.5 5H12.5C12.7761 5 13 5.22386 13 5.5V12.5C13 12.7761 12.7761 13 12.5 13H3.5C3.22386 13 3 12.7761 3 12.5V4.5Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        fill="none"
+      />
+      <path
+        d="M5 7.5H11"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M5 9.5H9"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
       />
     </svg>
   );
@@ -174,7 +192,7 @@ function DemoIcon() {
 /**
  * Settings Toolbar component.
  */
-export const SettingsToolbar = observer(({ store }: SettingsToolbarProps) => {
+export const SettingsToolbar = observer(({ store, onShowHelp, onOpenPaths, isPathsModalOpen, showHelpNudge }: SettingsToolbarProps) => {
   const currentLayout = store.currentLayout;
 
   return (
@@ -273,40 +291,27 @@ export const SettingsToolbar = observer(({ store }: SettingsToolbarProps) => {
           />
         </Dropdown>
 
-        {/* Demos Dropdown */}
-        <Dropdown icon={<DemoIcon />} label="Demos">
-          <MenuHeader>Load Demo</MenuHeader>
-          <MenuItem
-            label="Full Pipeline"
-            description="Scene → Fields → Phase → Transport"
-            onClick={() => store.loadDemoAnimation('fullPipeline')}
-          />
-          <MenuItem
-            label="Line Drawing"
-            description="Animated stroke paths"
-            onClick={() => store.loadDemoAnimation('lineDrawing')}
-          />
-          <MenuItem
-            label="Particles"
-            description="Orbiting particle system"
-            onClick={() => store.loadDemoAnimation('particles')}
-          />
-          <MenuItem
-            label="Math + Oscillator"
-            description="Constants wired to oscillating dot"
-            onClick={() => store.loadDemoAnimation('math')}
-          />
-          <MenuDivider />
-          <MenuHeader>Patch</MenuHeader>
-          <MenuItem
-            label="Clear All"
-            description="Remove all blocks and connections"
-            onClick={() => store.clearPatch()}
-          />
-        </Dropdown>
+        {/* Path Manager */}
+        <button
+          className={`toolbar-dropdown-trigger ${isPathsModalOpen ? 'active' : ''}`}
+          onClick={onOpenPaths}
+          title="Manage SVG paths"
+        >
+          <span className="dropdown-icon"><PathsIcon /></span>
+          <span className="dropdown-label">Paths...</span>
+        </button>
+
       </div>
 
       <div className="toolbar-right">
+        <button
+          className={`toolbar-help-btn ${showHelpNudge ? 'nudge' : ''}`}
+          onClick={() => onShowHelp?.()}
+          title="Quick tour / Help"
+        >
+          ?
+        </button>
+
         <button
           className="toolbar-clear-btn"
           onClick={() => store.clearPatch()}

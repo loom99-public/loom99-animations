@@ -67,7 +67,8 @@
 
 .block-tier-badge,
 .block-subcategory-badge,
-.block-legacy-badge {
+.block-legacy-badge,
+.block-composite-badge {
   padding: 2px 8px;
   border-radius: 10px;
   font-weight: 600;
@@ -92,6 +93,12 @@
   background: #312e81;
   color: #c7d2fe;
   border: 1px solid rgba(124, 58, 237, 0.4);
+}
+
+.block-composite-badge {
+  background: #0ea5e9;
+  color: #ecfeff;
+  border: 1px solid rgba(14, 165, 233, 0.7);
 }
 
 .block-preview-badge {
@@ -163,6 +170,84 @@
 .tag-value {
   color: #e5e7eb;
   font-weight: 600;
+}
+
+.composite-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.composite-toggle {
+  padding: 4px 8px;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  color: #67e8f9;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.composite-toggle:hover {
+  background: #1e293b;
+}
+
+.composite-graph {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background: #0f0f0f;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+}
+
+.composite-graph-section h4 {
+  margin: 0 0 4px 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #9ca3af;
+}
+
+.composite-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  font-size: 11px;
+}
+
+.composite-node-id {
+  color: #67e8f9;
+  margin-right: 6px;
+}
+
+.composite-node-type {
+  color: #e5e7eb;
+}
+
+.composite-arrow {
+  margin: 0 4px;
+  color: #6b7280;
+}
+
+.composite-ports {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.composite-ports h5 {
+  margin: 0 0 4px 0;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #9ca3af;
 }
 
 .block-description {
@@ -566,6 +651,39 @@ code.wiring-info-value {
 .wiring-library-item:active {
   background: #2a4a3a;
   border-color: #22c55e;
+}
+
+.wiring-hint {
+  margin: 4px 0 8px;
+  color: #aaa;
+  font-size: 11px;
+}
+
+.wiring-target-item.near-match {
+  opacity: 0.85;
+  border-style: dashed;
+}
+
+.wiring-adapter-btn {
+  margin-left: auto;
+  padding: 4px 8px;
+  border: 1px solid #4ade80;
+  background: #1f2f1f;
+  color: #bbf7d0;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.wiring-adapter-btn:hover {
+  background: #234123;
+  border-color: #22c55e;
+  color: #dcfce7;
+}
+
+.wiring-adapter-btn:active {
+  background: #1b341b;
 }
 
 .wiring-library-color {

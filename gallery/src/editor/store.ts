@@ -19,7 +19,14 @@ import type {
   BlockType,
   BlockCategory,
   PortRef,
+  Bus,
+  Publisher,
+  Listener,
+  TypeDesc,
+  BusCombineMode,
+  AdapterStep,
 } from './types';
+import { isBusEligible, CORE_DOMAIN_DEFAULTS } from './types';
 import { getBlockDefinition, type BlockDefinition } from './blocks';
 import {
   DEFAULT_LAYOUT,
@@ -28,6 +35,12 @@ import {
   PRESET_LAYOUTS,
 } from './laneLayouts';
 import { getMacroKey, getMacroExpansion, type MacroExpansion } from './macros';
+import {
+  upsertComposite,
+  removeComposite,
+  listCompositeDefinitions,
+  type CompositeDefinition,
+} from './composites';
 
 // =============================================================================
 // Migration Helpers
@@ -71,6 +84,15 @@ export class EditorStore {
   /** All connections between blocks */
   connections: Connection[] = [];
 
+  /** Bus definitions */
+  buses: Bus[] = [];
+
+  /** Bus routing - publishers from blocks to buses */
+  publishers: Publisher[] = [];
+
+  /** Bus routing - listeners from buses to blocks */
+  listeners: Listener[] = [];
+
   /** Current lane layout ID */
   currentLayoutId: string = DEFAULT_LAYOUT.id;
 
@@ -113,6 +135,9 @@ export class EditorStore {
   /** Previewed block definition (from library, before placement) */
   previewedDefinition: BlockDefinition | null = null;
 
+  /** Composite definitions */
+  composites: CompositeDefinition[] = [];
+
   /** ID counter for blocks/connections */
   private nextId = 1;
 
@@ -124,11 +149,15 @@ export class EditorStore {
     makeObservable(this, {
       blocks: observable,
       connections: observable,
+      buses: observable,
+      publishers: observable,
+      listeners: observable,
       currentLayoutId: observable,
       lanes: observable,
       settings: observable,
       uiState: observable,
       previewedDefinition: observable,
+      composites: observable,
       addBlock: action,
       expandMacro: action,
       removeBlock: action,
@@ -143,6 +172,20 @@ export class EditorStore {
       loadPatch: action,
       loadDemoAnimation: action,
       clearPatch: action,
+      createBus: action,
+      deleteBus: action,
+      updateBus: action,
+      addPublisher: action,
+      removePublisher: action,
+      addListener: action,
+      removeListener: action,
+      reorderPublisher: action,
+      // getBusPublishers: action,
+      // getBusListeners: action,
+      // getPortRouting: action,
+      // findBusesByTypeDesc: action,
+      // isBusBound: action,
+      // getNextSortKey: action,
       toggleLaneCollapsed: action,
       toggleLanePinned: action,
       renameLane: action,
@@ -169,6 +212,11 @@ export class EditorStore {
       selectedPortInfo: computed,
       currentLayout: computed,
       availableLayouts: computed,
+      getBusById: computed,
+      getPublishersByBus: computed,
+      getListenersByBus: computed,
+      getBusesByCategory: computed,
+      getBusEligibleBuses: computed,
     });
   }
 
@@ -211,6 +259,37 @@ export class EditorStore {
   /** Get all available layouts */
   get availableLayouts(): readonly LaneLayout[] {
     return PRESET_LAYOUTS;
+  }
+
+  // =============================================================================
+  // Bus Computed Properties
+  // =============================================================================
+
+  /** Get bus by ID */
+  getBusById(id: string): Bus | null {
+    return this.buses.find((b) => b.id === id) ?? null;
+  }
+
+  /** Get all publishers for a bus */
+  getPublishersByBus(busId: string): Publisher[] {
+    return this.publishers
+      .filter((p) => p.busId === busId && p.enabled)
+      .sort((a, b) => a.sortKey - b.sortKey);
+  }
+
+  /** Get all listeners for a bus */
+  getListenersByBus(busId: string): Listener[] {
+    return this.listeners.filter((l) => l.busId === busId && l.enabled);
+  }
+
+  /** Get buses by category (core vs internal) */
+  getBusesByCategory(category: 'core' | 'internal'): Bus[] {
+    return this.buses.filter((b) => b.type.category === category);
+  }
+
+  /** Get only bus-eligible buses (core types) */
+  getBusEligibleBuses(): Bus[] {
+    return this.buses.filter((b) => isBusEligible(b.type));
   }
 
   // =============================================================================
@@ -623,12 +702,22 @@ export class EditorStore {
    * Clean, version-controlled format.
    */
   toJSON(): Patch {
+    const hasBuses = this.buses.length > 0 || this.publishers.length > 0 || this.listeners.length > 0;
+
     return {
-      version: 1,
+      version: hasBuses ? 2 : 1,
+      features: hasBuses ? { buses: true } : undefined,
       blocks: this.blocks.map((b) => ({ ...b })), // Clone to plain objects
       connections: this.connections.map((c) => ({ ...c })),
       lanes: this.lanes.map((l) => ({ ...l })),
+      // Only include bus arrays if we have them (v2 patches)
+      ...(hasBuses && {
+        buses: this.buses.map((b) => ({ ...b })),
+        publishers: this.publishers.map((p) => ({ ...p })),
+        listeners: this.listeners.map((l) => ({ ...l })),
+      }),
       settings: { ...this.settings },
+      composites: this.composites.map((c) => ({ ...c })),
     };
   }
 
@@ -646,7 +735,35 @@ export class EditorStore {
     this.blocks = migratedBlocks;
     this.connections = patch.connections;
     this.lanes = patch.lanes;
-    this.settings = patch.settings;
+    this.settings = {
+      seed: patch.settings?.seed || 0,
+      speed: patch.settings?.speed || 1,
+      advancedLaneMode: patch.settings?.advancedLaneMode || false,
+      autoConnect: patch.settings?.autoConnect || false,
+      showTypeHints: patch.settings?.showTypeHints || false,
+      highlightCompatible: patch.settings?.highlightCompatible || false,
+      warnBeforeDisconnect: patch.settings?.warnBeforeDisconnect || true,
+      filterByLane: patch.settings?.filterByLane || false,
+      filterByConnection: patch.settings?.filterByConnection || false,
+    };
+
+    // Handle v2 patch format with buses
+    if (patch.version >= 2 || (patch.features?.buses)) {
+      this.buses = patch.buses || [];
+      this.publishers = patch.publishers || [];
+      this.listeners = patch.listeners || [];
+    } else {
+      // Legacy v1 patch - ensure empty bus arrays
+      this.buses = [];
+      this.publishers = [];
+      this.listeners = [];
+    }
+
+    if ('composites' in patch && Array.isArray((patch as any).composites)) {
+      this.composites = (patch as any).composites;
+    } else {
+      this.composites = [];
+    }
     this.uiState.selectedBlockId = null;
     // NOTE: Do NOT reset isPlaying - preserve playback state
 
@@ -665,6 +782,9 @@ export class EditorStore {
   clearPatch(): void {
     this.blocks = [];
     this.connections = [];
+    this.buses = [];
+    this.publishers = [];
+    this.listeners = [];
     this.uiState.selectedBlockId = null;
     // NOTE: Do NOT reset isPlaying - preserve playback state
     this.previewedDefinition = null;
@@ -689,7 +809,7 @@ export class EditorStore {
     const fieldsLane = this.lanes.find((l) => l.kind === 'Fields') ?? this.lanes[2];
     const specLane = this.lanes.find((l) => l.kind === 'Spec') ?? this.lanes[3];
     const programLane = this.lanes.find((l) => l.kind === 'Program') ?? this.lanes[4];
-    const scalarLane = this.lanes.find((l) => l.kind === 'Scalars') ?? this.lanes[2];
+    // const scalarLane = this.lanes.find((l) => l.kind === 'Scalars') ?? this.lanes[2];
 
     if (variant === 'fullPipeline') {
       // Full Pipeline demo: SVGPathSource → Fields → Phase → PerElementTransport → Output
@@ -929,5 +1049,201 @@ export class EditorStore {
       Output: 'Render',
     };
     return mapping[kind];
+  }
+
+  /**
+   * Composite management
+   */
+  addComposite(def: CompositeDefinition): void {
+    upsertComposite(def);
+    this.composites = listCompositeDefinitions().slice();
+  }
+
+  deleteComposite(id: string): void {
+    removeComposite(id);
+    this.composites = listCompositeDefinitions().slice();
+  }
+
+  // =============================================================================
+  // Actions - Bus Management
+  // =============================================================================
+
+  /**
+   * Create a new bus.
+   * @param typeDesc Type descriptor for the bus
+   * @param name Optional human-readable name
+   * @param combineMode How to combine multiple publishers
+   * @returns Created bus ID
+   */
+  createBus(
+    typeDesc: TypeDesc,
+    name?: string,
+    combineMode: BusCombineMode = 'last'
+  ): string {
+    if (!isBusEligible(typeDesc)) {
+      throw new Error(`Type ${typeDesc.domain} is not eligible for buses`);
+    }
+
+    const defaultValue = CORE_DOMAIN_DEFAULTS[typeDesc.domain as keyof typeof CORE_DOMAIN_DEFAULTS];
+    if (defaultValue === undefined) {
+      throw new Error(`No default value for domain ${typeDesc.domain}`);
+    }
+
+    const bus: Bus = {
+      id: `bus-${this.nextId++}`,
+      name: name ?? `Bus ${typeDesc.domain}`,
+      type: typeDesc,
+      combineMode,
+      defaultValue,
+      sortKey: 0,
+    };
+
+    this.buses.push(bus);
+    return bus.id;
+  }
+
+  /**
+   * Delete a bus and clean up all related routing.
+   * @param busId Bus ID to delete
+   */
+  deleteBus(busId: string): void {
+    // Remove the bus
+    this.buses = this.buses.filter(b => b.id !== busId);
+
+    // Remove all publishers to this bus
+    this.publishers = this.publishers.filter(p => p.busId !== busId);
+
+    // Remove all listeners from this bus
+    this.listeners = this.listeners.filter(l => l.busId !== busId);
+  }
+
+  /**
+   * Update bus properties.
+   * @param busId Bus ID to update
+   * @param updates Properties to update
+   */
+  updateBus(busId: string, updates: Partial<Pick<Bus, 'name' | 'combineMode' | 'defaultValue'>>): void {
+    const bus = this.buses.find(b => b.id === busId);
+    if (!bus) {
+      throw new Error(`Bus ${busId} not found`);
+    }
+
+    if (updates.name !== undefined) bus.name = updates.name;
+    if (updates.combineMode !== undefined) bus.combineMode = updates.combineMode;
+    if (updates.defaultValue !== undefined) bus.defaultValue = updates.defaultValue;
+  }
+
+  // =============================================================================
+  // Actions - Routing Management
+  // =============================================================================
+
+  /**
+   * Add a publisher from an output to a bus.
+   * @param busId Bus ID to publish to
+   * @param blockId Block ID with output
+   * @param port Output port name
+   * @param adapterChain Optional adapter chain
+   * @returns Created publisher ID
+   */
+  addPublisher(
+    busId: string,
+    blockId: BlockId,
+    port: string,
+    adapterChain?: AdapterStep[]
+  ): string {
+    const bus = this.buses.find(b => b.id === busId);
+    if (!bus) {
+      throw new Error(`Bus ${busId} not found`);
+    }
+
+    // Get next sort key
+    const maxSortKey = this.publishers
+      .filter(p => p.busId === busId)
+      .reduce((max, p) => Math.max(max, p.sortKey), 0);
+
+    const publisher: Publisher = {
+      id: `pub-${this.nextId++}`,
+      busId,
+      from: { blockId, port },
+      adapterChain,
+      enabled: true,
+      sortKey: maxSortKey + 1,
+    };
+
+    this.publishers.push(publisher);
+    return publisher.id;
+  }
+
+  /**
+   * Remove a publisher.
+   * @param publisherId Publisher ID to remove
+   */
+  removePublisher(publisherId: string): void {
+    this.publishers = this.publishers.filter(p => p.id !== publisherId);
+  }
+
+  /**
+   * Add a listener from a bus to an input.
+   * @param busId Bus ID to listen from
+   * @param blockId Block ID with input
+   * @param port Input port name
+   * @param adapterChain Optional adapter chain
+   * @returns Created listener ID
+   */
+  addListener(
+    busId: string,
+    blockId: BlockId,
+    port: string,
+    adapterChain?: AdapterStep[]
+  ): string {
+    const bus = this.buses.find(b => b.id === busId);
+    if (!bus) {
+      throw new Error(`Bus ${busId} not found`);
+    }
+
+    const listener: Listener = {
+      id: `list-${this.nextId++}`,
+      busId,
+      to: { blockId, port },
+      adapterChain,
+      enabled: true,
+    };
+
+    this.listeners.push(listener);
+    return listener.id;
+  }
+
+  /**
+   * Remove a listener.
+   * @param listenerId Listener ID to remove
+   */
+  removeListener(listenerId: string): void {
+    this.listeners = this.listeners.filter(l => l.id !== listenerId);
+  }
+
+  /**
+   * Reorder publishers within a bus.
+   * @param publisherId Publisher to reorder
+   * @param newSortKey New sort key position
+   */
+  reorderPublisher(publisherId: string, newSortKey: number): void {
+    const publisher = this.publishers.find(p => p.id === publisherId);
+    if (!publisher) {
+      throw new Error(`Publisher ${publisherId} not found`);
+    }
+
+    const oldSortKey = publisher.sortKey;
+    publisher.sortKey = newSortKey;
+
+    // Adjust other publishers in the same bus
+    this.publishers
+      .filter(p => p.busId === publisher.busId && p.id !== publisherId)
+      .forEach(p => {
+        if (oldSortKey < newSortKey && p.sortKey > oldSortKey && p.sortKey <= newSortKey) {
+          p.sortKey--;
+        } else if (oldSortKey > newSortKey && p.sortKey < oldSortKey && p.sortKey >= newSortKey) {
+          p.sortKey++;
+        }
+        });
   }
 }

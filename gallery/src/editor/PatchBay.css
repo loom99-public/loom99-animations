@@ -221,6 +221,11 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+.block.drop-target {
+  outline: 1px dashed rgba(74, 158, 255, 0.7);
+  background: rgba(74, 158, 255, 0.08);
+}
+
 /* Block drag handle */
 .block-drag-handle {
   display: flex;
@@ -352,6 +357,7 @@
 .port {
   display: flex;
   align-items: center;
+  gap: 4px;
   padding: 2px 6px;
   background: #333;
   border: 2px solid #555;
@@ -411,4 +417,48 @@
   max-width: 60px;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.port-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.port-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 4px;
+  border-radius: 6px;
+  background: #444;
+  color: #ddd;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.port-badge.world {
+  font-size: 9px;
+  min-width: 18px;
+}
+
+.port-badge.world.signal { background: #1d4ed8; }
+.port-badge.world.field { background: #9333ea; }
+.port-badge.world.scalar { background: #b45309; }
+.port-badge.world.event { background: #047857; }
+.port-badge.world.scene { background: #2563eb; }
+.port-badge.world.program { background: #b91c1c; }
+.port-badge.world.render { background: #0ea5e9; }
+.port-badge.world.filter { background: #7c3aed; }
+.port-badge.world.stroke { background: #334155; }
+.port-badge.world.unknown { background: #44403c; }
+
+.port-badge.domain {
+  background: #2f2f2f;
+  color: #b4b4b4;
+  font-weight: 600;
+  text-transform: none;
 }

@@ -15,7 +15,8 @@
  * 3. User dropped a block to satisfy a specific input port
  */
 
-import type { Block, BlockId, Connection, Slot, SlotType, LaneId } from './types';
+import type { Block, BlockId, Connection, SlotType, LaneId } from './types';
+import { areTypesCompatible } from './portUtils';
 import type { BlockDefinition } from './blocks';
 
 // =============================================================================
@@ -127,7 +128,7 @@ function wireToExplicitInput(ctx: AutoWireContext): AutoWireResult {
 
   // Find outputs on new block that match the target input type
   const matchingOutputs = newBlockDef.outputs.filter(
-    (out) => typesCompatible(out.type, toPort.slotType)
+    (out) => areTypesCompatible(out.type, toPort.slotType)
   );
 
   if (matchingOutputs.length === 0) {
@@ -163,7 +164,7 @@ function wireFromExplicitOutput(ctx: AutoWireContext): AutoWireResult {
 
   // Find inputs on new block that match the source output type AND are free
   const matchingInputs = newBlockDef.inputs.filter((inp) => {
-    if (!typesCompatible(fromPort.slotType, inp.type)) return false;
+    if (!areTypesCompatible(fromPort.slotType, inp.type)) return false;
     // Must not already have an incoming connection
     return !hasIncomingConnection(connections, newBlockId, inp.id);
   });
@@ -210,7 +211,7 @@ function wireFromPrevInLane(ctx: AutoWireContext): AutoWireResult {
   for (const prevOutput of prevDef.outputs) {
     // Find free inputs on new block that match this output type
     const matchingInputs = newBlockDef.inputs.filter((inp) => {
-      if (!typesCompatible(prevOutput.type, inp.type)) return false;
+      if (!areTypesCompatible(prevOutput.type, inp.type)) return false;
       // Must not already have an incoming connection
       if (hasIncomingConnection(connections, newBlockId, inp.id)) return false;
       // Must not already be claimed by another auto-wire in this batch
@@ -274,7 +275,7 @@ function wireFromAllBlocks(ctx: AutoWireContext): AutoWireResult {
       if (!blockDef) continue;
 
       for (const output of blockDef.outputs) {
-        if (!typesCompatible(output.type, newInput.type)) continue;
+        if (!areTypesCompatible(output.type, newInput.type)) continue;
 
         // Check this output isn't already connected to something
         // (optional: we could allow fan-out, but for now keep it simple)
@@ -320,14 +321,6 @@ function wireFromAllBlocks(ctx: AutoWireContext): AutoWireResult {
 // =============================================================================
 // Helpers
 // =============================================================================
-
-/**
- * Check if two slot types are compatible for connection.
- * For now, exact match. Could add coercion rules later.
- */
-function typesCompatible(outputType: SlotType, inputType: SlotType): boolean {
-  return outputType === inputType;
-}
 
 /**
  * Check if an input port already has an incoming connection.

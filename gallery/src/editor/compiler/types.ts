@@ -6,6 +6,7 @@
  * - Patch graph is made of blocks with typed ports
  * - Compilation is a topo-ordered reduction producing typed Artifacts per output port
  * - Final Artifact must be a RenderTreeProgram
+ * - Phase 2: Buses as first-class graph nodes
  */
 
 // =============================================================================
@@ -123,6 +124,12 @@ export type ValueKind =
   | 'Field:color'
   | 'Field:vec2'
 
+  // Signals
+  | 'Signal:Time'
+  | 'Signal:number'
+  | 'Signal:Unit'
+  | 'Signal:vec2'
+
   // Special types
   | 'PhaseMachine'
   | 'TargetScene'
@@ -197,10 +204,26 @@ export interface BlockInstance {
   position?: number;
 }
 
+/**
+ * Forward declaration of bus types (imported from main types)
+ * These will be available when buses are present in a patch.
+ */
+// Re-export types from main editor types
+export type { Bus, Publisher, Listener } from '../types';
+
+/**
+ * Extended CompilerPatch with optional bus support.
+ * Maintains backward compatibility with existing wire-only patches.
+ */
 export interface CompilerPatch {
   blocks: Map<BlockId, BlockInstance>;
   connections: readonly CompilerConnection[];
   output?: PortRef;
+
+  // Bus-related additions (Phase 2)
+  buses?: Bus[];
+  publishers?: Publisher[];
+  listeners?: Listener[];
 }
 
 // =============================================================================
@@ -228,6 +251,7 @@ export type Artifact =
   // Primitive block artifacts (Phase 2)
   | { kind: 'ElementCount'; value: number }
   | { kind: 'Signal:Time'; value: (t: number, ctx: RuntimeCtx) => number }
+  | { kind: 'Signal:number'; value: (t: number, ctx: RuntimeCtx) => number }
   | { kind: 'Signal:Unit'; value: (t: number, ctx: RuntimeCtx) => number }
   | { kind: 'Signal:vec2'; value: (t: number, ctx: RuntimeCtx) => Vec2 }
   | { kind: 'RenderNode'; value: DrawNode }
@@ -240,6 +264,9 @@ export type Artifact =
   | { kind: 'Spec:Transform3DCompositor'; value: unknown }
   | { kind: 'Spec:DeformCompositor'; value: unknown }
   | { kind: 'Spec:ProgramStack'; value: unknown }
+
+  // Phase 2: Field expression artifacts for lazy evaluation
+  | { kind: 'FieldExpr'; value: unknown }
 
   | { kind: 'Error'; message: string; where?: { blockId?: string; port?: string } };
 
@@ -288,12 +315,19 @@ export type CompileErrorCode =
   | 'CycleDetected'
   | 'OutputMissing'
   | 'OutputWrongType'
-  | 'UpstreamError';
+  | 'UpstreamError'
+  // Phase 2 additions
+  | 'BusMissing'
+  | 'BusTypeError'
+  | 'InvalidBusRouting'
+  | 'FeedbackLoopError'
+  | 'AdapterError'
+  | 'BusEvaluationError';
 
 export interface CompileError {
   code: CompileErrorCode;
   message: string;
-  where?: { blockId?: string; port?: string; connection?: CompilerConnection };
+  where?: { blockId?: string; port?: string; connection?: CompilerConnection; busId?: string };
 }
 
 export interface CompileResult {

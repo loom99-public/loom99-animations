@@ -22,6 +22,8 @@ import {
   getPortColor,
   isPortConnected,
   areTypesCompatible,
+  describeSlotType,
+  formatTypeDescriptor,
 } from './portUtils';
 import './PatchBay.css';
 
@@ -71,6 +73,21 @@ function Port({
   onContextMenu: (e: React.MouseEvent, port: PortRef) => void;
 }) {
   const portRef: PortRef = { blockId, slotId: slot.id, direction };
+  const typeDescriptor = describeSlotType(slot.type);
+  const worldGlyph: Record<string, string | null> = {
+    signal: 'S',
+    field: 'F',
+    scalar: 'C',
+    event: 'E',
+    scene: 'SC',
+    program: 'P',
+    render: 'R',
+    filter: 'FX',
+    stroke: 'ST',
+    unknown: null,
+  };
+  const worldBadge = worldGlyph[typeDescriptor.world] ?? null;
+  const domainBadge = typeDescriptor.domain;
 
   const handleMouseEnter = () => onHover(portRef);
   const handleMouseLeave = () => onHover(null);
@@ -107,12 +124,16 @@ function Port({
     <div
       className={className}
       style={portStyle}
-      title={`${slot.label} (${slot.type})`}
+      title={`${slot.label} (${slot.type}) · ${formatTypeDescriptor(typeDescriptor)}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
     >
+      <span className="port-badges">
+        {worldBadge && <span className={`port-badge world ${typeDescriptor.world}`}>{worldBadge}</span>}
+        {domainBadge && <span className="port-badge domain">{domainBadge}</span>}
+      </span>
       <span className="port-label">{slot.label}</span>
     </div>
   );
@@ -152,6 +173,21 @@ function DraggablePatchBlock({
     },
   });
 
+  const { setNodeRef: setDropRef, isOver: isOverDropTarget } = useDroppable({
+    id: `patch-target-${block.id}`,
+    data: {
+      type: 'patch-target',
+      blockId: block.id,
+      laneId,
+      index,
+    },
+  });
+
+  const setRefs = (node: HTMLElement | null) => {
+    setNodeRef(node);
+    setDropRef(node);
+  };
+
   const definition = getBlockDefinition(block.type);
   const blockColor = definition?.color ?? laneColor;
 
@@ -185,12 +221,12 @@ function DraggablePatchBlock({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={setRefs}
       style={{
         ...style,
         '--block-color': blockColor,
       } as React.CSSProperties}
-      className={`block ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''} ${hasInputs ? 'has-inputs' : ''} ${hasOutputs ? 'has-outputs' : ''}`}
+      className={`block ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''} ${isOverDropTarget ? 'drop-target' : ''} ${hasInputs ? 'has-inputs' : ''} ${hasOutputs ? 'has-outputs' : ''}`}
       onClick={(e) => {
         e.stopPropagation();
         onSelect();

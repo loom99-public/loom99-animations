@@ -11,7 +11,6 @@ import type {
   ParticlesFields,
   ParticleBehavior,
   Color,
-  Env,
   VarianceEnvelope,
 } from './types';
 import {

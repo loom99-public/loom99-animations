@@ -119,7 +119,7 @@ export function memoizedScan<S>(
       const nextCacheTime = maxComputedTime + cacheInterval;
       const startState = cache.get(maxComputedTime)!;
 
-      let state = startState;
+      let state: S = startState;
       let currentTime = maxComputedTime;
 
       while (currentTime < nextCacheTime) {

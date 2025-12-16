@@ -9,13 +9,10 @@ import type { Seed } from '../../core/types';
 import type { RenderTree } from '../../render/tree';
 import type { Program } from './compiler';
 import type { Env } from './types';
-import { compileParticles, createParticlesPhaseMachine, getProgramDuration } from './compiler';
+import { compileParticles, createParticlesPhaseMachine } from './compiler';
 import { getScene, getViewport } from './scene';
 import {
   createModeSystem,
-  ORIGINAL_MODE_SYSTEM,
-  PROCEDURAL_MODE_SYSTEM,
-  VARIED_MODE_SYSTEM,
 } from './modes';
 import {
   VARIANCE_ORIGINAL,

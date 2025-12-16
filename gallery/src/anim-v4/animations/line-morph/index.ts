@@ -8,9 +8,9 @@
 import type { Seed } from '../../core/types';
 import type { RenderTree } from '../../render/tree';
 import type { Program } from './compiler';
-import type { Env, Field, Color } from './types';
-import { VARIANCE_PROCEDURAL, VARIANCE_VARIED, VARIANCE_ORIGINAL } from './types';
-import { compileLineMorph, createLineMorphPhaseMachine, getProgramDuration } from './compiler';
+import type { Env, Field } from './types';
+import { VARIANCE_ORIGINAL } from './types';
+import { compileLineMorph, createLineMorphPhaseMachine } from './compiler';
 import {
   getScene,
   getOriginalOriginsForTarget,
@@ -21,7 +21,6 @@ import {
   pickOriginMode,
   PROCEDURAL_MODE_SYSTEM,
   VARIED_MODE_SYSTEM,
-  ORIGINAL_MODE_SYSTEM,
 } from './modes';
 import type { Vec2 } from '../../core/types';
 

@@ -284,7 +284,7 @@ export function createSVGGlitchRenderer(): GlitchRenderer {
 export function createCSSGlitchRenderer(): GlitchRenderer {
   return {
     layer(args): RenderNode {
-      const { id, content, channel, offset, transform, opacity, bounds } = args;
+      const { id, content, offset, transform, opacity, bounds } = args;
 
       // Build transform including offset as translation
       const fullTransform = buildTransform(

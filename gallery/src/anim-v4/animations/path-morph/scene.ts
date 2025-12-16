@@ -5,7 +5,7 @@
  * Each path becomes a morph target.
  */
 
-import type { PathMorphScene, PathDef } from './types';
+import type { PathMorphScene } from './types';
 import { LOGO_PATHS, TEXT_PATHS, pathPointsToSVGPath } from '../../../data/pathData';
 
 // =============================================================================

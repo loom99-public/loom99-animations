@@ -8,9 +8,6 @@
 import type { RenderTree, RenderNode } from '../../render/tree';
 import { text, rect, group, renderTree } from '../../render/tree';
 import type {
-  TypewriterScene,
-  TypewriterParams,
-  TypewriterState,
   TypewriterRenderInput,
   Color,
 } from './types';

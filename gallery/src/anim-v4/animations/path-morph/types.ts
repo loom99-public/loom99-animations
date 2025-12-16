@@ -8,7 +8,6 @@
  */
 
 import type { Seed, Time, Context } from '../../core/types';
-import type { RenderTree } from '../../render/tree';
 
 // =============================================================================
 // Vec2

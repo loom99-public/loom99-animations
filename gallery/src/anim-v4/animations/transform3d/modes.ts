@@ -11,9 +11,9 @@
  * - Variance: procedural (coherent) vs varied (chaotic)
  */
 
-import type { Seed, Vec2, CompileCtx } from '../../core/types';
+import type { Vec2 } from '../../core/types';
 import { createPRNG } from '../../core/rand';
-import type { Transform3DFields, Field, EaseKind } from './types';
+import type { Transform3DFields } from './types';
 
 // =============================================================================
 // Mode Types
@@ -48,46 +48,46 @@ interface EntryPosePreset {
 
 const ENTRY_POSE_PRESETS: Record<EntryPoseMode, EntryPosePreset> = {
   tiltLeft: {
-    getTranslate: (rng, deep) => ({
+    getTranslate: (rng, _deep) => ({
       x: rng.range(-300, -150),
       y: rng.range(-50, 50),
     }),
-    getZ: (rng, deep) => rng.range(deep ? 200 : 100, deep ? 400 : 200),
-    getRotX: (rng, varied) => rng.range(varied ? -45 : -20, varied ? 45 : 20),
-    getRotY: (rng, varied) => rng.range(varied ? -60 : -40, varied ? -20 : -30),
+    getZ: (rng, _deep) => rng.range(100, 200),
+    getRotX: (rng, _varied) => rng.range(-20, 20),
+    getRotY: (rng, _varied) => rng.range(-40, -30),
     getRotZ: (rng) => rng.range(-30, 30),
     getScale: (rng) => rng.range(0.6, 0.9),
   },
   tiltRight: {
-    getTranslate: (rng, deep) => ({
+    getTranslate: (rng, _deep) => ({
       x: rng.range(150, 300),
       y: rng.range(-50, 50),
     }),
-    getZ: (rng, deep) => rng.range(deep ? 200 : 100, deep ? 400 : 200),
-    getRotX: (rng, varied) => rng.range(varied ? -45 : -20, varied ? 45 : 20),
-    getRotY: (rng, varied) => rng.range(varied ? 20 : 30, varied ? 60 : 40),
+    getZ: (rng, _deep) => rng.range(100, 200),
+    getRotX: (rng, _varied) => rng.range(-20, 20),
+    getRotY: (rng, _varied) => rng.range(30, 40),
     getRotZ: (rng) => rng.range(-30, 30),
     getScale: (rng) => rng.range(0.6, 0.9),
   },
   flipTop: {
-    getTranslate: (rng, deep) => ({
+    getTranslate: (rng, _deep) => ({
       x: rng.range(-50, 50),
       y: rng.range(-300, -150),
     }),
-    getZ: (rng, deep) => rng.range(deep ? 150 : 80, deep ? 350 : 180),
-    getRotX: (rng, varied) => rng.range(varied ? -60 : -40, varied ? -20 : -30),
-    getRotY: (rng, varied) => rng.range(varied ? -30 : -15, varied ? 30 : 15),
+    getZ: (rng, _deep) => rng.range(80, 180),
+    getRotX: (rng, _varied) => rng.range(-40, -30),
+    getRotY: (rng, _varied) => rng.range(-15, 15),
     getRotZ: (rng) => rng.range(-20, 20),
     getScale: (rng) => rng.range(0.7, 1.0),
   },
   scatter3D: {
-    getTranslate: (rng, deep) => ({
+    getTranslate: (rng, _deep) => ({
       x: rng.range(-400, 400),
       y: rng.range(-400, 400),
     }),
-    getZ: (rng, deep) => rng.range(deep ? 100 : 50, deep ? 500 : 250),
-    getRotX: (rng, varied) => rng.range(-90, 90),
-    getRotY: (rng, varied) => rng.range(-90, 90),
+    getZ: (rng, _deep) => rng.range(50, 250),
+    getRotX: (rng, _varied) => rng.range(-90, 90),
+    getRotY: (rng, _varied) => rng.range(-90, 90),
     getRotZ: (rng) => rng.range(-180, 180),
     getScale: (rng) => rng.range(0.4, 1.1),
   },
@@ -221,7 +221,7 @@ export function createTransform3DFields(config: Transform3DModeConfig): Transfor
       return Array.from({ length: n }, () => entryPreset.getScale(rng));
     },
 
-    ease: (seed, n, _ctx) => {
+    ease: (_seed, n, _ctx) => {
       return Array(n).fill(isVaried ? 'easeOutQuint' : 'easeOutCubic');
     },
 
@@ -232,7 +232,7 @@ export function createTransform3DFields(config: Transform3DModeConfig): Transfor
       );
     },
 
-    opacity: (seed, n, _ctx) => {
+    opacity: (_seed, n, _ctx) => {
       return Array(n).fill(1);
     },
 

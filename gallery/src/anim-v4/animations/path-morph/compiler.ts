@@ -7,7 +7,7 @@
  * - Feed renderer with (morph, startShape, targetPath)
  */
 
-import type { Signal, Context, Time, Seed } from '../../core/types';
+import type { Context, Time, Seed } from '../../core/types';
 import { PhaseMachines, type PhaseMachine } from '../../core/types';
 import type { RenderTree } from '../../render/tree';
 import { group, renderTree } from '../../render/tree';
@@ -20,7 +20,7 @@ import type {
   Env,
   Program,
 } from './types';
-import type { ModeSystem, PathMorphModeFields } from './modes';
+import type { ModeSystem } from './modes';
 import { renderMorphPath, generatePathGlowFilter, easeOutCubic, easeInCubic, hexToColor } from './render';
 import { getPathBounds, defaultStartSizeFromBounds } from './geometry';
 import { createPRNG } from '../../core/rand';

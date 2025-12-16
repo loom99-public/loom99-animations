@@ -10,7 +10,6 @@
  * 3. Extract 2D affine transform as SVG matrix(a,b,c,d,e,f)
  */
 
-import type { Vec2 } from '../../core/types';
 import type { Transform3D, Matrix2D } from './types';
 
 // =============================================================================
@@ -48,7 +47,7 @@ function multiply(a: Mat4, b: Mat4): Mat4 {
       result[row * 4 + col] = sum;
     }
   }
-  return result as Mat4;
+  return result as unknown as Mat4;
 }
 
 /**
@@ -207,7 +206,7 @@ export function project3DTo2D(t3d: Transform3D): Matrix2D {
   // 7. Extract 2D affine transform from 4x4 matrix
   // For a point at origin after transform, we need to handle the perspective division
   // Test the origin point
-  const [px, py, pz, pw] = transformPoint(mat, 0, 0, 0);
+  const [px, py, _pz, pw] = transformPoint(mat, 0, 0, 0);
   const w = pw === 0 ? 1 : pw;
 
   // Extract the 2x3 affine part, accounting for perspective

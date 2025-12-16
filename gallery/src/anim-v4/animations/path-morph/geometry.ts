@@ -57,8 +57,6 @@ export function parsePathMLAZ(d: string): ParsedCmd[] {
 
   const tokens = normalized.split(' ').filter(t => t.length > 0);
   let i = 0;
-  let currentX = 0;
-  let currentY = 0;
 
   while (i < tokens.length) {
     const cmd = tokens[i].toUpperCase();
@@ -69,16 +67,12 @@ export function parsePathMLAZ(d: string): ParsedCmd[] {
         const x = parseFloat(tokens[i++]);
         const y = parseFloat(tokens[i++]);
         commands.push({ cmd: 'M', x, y });
-        currentX = x;
-        currentY = y;
         break;
       }
       case 'L': {
         const x = parseFloat(tokens[i++]);
         const y = parseFloat(tokens[i++]);
         commands.push({ cmd: 'L', x, y });
-        currentX = x;
-        currentY = y;
         break;
       }
       case 'Q': {
@@ -87,8 +81,6 @@ export function parsePathMLAZ(d: string): ParsedCmd[] {
         const x = parseFloat(tokens[i++]);
         const y = parseFloat(tokens[i++]);
         commands.push({ cmd: 'Q', cx, cy, x, y });
-        currentX = x;
-        currentY = y;
         break;
       }
       case 'A': {
@@ -100,8 +92,6 @@ export function parsePathMLAZ(d: string): ParsedCmd[] {
         const x = parseFloat(tokens[i++]);
         const y = parseFloat(tokens[i++]);
         commands.push({ cmd: 'A', rx, ry, rot, laf, sf, x, y });
-        currentX = x;
-        currentY = y;
         break;
       }
       case 'Z': {

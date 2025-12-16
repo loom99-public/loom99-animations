@@ -6,7 +6,7 @@
  */
 
 import type { Vec2 } from '../../core/types';
-import type { Field, LineMorphModeFields, Color, Env, VarianceEnvelope } from './types';
+import type { Field, LineMorphModeFields, Color, VarianceEnvelope } from './types';
 import { VARIANCE_PROCEDURAL, VARIANCE_VARIED, VARIANCE_ORIGINAL } from './types';
 import { createPRNG } from '../../core/rand';
 

@@ -9,6 +9,7 @@ import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import type { EditorStore } from './store';
 import { BusChannel } from './BusChannel';
+import { BusCreationDialog } from './BusCreationDialog';
 import './BusBoard.css';
 
 interface BusBoardProps {
@@ -21,15 +22,21 @@ interface BusBoardProps {
 export const BusBoard = observer(({ store }: BusBoardProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
+  const [isCreationDialogOpen, setIsCreationDialogOpen] = useState(false);
 
   const buses = store.buses;
 
   const handleNewBus = () => {
-    // Stub for WI-2 - actual creation dialog will be implemented later
-    console.log('New Bus clicked - creation dialog not yet implemented (WI-2)');
+    setIsCreationDialogOpen(true);
   };
 
   const handleSelectBus = (busId: string) => {
+    setSelectedBusId(busId);
+    // TODO WI-5: Set store.selectedBusId when bus selection is added to store
+  };
+
+  const handleBusCreated = (busId: string) => {
+    // Select the newly created bus
     setSelectedBusId(busId);
     // TODO WI-5: Set store.selectedBusId when bus selection is added to store
   };
@@ -57,7 +64,7 @@ export const BusBoard = observer(({ store }: BusBoardProps) => {
             <button
               className="bus-board-new-btn"
               onClick={handleNewBus}
-              title="Create new bus (WI-2)"
+              title="Create new bus"
             >
               + New Bus
             </button>
@@ -86,6 +93,14 @@ export const BusBoard = observer(({ store }: BusBoardProps) => {
           </div>
         </>
       )}
+
+      {/* Bus Creation Dialog */}
+      <BusCreationDialog
+        store={store}
+        isOpen={isCreationDialogOpen}
+        onClose={() => setIsCreationDialogOpen(false)}
+        onCreated={handleBusCreated}
+      />
     </div>
   );
 });

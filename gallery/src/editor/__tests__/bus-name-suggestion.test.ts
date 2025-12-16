@@ -177,17 +177,17 @@ describe('Bus Name Auto-suggestion (WI-11)', () => {
   describe('Integration: Multiple buses of same type', () => {
     it('should handle multiple phase buses with auto-increment', () => {
       // Simulating user creating multiple phase buses
-      const bus1 = store.createBus(
+      store.createBus(
         { world: 'signal', domain: 'phase', category: 'core', busEligible: true },
         'phaseA',
         'last'
       );
-      const bus2 = store.createBus(
+      store.createBus(
         { world: 'signal', domain: 'phase', category: 'core', busEligible: true },
         'phaseB',
         'last'
       );
-      const bus3 = store.createBus(
+      store.createBus(
         { world: 'signal', domain: 'phase', category: 'core', busEligible: true },
         'phaseC',
         'last'

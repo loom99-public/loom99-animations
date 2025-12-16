@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { TransformCompositor, type TransformState } from '../compositors/TransformCompositor';
+import { TransformCompositor } from '../compositors/TransformCompositor';
 
 describe('TransformCompositor - Translate', () => {
   it('interpolates translate from start to end', () => {

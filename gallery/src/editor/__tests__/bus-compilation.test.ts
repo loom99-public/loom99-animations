@@ -21,7 +21,7 @@ function createTestContext(): CompileCtx {
   return {
     env: {},
     geom: {
-      get: <K extends object, V>(key: K, compute: () => V): V => compute(),
+      get: <K extends object, V>(_key: K, compute: () => V): V => compute(),
       invalidate: () => {},
     },
   };

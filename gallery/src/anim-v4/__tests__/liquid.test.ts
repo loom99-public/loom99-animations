@@ -29,7 +29,7 @@ import {
   createCircleScene,
 } from '../animations/liquid';
 import { PhaseMachines, DEFAULT_CONTEXT } from '../core/types';
-import type { LiquidBehavior, LiquidPhaseSample } from '../animations/liquid/types';
+import type { LiquidBehavior } from '../animations/liquid/types';
 
 describe('Liquid Animation', () => {
   const testEnv = { viewport: { w: 600, h: 200 } };

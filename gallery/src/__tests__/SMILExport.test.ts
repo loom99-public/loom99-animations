@@ -404,10 +404,6 @@ describe('SMIL Export - Browser Compatibility', () => {
   });
 
   it('creates elements with correct SVG namespace', () => {
-    const compositor = new PathMorphCompositor({
-      startPos: { x: 0, y: 0 },
-      points: [{ x: 100, y: 100 }],
-    });
 
     const element = new MorphingLineElement({
       id: 'ns-test',

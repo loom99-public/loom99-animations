@@ -8,7 +8,7 @@
  * - No mocks for core functionality - tests actual interpolation math
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { Track, TrackGroup } from '../core/Track';
 import { easings } from '../core/easing';
 

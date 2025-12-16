@@ -253,7 +253,7 @@ describe('VarianceModes - Comparison', () => {
     );
 
     // All should produce valid animations
-    animations.forEach((anim, index) => {
+    animations.forEach((anim, _index) => {
       expect(anim.getElements().length).toBe(testLines.length);
 
       const svg = anim.toSVG();

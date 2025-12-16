@@ -43,7 +43,7 @@ class MockElement extends BaseElement {
     this.lastElapsed = elapsed;
   }
 
-  render(container: SVGElement | HTMLCanvasElement): void {
+  render(_container: SVGElement | HTMLCanvasElement): void {
     // Mock render
   }
 

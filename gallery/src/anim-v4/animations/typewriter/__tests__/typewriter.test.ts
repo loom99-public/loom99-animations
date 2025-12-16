@@ -306,7 +306,6 @@ describe('Modes', () => {
     expect(mode.burstChance).toBeDefined();
 
     const intervals = mode.charInterval!(42, 10, testCtx);
-    const jitters = mode.intervalJitter!(42, 10, testCtx);
     const bursts = mode.burstChance!(42, 10, testCtx);
 
     // Intervals should vary

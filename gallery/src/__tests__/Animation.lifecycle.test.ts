@@ -9,7 +9,7 @@
  * @vitest-environment node
  */
 
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { Animation } from '../core/Animation';
 import { BaseElement } from '../core/Element';
 import { Track } from '../core/Track';
@@ -44,7 +44,7 @@ class MockElement extends BaseElement {
     this.lastElapsed = elapsed;
   }
 
-  render(container: SVGElement | HTMLCanvasElement): void {
+  render(_container: SVGElement | HTMLCanvasElement): void {
     // Mock render
   }
 
@@ -165,7 +165,7 @@ describe('Animation - Callback Execution', () => {
     });
 
     // Start entrance but don't await
-    const entrancePromise = animation.entrance();
+    animation.entrance();
 
     // Advance time slightly but not enough to complete
     vi.advanceTimersByTime(100);

@@ -46,8 +46,13 @@ class MockElement extends BaseElement {
     this.lastElapsed = elapsed;
   }
 
-  render(container: SVGElement | HTMLCanvasElement): void {
+  render(_container: SVGElement | HTMLCanvasElement): void {
     // Mock render
+  }
+
+  /** Expose trackGroup for test assertions */
+  getTrackGroup() {
+    return this.trackGroup;
   }
 
   toSVG(): SVGElement {
@@ -314,7 +319,7 @@ describe('Animation - Real-World Scenarios', () => {
     await animation.entrance();
 
     // All tracks should complete
-    expect(element.trackGroup.isComplete(element.lastElapsed)).toBe(true);
+    expect(element.getTrackGroup().isComplete(element.lastElapsed)).toBe(true);
   });
 
   it('simulates entrance → hold → exit → restart cycle', async () => {

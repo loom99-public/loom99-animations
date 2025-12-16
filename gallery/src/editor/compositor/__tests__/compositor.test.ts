@@ -171,7 +171,7 @@ describe('TreeRewrite', () => {
     const tree = makeTestTree();
     const visited: string[] = [];
 
-    const result = drawNodeRewrite.mapNodes(tree, (node, path) => {
+    const result = drawNodeRewrite.mapNodes(tree, (node, _path) => {
       visited.push(node.id);
       return node;
     });
@@ -256,7 +256,7 @@ describe('Compositor', () => {
     const fadeParticles = scoped(
       'fade-particles',
       { selector: hasTag('particle') },
-      (node, ctx) => withOpacity(`${node.id}:fade`, 0.5, node)
+      (node, _ctx) => withOpacity(`${node.id}:fade`, 0.5, node)
     );
 
     const result = fadeParticles.apply(tree, { timeMs: 0, seed: 0 });

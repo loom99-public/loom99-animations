@@ -26,12 +26,13 @@ body.editor-mode {
   user-select: none;
 }
 
+/* P0: Reduced grid gap from 12px to 6px (saves ~12px horizontal) */
 .editor-main {
   flex: 1;
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr) 420px;
-  gap: 12px;
-  padding: 12px;
+  gap: 6px;
+  padding: 6px;
   min-height: 0;
   overflow: hidden;
 }
@@ -75,19 +76,21 @@ body.editor-mode {
   color: #fecdd3;
 }
 
+/* P0: Reduced gap from 8px to 4px (saves ~4px vertical) */
 .editor-left {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   min-height: 0;
 }
 
+/* P0: Reduced border-radius from 10px to 6px */
 .left-panel {
   display: flex;
   flex-direction: column;
   background: #111;
   border: 1px solid #222;
-  border-radius: 10px;
+  border-radius: 6px;
   min-height: 0;
   overflow: hidden;
 }
@@ -100,11 +103,12 @@ body.editor-mode {
   display: none;
 }
 
+/* P0: Reduced padding from 8px 10px to 6px 8px (saves ~4px vertical per panel) */
 .panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
+  padding: 6px 8px;
   background: #151515;
   border-bottom: 1px solid #222;
 }
@@ -169,24 +173,26 @@ body.editor-mode {
   min-height: 0;
 }
 
+/* P0: Reduced margin from 4px 2px to 2px 1px (saves ~4px vertical) */
 .vertical-resizer {
   height: 10px;
   border: 1px solid #222;
   border-radius: 6px;
   background: #1f1f1f;
   cursor: row-resize;
-  margin: 4px 2px;
-  width: calc(100% - 4px);
+  margin: 2px 1px;
+  width: calc(100% - 2px);
   align-self: center;
 }
 
+/* P0: Reduced margin from 10px 0 to 4px 0 (saves ~12px vertical) */
 .horizontal-resizer {
   height: 12px;
   border: 1px solid #222;
   border-radius: 6px;
   background: #1f1f1f;
   cursor: row-resize;
-  margin: 10px 0;
+  margin: 4px 0;
   flex-shrink: 0;
   width: 100%;
 }
@@ -204,6 +210,7 @@ body.editor-mode {
   min-height: 0;
 }
 
+/* P0: Reduced border-radius from 10px to 6px */
 .editor-preview {
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -211,7 +218,7 @@ body.editor-mode {
   max-height: 520px;
   background: #111;
   border: 1px solid #222;
-  border-radius: 10px;
+  border-radius: 6px;
   overflow: hidden;
   display: flex;
 }
@@ -220,21 +227,23 @@ body.editor-mode {
   height: 100%;
 }
 
+/* P0: Reduced gap from 8px to 4px (saves ~4px horizontal) */
 /* Bay area - horizontal split for PatchBay and BusBoard */
 .editor-bay {
   display: flex;
   flex-direction: row;
-  gap: 8px;
+  gap: 4px;
   min-height: 0;
   min-width: 0;
 }
 
+/* P0: Reduced border-radius from 10px to 6px */
 .bay-panel {
   display: flex;
   flex-direction: column;
   background: #111;
   border: 1px solid #222;
-  border-radius: 10px;
+  border-radius: 6px;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
@@ -248,13 +257,14 @@ body.editor-mode {
   display: none;
 }
 
+/* P0: Reduced margin from 2px 4px to 1px 2px (saves ~4px horizontal) */
 .bay-resizer {
   width: 10px;
   border: 1px solid #222;
   border-radius: 6px;
   background: #1f1f1f;
   cursor: col-resize;
-  margin: 2px 4px;
+  margin: 1px 2px;
   flex-shrink: 0;
   align-self: stretch;
 }
@@ -298,9 +308,10 @@ body.editor-mode {
   align-self: stretch;
 }
 
+/* P0: Reduced border-radius from 10px to 6px */
 .editor-control-surface {
   border: 1px solid #222;
-  border-radius: 10px;
+  border-radius: 6px;
   overflow: hidden;
   min-height: 0;
   flex: 1;

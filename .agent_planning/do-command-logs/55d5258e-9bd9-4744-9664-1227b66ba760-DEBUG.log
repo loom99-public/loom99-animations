@@ -1,0 +1,10 @@
+2025-12-15T22:18:02.629541 ============================================================
+2025-12-15T22:18:02.629665 init.py: SESSION START
+2025-12-15T22:18:02.629751 init.py: session_id=55d5258e-9bd9-4744-9664-1227b66ba760
+2025-12-15T22:18:02.629869 init.py: cwd=/Users/bmf/code/loom99-animations
+2025-12-15T22:18:02.629964 init.py: hook_input keys=['session_id', 'transcript_path', 'cwd', 'hook_event_name', 'source']
+2025-12-15T22:18:02.630046 init.py: hook_event_name=SessionStart
+2025-12-15T22:18:02.630141 init.py: transcript_path=/Users/bmf/.claude/projects/-Users-bmf-code-loom99-animations/55d5258e-9bd9-4744-9664-1227b66ba760.jsonl
+2025-12-15T22:18:02.630311 init.py: directory exists: .agent_planning/do-command-logs
+2025-12-15T22:18:02.630527 init.py: directory exists: .agent_planning/do-command-logs/partials
+2025-12-15T22:18:02.630659 init.py: initialization complete

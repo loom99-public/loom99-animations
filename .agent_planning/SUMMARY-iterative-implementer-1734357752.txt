@@ -1,0 +1,51 @@
+Agent: iterative-implementer | 2025-12-16T13:12:32Z
+Completed: WI-3 Input Port Bus Binding UI | Files: 3 | Commits: 0 (pending)
+Status: complete
+
+## Summary
+Implemented WI-3: Input Port Bus Binding UI for Phase 3 Bus UI system.
+All acceptance criteria met. Tests passing (457/457).
+
+## Work Completed
+- Created BusPicker.tsx - Bus selection dropdown for input ports
+- Created BusPicker.css - Styling for bus picker dropdown
+- Modified PatchBay.tsx - Added bus binding slots to input ports
+- Added CSS to PatchBay.css - Styles for binding slots, badges, context menu
+
+## Key Features Implemented
+- Bus binding slot (dot) adjacent to all input ports
+- Clicking slot opens BusPicker dropdown with compatible buses
+- Bus subscription badge displays "← busName [identity]"
+- Right-click context menu for unsubscribing from bus
+- "Create new bus" option in picker (auto-subscribes)
+- "Show convertible" toggle (disabled, Phase 4 feature)
+- Portal rendering for dropdown (stays on screen)
+- Click-outside-to-close and Escape key handling
+- Both wires AND bus subscriptions can coexist
+
+## Acceptance Criteria Status
+✓ All input ports show binding slot (small bus icon/dot)
+✓ Clicking slot opens BusPicker dropdown
+✓ BusPicker lists compatible buses (exact type match via TypeDesc)
+✓ Selecting bus creates listener (store.addListener)
+✓ Port displays "← busName" badge when subscribed
+✓ Transform badge shows "[identity]" by default
+✓ Unsubscribe via right-click context menu
+✓ Works alongside wires (both can coexist)
+✓ BusPicker uses portal rendering
+✓ Click-outside-to-close and Escape closes
+✓ BusPicker updates when store.buses changes
+
+## Files Modified
+- /Users/bmf/code/loom99-animations/gallery/src/editor/PatchBay.tsx
+- /Users/bmf/code/loom99-animations/gallery/src/editor/PatchBay.css
+
+## Files Created
+- /Users/bmf/code/loom99-animations/gallery/src/editor/BusPicker.tsx
+- /Users/bmf/code/loom99-animations/gallery/src/editor/BusPicker.css
+
+## Tests
+All tests passing: 24 test files, 457 tests passed
+
+## Ready for Commit
+Yes - WI-3 complete and tested

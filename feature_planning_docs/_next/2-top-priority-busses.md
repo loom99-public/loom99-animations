@@ -323,14 +323,16 @@ At this point, Loom stops feeling like a wiring puzzle and starts feeling like a
 
 ⸻
 
-Phase 3 (de-emphasize lanes / adopt zones or free canvas)
+Phase 3 (remove lanes / adopt freeform canvas)
 
 Only after buses are working well:
-	•	remove lane skeleton, or keep as optional “guided layout”
-	•	introduce faint zones (Material/Motion/Look/Post) as backgrounds
-	•	encourage “publish to buses” in starter demos
+	•	remove lane skeleton entirely (lanes will NOT be kept)
+	•	introduce faint zones (Material/Motion/Look/Post) as optional visual backgrounds
+	•	encourage "publish to buses" in starter demos
 
-This is where lanes become irrelevant.
+**Important policy notes:**
+- Lanes WILL be removed. The canvas becomes freeform.
+- Wires will NOT be removed. Wires remain functional (de-emphasized in UI but available for internal use, composite blocks, and advanced users).
 
 ⸻
 

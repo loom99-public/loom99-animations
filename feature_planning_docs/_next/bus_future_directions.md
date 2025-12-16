@@ -1,18 +1,24 @@
 # Strategic Considerations & Future Directions
 
-This document explores post-transformation cleanup, potential challenges, and future opportunities to build upon the new bus-centric architecture.
+This document explores potential challenges and future opportunities to build upon the bus-centric architecture.
 
-### 1. Cleanup & Technical Debt Removal
+### 1. Wire and Bus Coexistence (PERMANENT POLICY)
 
-Once the bus system is stable and has been adopted as the primary workflow (after Phase 5), the following cleanup should be undertaken to simplify the codebase:
+**Important**: Wires and buses will coexist indefinitely. This is a deliberate design choice, not a transitional state.
 
-*   **Full Deprecation of Wired Connections:**
-    *   Remove the `connections: Connection[]` array from the `Patch` type in `gallery/src/editor/types.ts`.
-    *   Delete the `connect` and `disconnect` actions from `gallery/src/editor/store.ts`.
-    *   Remove all UI logic related to drawing, dragging, and interacting with bezier curve connections from `gallery/src/editor/PatchBay.tsx`.
-*   **Remove Lane Logic:** The concept of "Lanes" will be obsolete. All related UI components and layout logic should be deleted. The patch bay should become a true freeform canvas.
-*   **Simplify the Compiler:** The conditional logic in the compiler for handling old, wire-based patches can be removed. The compiler should be streamlined to only support the multi-pass, bus-aware compilation path.
-*   **Remove Legacy UI:** Any UI elements, modals, or context menus related to creating wired connections should be removed.
+*   **Wires remain in the codebase:**
+    *   The `connections: Connection[]` array stays in the `Patch` type.
+    *   The `connect` and `disconnect` actions remain in the store.
+    *   Wire rendering and interaction logic remains in PatchBay.
+*   **UI de-emphasis (not removal):**
+    *   Buses are promoted as the primary routing mechanism in the UI.
+    *   Wire creation UI is available but not prominent (e.g., in advanced mode, context menus).
+    *   New users are guided toward buses; power users can still wire directly.
+*   **Internal use cases for wires:**
+    *   Composite block internals (wiring between internal primitive blocks).
+    *   Legacy patch support without conversion.
+    *   Explicit, visible connections when debugging or when the user prefers them.
+*   **Lanes will be removed:** The Lane concept is being phased out. The patch bay will become a freeform canvas organized by buses rather than lanes.
 
 ### 2. Things to Watch Out For (Risks & Mitigations)
 

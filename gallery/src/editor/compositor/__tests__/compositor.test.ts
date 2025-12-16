@@ -176,11 +176,11 @@ describe('TreeRewrite', () => {
       return node;
     });
 
-    // All nodes visited
+    // All nodes visited: root + stroke-1 + stroke-2 + particles + p-1 + p-2 + p-3 = 7
     expect(visited).toContain('root');
     expect(visited).toContain('stroke-1');
     expect(visited).toContain('p-3');
-    expect(visited.length).toBe(6);
+    expect(visited.length).toBe(7);
 
     // Tree unchanged (identity map)
     expect(result).toBe(tree);

@@ -214,10 +214,12 @@ Without lazy Fields, Field buses would allocate N arrays per publisher per frame
 #### Phase 5+ Deferred (Future)
 | Item | Description | Phase |
 |------|-------------|-------|
-| Wire Deprecation | Remove wire-based connections | 5 |
-| Migration Tools | Wire-to-bus conversion | 5 |
+| Lane Removal | Remove lane-based UI organization | 5 |
+| Migration Tools | Wire-to-bus conversion helpers (optional) | 5 |
 | Bus Hot-swapping | Runtime reconfiguration | 5+ |
 | WASM Integration | Numeric domain tags, WASM eval | 5+ |
+
+**Note**: Wires will NOT be deprecated. Wires and buses coexist indefinitely. Wires are de-emphasized in UI but remain fully functional internally for composite blocks, legacy patches, and advanced users.
 
 ## Dependency Graph
 

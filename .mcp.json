@@ -33,15 +33,6 @@
         "gemini-mcp-tool"
       ],
       "env": {}
-    },
-    "chatgpt-mcp": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "claude-chatgpt-mcp"
-      ],
-      "env": {}
     }
   }
 }

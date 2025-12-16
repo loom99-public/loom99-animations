@@ -196,21 +196,22 @@ With the bus architecture in place, you can now build the infinite looping capab
 
 ---
 
-### **Phase 5: Backward Compatibility and Deprecation**
+### **Phase 5: UI Polish and Coexistence**
 
-This phase ensures a smooth transition for users and existing projects.
+This phase ensures both paradigms work smoothly together.
 
 #### 1. **Manage Patch Versions**
-*   **Goal:** Gracefully handle old and new patch formats.
+*   **Goal:** Gracefully handle patches with wires, buses, or both.
 *   **Implementation:**
     *   `EditorStore.loadPatch` should inspect the `patch.version` field.
-    *   If the version is old or missing, use the old compiler/UI logic for wires.
-    *   If the version is `2.0-bus`, use the new bus-centric logic.
-    *   Consider adding a "Migrate to Buses" button that attempts to convert a wired patch to a bus-based one.
+    *   If the version is old or missing, use the wire-based compiler path.
+    *   If the version is `2.0-bus` or has buses array, use the bus-aware compiler.
+    *   Patches can contain BOTH wires AND buses - they coexist.
 
-#### 2. **Gradually Deprecate Wires and Lanes**
-*   **Goal:** Nudge users towards the new paradigm.
-*   **Plan:**
-    *   **Initially:** Wires and buses coexist.
-    *   **Mid-transition:** Change the default interaction. Hide wires by default. Make creating buses the primary action.
-    *   **Finally:** Remove the wire-drawing and connection logic entirely. Remove the "Lane" concept from the UI.
+#### 2. **Wire and Bus Coexistence (PERMANENT)**
+*   **Goal:** Both paradigms coexist indefinitely. Wires are de-emphasized in UI but remain fully functional.
+*   **Policy:**
+    *   **Wires remain**: Block-to-block wiring continues to work internally and in the compiler.
+    *   **UI de-emphasis**: Buses are promoted as the primary routing mechanism in the UI. Wire creation is available but not prominent.
+    *   **No deprecation**: Wires will NOT be removed. They are useful for internal implementation, composite block internals, and advanced users.
+    *   **Lanes removed**: The Lane concept will be phased out. The patch bay becomes a freeform canvas organized by buses.

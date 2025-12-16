@@ -89,6 +89,55 @@
   color: #fff;
 }
 
+/* Filter Section */
+.bus-board-filter {
+  position: relative;
+  padding: 8px 10px;
+  border-bottom: 1px solid #222;
+  background: #0f0f0f;
+}
+
+.bus-board-filter-input {
+  width: 100%;
+  padding: 6px 28px 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #1a1a1a;
+  color: #ccc;
+  font-size: 12px;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.bus-board-filter-input::placeholder {
+  color: #555;
+}
+
+.bus-board-filter-input:focus {
+  border-color: #4a9eff;
+  background: #1f1f1f;
+}
+
+.bus-board-filter-clear {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 2px 6px;
+  border: none;
+  background: transparent;
+  color: #666;
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.bus-board-filter-clear:hover {
+  color: #aaa;
+}
+
 /* Channels Container */
 .bus-board-channels {
   flex: 1;
@@ -97,7 +146,7 @@
   padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 /* Empty State */
@@ -121,6 +170,68 @@
   margin-top: 8px;
   font-size: 11px;
   color: #444;
+}
+
+/* Bus Group */
+.bus-board-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Group Header */
+.bus-board-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: #181818;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.bus-board-group-header:hover {
+  background: #1f1f1f;
+  border-color: #3a3a3a;
+}
+
+.bus-board-group-icon {
+  font-size: 10px;
+  color: #888;
+  line-height: 1;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.bus-board-group-header:hover .bus-board-group-icon {
+  color: #aaa;
+}
+
+.bus-board-group-title {
+  flex: 1;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #999;
+  font-weight: 600;
+  user-select: none;
+}
+
+.bus-board-group-count {
+  font-size: 10px;
+  color: #666;
+  font-weight: 400;
+  user-select: none;
+}
+
+/* Group Buses */
+.bus-board-group-buses {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 8px;
 }
 
 /* Channel Strip */

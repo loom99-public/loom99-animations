@@ -23,6 +23,8 @@ import type {
   Publisher,
   Listener,
   TypeDesc,
+  BusCombineMode,
+  AdapterStep,
 } from './types';
 import { isBusEligible, CORE_DOMAIN_DEFAULTS } from './types';
 import { getBlockDefinition, type BlockDefinition } from './blocks';
@@ -178,12 +180,12 @@ export class EditorStore {
       addListener: action,
       removeListener: action,
       reorderPublisher: action,
-      getBusPublishers: action,
-      getBusListeners: action,
-      getPortRouting: action,
-      findBusesByTypeDesc: action,
-      isBusBound: action,
-      getNextSortKey: action,
+      // getBusPublishers: action,
+      // getBusListeners: action,
+      // getPortRouting: action,
+      // findBusesByTypeDesc: action,
+      // isBusBound: action,
+      // getNextSortKey: action,
       toggleLaneCollapsed: action,
       toggleLanePinned: action,
       renameLane: action,
@@ -210,11 +212,8 @@ export class EditorStore {
       selectedPortInfo: computed,
       currentLayout: computed,
       availableLayouts: computed,
-      getBusById: computed,
-      getPublishersByBus: computed,
-      getListenersByBus: computed,
-      getBusesByCategory: computed,
-      getBusEligibleBuses: computed,
+      // Note: getBusById, getPublishersByBus, etc. are methods, not getters
+      // MobX 'computed' can only be used with getters, so we don't annotate them
     });
   }
 
@@ -733,7 +732,17 @@ export class EditorStore {
     this.blocks = migratedBlocks;
     this.connections = patch.connections;
     this.lanes = patch.lanes;
-    this.settings = patch.settings;
+    this.settings = {
+      seed: patch.settings?.seed || 0,
+      speed: patch.settings?.speed || 1,
+      advancedLaneMode: patch.settings?.advancedLaneMode || false,
+      autoConnect: patch.settings?.autoConnect || false,
+      showTypeHints: patch.settings?.showTypeHints || false,
+      highlightCompatible: patch.settings?.highlightCompatible || false,
+      warnBeforeDisconnect: patch.settings?.warnBeforeDisconnect || true,
+      filterByLane: patch.settings?.filterByLane || false,
+      filterByConnection: patch.settings?.filterByConnection || false,
+    };
 
     // Handle v2 patch format with buses
     if (patch.version >= 2 || (patch.features?.buses)) {
@@ -797,7 +806,7 @@ export class EditorStore {
     const fieldsLane = this.lanes.find((l) => l.kind === 'Fields') ?? this.lanes[2];
     const specLane = this.lanes.find((l) => l.kind === 'Spec') ?? this.lanes[3];
     const programLane = this.lanes.find((l) => l.kind === 'Program') ?? this.lanes[4];
-    const scalarLane = this.lanes.find((l) => l.kind === 'Scalars') ?? this.lanes[2];
+    // const scalarLane = this.lanes.find((l) => l.kind === 'Scalars') ?? this.lanes[2];
 
     if (variant === 'fullPipeline') {
       // Full Pipeline demo: SVGPathSource → Fields → Phase → PerElementTransport → Output
@@ -1155,7 +1164,7 @@ export class EditorStore {
       from: { blockId, port },
       adapterChain,
       enabled: true,
-      sortKey: maxSortKey + 1,
+      sortKey: maxSortKey + 10,
     };
 
     this.publishers.push(publisher);
@@ -1232,82 +1241,6 @@ export class EditorStore {
         } else if (oldSortKey > newSortKey && p.sortKey < oldSortKey && p.sortKey >= newSortKey) {
           p.sortKey++;
         }
-      });
-
-  // =============================================================================
-  // Actions - Bus Inspection and Discovery
-  // =============================================================================
-
-  /**
-   * Get all publishers for a bus (method version of computed).
-   * @param busId Bus ID
-   * @returns Array of publishers
-   */
-//   // getBusPublishers(busId: string) {
-//   //   return this.getPublishersByBus(busId);
-//   // }
-
-  /**
-   * Get all listeners for a bus (method version of computed).
-   * @param busId Bus ID
-   * @returns Array of listeners
-   */
-  getBusListeners(busId: string) {
-    return this.getListenersByBus(busId);
-  }
-
-  /**
-   * Get routing information for a specific port.
-   * @param blockId Block ID
-   * @param port Port name
-   * @returns Object with publishesAs and listensTo arrays
-   */
-  getPortRouting(blockId: BlockId, port: string) {
-    const publishesAs = this.publishers.filter(
-      p => p.from.blockId === blockId && p.from.port === port
-    );
-
-    const listensTo = this.listeners.filter(
-      l => l.to.blockId === blockId && l.to.port === port
-    );
-
-    return { publishesAs, listensTo };
-  }
-
-  /**
-   * Find buses compatible with a TypeDesc.
-   * @param typeDesc Type descriptor to match
-   * @returns Array of compatible buses
-   */
-  findBusesByTypeDesc(typeDesc: TypeDesc) {
-    return this.buses.filter(bus => {
-      if (!isBusEligible(bus.type) || !isBusEligible(typeDesc)) {
-        return false;
-      }
-      return isDirectlyCompatible(bus.type, typeDesc);
-    });
-  }
-
-  /**
-   * Check if a bus has any publishers or listeners.
-   * @param busId Bus ID
-   * @returns True if bus is bound (has routing)
-   */
-  isBusBound(busId: string) {
-    const publishers = this.publishers.filter(p => p.busId === busId);
-    const listeners = this.listeners.filter(l => l.busId === busId);
-    return publishers.length > 0 || listeners.length > 0;
-  }
-
-  /**
-   * Get the next sort key for a bus.
-   * @param busId Bus ID
-   * @returns Next sort key value
-   */
-  getNextSortKey(busId: string) {
-    const maxSortKey = this.publishers
-      .filter(p => p.busId === busId)
-      .reduce((max, p) => Math.max(max, p.sortKey), 0);
-    return maxSortKey + 1;
+        });
   }
 }

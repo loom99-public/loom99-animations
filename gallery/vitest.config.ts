@@ -12,7 +12,7 @@ export default defineConfig({
         isolate: true,
       },
     },
-    exclude: ['**/to-delete/**', '**/node_modules/**', '**/dist/**'],
+    exclude: ['**/to-delete/**', '**/node_modules/**', '**/dist/**', '**/e2e/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],

@@ -291,8 +291,13 @@ Phase 2
 	•	Add feedback safety rules
 
 Phase 3
-	•	Optional: hide most wires by default
-	•	Canvas becomes “modules + buses”, not spaghetti
+	•	Hide most wires by default (wires remain functional, just de-emphasized in UI)
+	•	Remove lanes entirely - canvas becomes freeform
+	•	Canvas becomes "modules + buses", not spaghetti
+
+**Policy notes:**
+- Lanes WILL be removed. Buses replace lanes as the organizational paradigm.
+- Wires will NOT be removed. Wires remain functional internally for composite blocks, legacy patches, and advanced users.
 
 ⸻
 

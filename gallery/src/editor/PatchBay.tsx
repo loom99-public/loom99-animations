@@ -12,9 +12,10 @@
  */
 
 import { observer } from 'mobx-react-lite';
+import { useState } from 'react';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import type { EditorStore } from './store';
-import type { Lane, LaneKind, Block, Slot, PortRef } from './types';
+import type { Lane, LaneKind, Block, Slot, PortRef, Listener } from './types';
 import { getBlockDefinition } from './blocks';
 import { LayoutSelector } from './LayoutSelector';
 import {
@@ -25,6 +26,7 @@ import {
   describeSlotType,
   formatTypeDescriptor,
 } from './portUtils';
+import { BusPicker } from './BusPicker';
 import './PatchBay.css';
 
 interface PatchBayProps {
@@ -59,6 +61,8 @@ function Port({
   onHover,
   onClick,
   onContextMenu,
+  onBindingSlotClick,
+  busSubscription,
 }: {
   slot: Slot;
   blockId: string;
@@ -71,6 +75,8 @@ function Port({
   onHover: (port: PortRef | null) => void;
   onClick: (port: PortRef) => void;
   onContextMenu: (e: React.MouseEvent, port: PortRef) => void;
+  onBindingSlotClick?: (e: React.MouseEvent, port: PortRef) => void;
+  busSubscription?: { busName: string; listenerId: string } | null;
 }) {
   const portRef: PortRef = { blockId, slotId: slot.id, direction };
   const typeDescriptor = describeSlotType(slot.type);
@@ -101,6 +107,11 @@ function Port({
     onContextMenu(e, portRef);
   };
 
+  const handleBindingSlotClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onBindingSlotClick?.(e, portRef);
+  };
+
   // Determine port styling
   let portStyle: React.CSSProperties = {};
   if (connectionColor) {
@@ -121,20 +132,43 @@ function Port({
   ].filter(Boolean).join(' ');
 
   return (
-    <div
-      className={className}
-      style={portStyle}
-      title={`${slot.label} (${slot.type}) · ${formatTypeDescriptor(typeDescriptor)}`}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onClick={handleClick}
-      onContextMenu={handleContextMenu}
-    >
-      <span className="port-badges">
-        {worldBadge && <span className={`port-badge world ${typeDescriptor.world}`}>{worldBadge}</span>}
-        {domainBadge && <span className="port-badge domain">{domainBadge}</span>}
-      </span>
-      <span className="port-label">{slot.label}</span>
+    <div className="port-container">
+      {/* Bus binding slot for input ports */}
+      {direction === 'input' && (
+        <div
+          className={`bus-binding-slot ${busSubscription ? 'subscribed' : ''}`}
+          onClick={handleBindingSlotClick}
+          title={busSubscription ? `Subscribed to: ${busSubscription.busName}` : 'Click to bind to bus'}
+        >
+          <span className="bus-binding-dot">●</span>
+        </div>
+      )}
+
+      {/* Port */}
+      <div
+        className={className}
+        style={portStyle}
+        title={`${slot.label} (${slot.type}) · ${formatTypeDescriptor(typeDescriptor)}`}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
+        onContextMenu={handleContextMenu}
+      >
+        <span className="port-badges">
+          {worldBadge && <span className={`port-badge world ${typeDescriptor.world}`}>{worldBadge}</span>}
+          {domainBadge && <span className="port-badge domain">{domainBadge}</span>}
+        </span>
+        <span className="port-label">{slot.label}</span>
+      </div>
+
+      {/* Bus subscription badge */}
+      {direction === 'input' && busSubscription && (
+        <div className="bus-subscription-badge" title={`Subscribed to: ${busSubscription.busName} [identity]`}>
+          <span className="bus-subscription-arrow">←</span>
+          <span className="bus-subscription-name">{busSubscription.busName}</span>
+          <span className="bus-subscription-transform">[identity]</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -153,6 +187,8 @@ function DraggablePatchBlock({
   onSelect,
   store,
   portColorMap,
+  onInputBindingSlotClick,
+  getInputBusSubscription,
 }: {
   block: Block;
   laneId: string;
@@ -162,6 +198,8 @@ function DraggablePatchBlock({
   onSelect: () => void;
   store: EditorStore;
   portColorMap: Map<string, string>;
+  onInputBindingSlotClick: (e: React.MouseEvent, port: PortRef) => void;
+  getInputBusSubscription: (blockId: string, slotId: string) => { busName: string; listenerId: string } | null;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `patch-block-${block.id}`,
@@ -256,6 +294,8 @@ function DraggablePatchBlock({
               }
             }
 
+            const busSubscription = getInputBusSubscription(block.id, slot.id);
+
             return (
               <Port
                 key={slot.id}
@@ -270,6 +310,8 @@ function DraggablePatchBlock({
                 onHover={(p) => store.setHoveredPort(p)}
                 onClick={(p) => store.setSelectedPort(p)}
                 onContextMenu={(e, p) => store.openContextMenu(e.clientX, e.clientY, p)}
+                onBindingSlotClick={onInputBindingSlotClick}
+                busSubscription={busSubscription}
               />
             );
           })}
@@ -365,12 +407,16 @@ function DroppableLane({
   isActive,
   isSuggested,
   portColorMap,
+  onInputBindingSlotClick,
+  getInputBusSubscription,
 }: {
   store: EditorStore;
   lane: Lane;
   isActive: boolean;
   isSuggested: boolean;
   portColorMap: Map<string, string>;
+  onInputBindingSlotClick: (e: React.MouseEvent, port: PortRef) => void;
+  getInputBusSubscription: (blockId: string, slotId: string) => { busName: string; listenerId: string } | null;
 }) {
   const { isOver, setNodeRef } = useDroppable({
     id: `lane-${lane.id}`,
@@ -464,10 +510,62 @@ function DroppableLane({
                 onSelect={() => store.selectBlock(blockId)}
                 store={store}
                 portColorMap={portColorMap}
+                onInputBindingSlotClick={onInputBindingSlotClick}
+                getInputBusSubscription={getInputBusSubscription}
               />
             );
           })}
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Context menu for port operations (including bus unsubscribe).
+ */
+function PortContextMenu({
+  store,
+  isOpen,
+  position,
+  portRef,
+  onClose,
+  busSubscription,
+}: {
+  store: EditorStore;
+  isOpen: boolean;
+  position: { x: number; y: number };
+  portRef: PortRef | null;
+  onClose: () => void;
+  busSubscription: { busName: string; listenerId: string } | null;
+}) {
+  if (!isOpen || !portRef) return null;
+
+  const handleUnsubscribe = () => {
+    if (busSubscription) {
+      store.removeListener(busSubscription.listenerId);
+      onClose();
+    }
+  };
+
+  return (
+    <div
+      className="port-context-menu"
+      style={{
+        position: 'fixed',
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        zIndex: 1001,
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {busSubscription && (
+        <div className="port-context-menu-item" onClick={handleUnsubscribe}>
+          Disconnect from {busSubscription.busName}
+        </div>
+      )}
+      {!busSubscription && (
+        <div className="port-context-menu-item disabled">No bus subscription</div>
       )}
     </div>
   );
@@ -481,17 +579,89 @@ export const PatchBay = observer(({ store }: PatchBayProps) => {
   const activeLaneId = store.uiState.activeLaneId;
   const draggingLaneKind = store.uiState.draggingLaneKind;
 
+  // Bus picker state
+  const [busPickerState, setBusPickerState] = useState<{
+    isOpen: boolean;
+    portRef: PortRef | null;
+    position: { x: number; y: number };
+  }>({
+    isOpen: false,
+    portRef: null,
+    position: { x: 0, y: 0 },
+  });
+
+  // Context menu state
+  const [contextMenuState, setContextMenuState] = useState<{
+    isOpen: boolean;
+    portRef: PortRef | null;
+    position: { x: number; y: number };
+  }>({
+    isOpen: false,
+    portRef: null,
+    position: { x: 0, y: 0 },
+  });
+
   // Build port color map for visual connection indication
   const portColorMap = buildPortColorMap(store.connections);
 
-  // Click anywhere in patch-bay (except ports/blocks which stop propagation) clears port selection
+  // Get bus subscription for an input port
+  const getInputBusSubscription = (blockId: string, slotId: string): { busName: string; listenerId: string } | null => {
+    const listener = store.listeners.find(
+      (l) => l.to.blockId === blockId && l.to.port === slotId && l.enabled
+    );
+    if (!listener) return null;
+
+    const bus = store.buses.find((b) => b.id === listener.busId);
+    if (!bus) return null;
+
+    return {
+      busName: bus.name,
+      listenerId: listener.id,
+    };
+  };
+
+  // Handle binding slot click (opens bus picker)
+  const handleInputBindingSlotClick = (e: React.MouseEvent, portRef: PortRef) => {
+    setBusPickerState({
+      isOpen: true,
+      portRef,
+      position: { x: e.clientX, y: e.clientY },
+    });
+  };
+
+  // Handle port right-click (opens context menu)
+  const handlePortContextMenu = (e: React.MouseEvent, portRef: PortRef) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Only show context menu for input ports with bus subscription
+    if (portRef.direction === 'input') {
+      const subscription = getInputBusSubscription(portRef.blockId, portRef.slotId);
+      setContextMenuState({
+        isOpen: true,
+        portRef,
+        position: { x: e.clientX, y: e.clientY },
+      });
+    }
+  };
+
+  // Click anywhere in patch-bay (except ports/blocks which stop propagation) clears selections
   const handleBackgroundClick = () => {
     // Clear port selection - blocks already clear this via selectBlock
     // This handles clicks on lane backgrounds, headers, empty areas, etc.
     if (store.uiState.selectedPort) {
       store.setSelectedPort(null);
     }
+
+    // Close context menu
+    if (contextMenuState.isOpen) {
+      setContextMenuState({ isOpen: false, portRef: null, position: { x: 0, y: 0 } });
+    }
   };
+
+  const currentContextMenuSubscription = contextMenuState.portRef
+    ? getInputBusSubscription(contextMenuState.portRef.blockId, contextMenuState.portRef.slotId)
+    : null;
 
   return (
     <div className="patch-bay" onClick={handleBackgroundClick}>
@@ -505,9 +675,32 @@ export const PatchBay = observer(({ store }: PatchBayProps) => {
             isActive={lane.id === activeLaneId}
             isSuggested={draggingLaneKind !== null && lane.kind === draggingLaneKind}
             portColorMap={portColorMap}
+            onInputBindingSlotClick={handleInputBindingSlotClick}
+            getInputBusSubscription={getInputBusSubscription}
           />
         ))}
       </div>
+
+      {/* Bus picker dropdown */}
+      {busPickerState.portRef && (
+        <BusPicker
+          store={store}
+          isOpen={busPickerState.isOpen}
+          onClose={() => setBusPickerState({ isOpen: false, portRef: null, position: { x: 0, y: 0 } })}
+          portRef={busPickerState.portRef}
+          position={busPickerState.position}
+        />
+      )}
+
+      {/* Port context menu */}
+      <PortContextMenu
+        store={store}
+        isOpen={contextMenuState.isOpen}
+        position={contextMenuState.position}
+        portRef={contextMenuState.portRef}
+        onClose={() => setContextMenuState({ isOpen: false, portRef: null, position: { x: 0, y: 0 } })}
+        busSubscription={currentContextMenuSubscription}
+      />
     </div>
   );
 });

@@ -462,3 +462,126 @@
   font-weight: 600;
   text-transform: none;
 }
+
+/* =============================================================================
+ * Bus Binding UI (WI-3)
+ * ============================================================================= */
+
+/* Port container - wraps port + binding slot + badge */
+.port-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+/* Bus binding slot (dot adjacent to input ports) */
+.bus-binding-slot {
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  background: #2a2a2a;
+  border: 1px solid #555;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.bus-binding-slot:hover {
+  background: #3a3a3a;
+  border-color: #777;
+  transform: scale(1.1);
+}
+
+.bus-binding-slot.subscribed {
+  background: #2a3a2a;
+  border-color: #4ade80;
+}
+
+.bus-binding-slot.subscribed:hover {
+  background: #2a4a2a;
+}
+
+.bus-binding-dot {
+  font-size: 8px;
+  color: #777;
+}
+
+.bus-binding-slot.subscribed .bus-binding-dot {
+  color: #4ade80;
+}
+
+/* Bus subscription badge (shows "← busName [identity]") */
+.bus-subscription-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: #2a3a2a;
+  border: 1px solid #4ade80;
+  border-radius: 8px;
+  font-size: 10px;
+  color: #4ade80;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.bus-subscription-badge:hover {
+  background: #2a4a2a;
+  border-color: #5de690;
+  color: #5de690;
+}
+
+.bus-subscription-arrow {
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.bus-subscription-name {
+  font-weight: 600;
+}
+
+.bus-subscription-transform {
+  font-size: 9px;
+  color: #888;
+  font-family: 'Courier New', monospace;
+}
+
+/* Port context menu (for unsubscribe) */
+.port-context-menu {
+  min-width: 180px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  padding: 4px;
+  z-index: 1001;
+}
+
+.port-context-menu-item {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #ddd;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.1s;
+}
+
+.port-context-menu-item:hover {
+  background: #3a3a3a;
+  color: #fff;
+}
+
+.port-context-menu-item.disabled {
+  color: #777;
+  cursor: default;
+  font-style: italic;
+}
+
+.port-context-menu-item.disabled:hover {
+  background: transparent;
+}

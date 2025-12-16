@@ -28,12 +28,32 @@ import type {
   Seed,
   ValueKind,
 } from './types';
+import { compileBusAwarePatch, isBusAwarePatch } from './compileBusAware';
 
 // =============================================================================
 // Main Compiler Entry Point
 // =============================================================================
 
 export function compilePatch(
+  patch: CompilerPatch,
+  registry: BlockRegistry,
+  seed: Seed,
+  ctx: CompileCtx
+): CompileResult {
+  // Route to bus-aware compiler if patch has buses
+  if (isBusAwarePatch(patch)) {
+    return compileBusAwarePatch(patch, registry, seed, ctx);
+  }
+
+  // Wire-only compilation (Phase 1 logic)
+  return compilePatchWireOnly(patch, registry, seed, ctx);
+}
+
+/**
+ * Wire-only compilation (original Phase 1 implementation).
+ * Used for backward compatibility with non-bus patches.
+ */
+function compilePatchWireOnly(
   patch: CompilerPatch,
   registry: BlockRegistry,
   seed: Seed,
@@ -46,14 +66,6 @@ export function compilePatch(
     return {
       ok: false,
       errors: [{ code: 'EmptyPatch', message: 'Patch is empty - add some blocks to compile.' }],
-    };
-  }
-
-  // 0.5) Check if patch uses buses - if so, return error (not implemented yet)
-  if (patch.buses && patch.buses.length > 0) {
-    return {
-      ok: false,
-      errors: [{ code: 'NotImplemented', message: 'Bus compilation not yet implemented' }],
     };
   }
 

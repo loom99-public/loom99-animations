@@ -27,6 +27,7 @@ import {
   formatTypeDescriptor,
 } from './portUtils';
 import { BusPicker } from './BusPicker';
+import { PublishMenu } from './PublishMenu';
 import './PatchBay.css';
 
 interface PatchBayProps {
@@ -63,6 +64,8 @@ function Port({
   onContextMenu,
   onBindingSlotClick,
   busSubscription,
+  onSendAffordanceClick,
+  busPublications,
 }: {
   slot: Slot;
   blockId: string;
@@ -77,6 +80,8 @@ function Port({
   onContextMenu: (e: React.MouseEvent, port: PortRef) => void;
   onBindingSlotClick?: (e: React.MouseEvent, port: PortRef) => void;
   busSubscription?: { busName: string; listenerId: string } | null;
+  onSendAffordanceClick?: (e: React.MouseEvent, port: PortRef) => void;
+  busPublications?: Array<{ publisherId: string; busId: string; busName: string }>;
 }) {
   const portRef: PortRef = { blockId, slotId: slot.id, direction };
   const typeDescriptor = describeSlotType(slot.type);
@@ -110,6 +115,20 @@ function Port({
   const handleBindingSlotClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onBindingSlotClick?.(e, portRef);
+  };
+
+  const handleSendAffordanceClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSendAffordanceClick?.(e, portRef);
+  };
+
+  const handlePublicationBadgeClick = (e: React.MouseEvent, busId: string) => {
+    e.stopPropagation();
+    // Select the bus in Bus Board (handled by store)
+    const store = (window as any).__editorStore__;
+    if (store) {
+      store.selectBus(busId);
+    }
   };
 
   // Determine port styling
@@ -161,12 +180,40 @@ function Port({
         <span className="port-label">{slot.label}</span>
       </div>
 
-      {/* Bus subscription badge */}
+      {/* Bus subscription badge (input ports) */}
       {direction === 'input' && busSubscription && (
         <div className="bus-subscription-badge" title={`Subscribed to: ${busSubscription.busName} [identity]`}>
           <span className="bus-subscription-arrow">←</span>
           <span className="bus-subscription-name">{busSubscription.busName}</span>
           <span className="bus-subscription-transform">[identity]</span>
+        </div>
+      )}
+
+      {/* Bus-send affordance (output ports) */}
+      {direction === 'output' && (
+        <div
+          className={`bus-send-affordance ${busPublications && busPublications.length > 0 ? 'publishing' : ''}`}
+          onClick={handleSendAffordanceClick}
+          title={busPublications && busPublications.length > 0 ? 'Publishing to bus(es)' : 'Click to publish to bus'}
+        >
+          <span className="bus-send-dot">+</span>
+        </div>
+      )}
+
+      {/* Bus publication badges (output ports) */}
+      {direction === 'output' && busPublications && busPublications.length > 0 && (
+        <div className="bus-publication-badges">
+          {busPublications.map((pub) => (
+            <div
+              key={pub.publisherId}
+              className="bus-publication-badge"
+              onClick={(e) => handlePublicationBadgeClick(e, pub.busId)}
+              title={`Publishing to: ${pub.busName}`}
+            >
+              <span className="bus-publication-arrow">→</span>
+              <span className="bus-publication-name">{pub.busName}</span>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -189,6 +236,8 @@ function DraggablePatchBlock({
   portColorMap,
   onInputBindingSlotClick,
   getInputBusSubscription,
+  onOutputSendAffordanceClick,
+  getOutputBusPublications,
 }: {
   block: Block;
   laneId: string;
@@ -200,6 +249,8 @@ function DraggablePatchBlock({
   portColorMap: Map<string, string>;
   onInputBindingSlotClick: (e: React.MouseEvent, port: PortRef) => void;
   getInputBusSubscription: (blockId: string, slotId: string) => { busName: string; listenerId: string } | null;
+  onOutputSendAffordanceClick: (e: React.MouseEvent, port: PortRef) => void;
+  getOutputBusPublications: (blockId: string, slotId: string) => Array<{ publisherId: string; busId: string; busName: string }>;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `patch-block-${block.id}`,
@@ -357,6 +408,8 @@ function DraggablePatchBlock({
               }
             }
 
+            const busPublications = getOutputBusPublications(block.id, slot.id);
+
             return (
               <Port
                 key={slot.id}
@@ -371,6 +424,8 @@ function DraggablePatchBlock({
                 onHover={(p) => store.setHoveredPort(p)}
                 onClick={(p) => store.setSelectedPort(p)}
                 onContextMenu={(e, p) => store.openContextMenu(e.clientX, e.clientY, p)}
+                onSendAffordanceClick={onOutputSendAffordanceClick}
+                busPublications={busPublications}
               />
             );
           })}
@@ -409,6 +464,8 @@ function DroppableLane({
   portColorMap,
   onInputBindingSlotClick,
   getInputBusSubscription,
+  onOutputSendAffordanceClick,
+  getOutputBusPublications,
 }: {
   store: EditorStore;
   lane: Lane;
@@ -417,6 +474,8 @@ function DroppableLane({
   portColorMap: Map<string, string>;
   onInputBindingSlotClick: (e: React.MouseEvent, port: PortRef) => void;
   getInputBusSubscription: (blockId: string, slotId: string) => { busName: string; listenerId: string } | null;
+  onOutputSendAffordanceClick: (e: React.MouseEvent, port: PortRef) => void;
+  getOutputBusPublications: (blockId: string, slotId: string) => Array<{ publisherId: string; busId: string; busName: string }>;
 }) {
   const { isOver, setNodeRef } = useDroppable({
     id: `lane-${lane.id}`,
@@ -512,6 +571,8 @@ function DroppableLane({
                 portColorMap={portColorMap}
                 onInputBindingSlotClick={onInputBindingSlotClick}
                 getInputBusSubscription={getInputBusSubscription}
+                onOutputSendAffordanceClick={onOutputSendAffordanceClick}
+                getOutputBusPublications={getOutputBusPublications}
               />
             );
           })}
@@ -579,8 +640,19 @@ export const PatchBay = observer(({ store }: PatchBayProps) => {
   const activeLaneId = store.uiState.activeLaneId;
   const draggingLaneKind = store.uiState.draggingLaneKind;
 
-  // Bus picker state
+  // Bus picker state (input ports)
   const [busPickerState, setBusPickerState] = useState<{
+    isOpen: boolean;
+    portRef: PortRef | null;
+    position: { x: number; y: number };
+  }>({
+    isOpen: false,
+    portRef: null,
+    position: { x: 0, y: 0 },
+  });
+
+  // Publish menu state (output ports)
+  const [publishMenuState, setPublishMenuState] = useState<{
     isOpen: boolean;
     portRef: PortRef | null;
     position: { x: number; y: number };
@@ -604,6 +676,11 @@ export const PatchBay = observer(({ store }: PatchBayProps) => {
   // Build port color map for visual connection indication
   const portColorMap = buildPortColorMap(store.connections);
 
+  // Store reference for badge click handler
+  if (typeof window !== 'undefined') {
+    (window as any).__editorStore__ = store;
+  }
+
   // Get bus subscription for an input port
   const getInputBusSubscription = (blockId: string, slotId: string): { busName: string; listenerId: string } | null => {
     const listener = store.listeners.find(
@@ -620,9 +697,34 @@ export const PatchBay = observer(({ store }: PatchBayProps) => {
     };
   };
 
-  // Handle binding slot click (opens bus picker)
+  // Get bus publications for an output port
+  const getOutputBusPublications = (blockId: string, slotId: string): Array<{ publisherId: string; busId: string; busName: string }> => {
+    const publishers = store.publishers.filter(
+      (p) => p.from.blockId === blockId && p.from.port === slotId
+    );
+
+    return publishers.map((pub) => {
+      const bus = store.buses.find((b) => b.id === pub.busId);
+      return {
+        publisherId: pub.id,
+        busId: pub.busId,
+        busName: bus?.name || 'Unknown',
+      };
+    });
+  };
+
+  // Handle binding slot click (opens bus picker for input ports)
   const handleInputBindingSlotClick = (e: React.MouseEvent, portRef: PortRef) => {
     setBusPickerState({
+      isOpen: true,
+      portRef,
+      position: { x: e.clientX, y: e.clientY },
+    });
+  };
+
+  // Handle send affordance click (opens publish menu for output ports)
+  const handleOutputSendAffordanceClick = (e: React.MouseEvent, portRef: PortRef) => {
+    setPublishMenuState({
       isOpen: true,
       portRef,
       position: { x: e.clientX, y: e.clientY },
@@ -677,11 +779,13 @@ export const PatchBay = observer(({ store }: PatchBayProps) => {
             portColorMap={portColorMap}
             onInputBindingSlotClick={handleInputBindingSlotClick}
             getInputBusSubscription={getInputBusSubscription}
+            onOutputSendAffordanceClick={handleOutputSendAffordanceClick}
+            getOutputBusPublications={getOutputBusPublications}
           />
         ))}
       </div>
 
-      {/* Bus picker dropdown */}
+      {/* Bus picker dropdown (input ports) */}
       {busPickerState.portRef && (
         <BusPicker
           store={store}
@@ -689,6 +793,17 @@ export const PatchBay = observer(({ store }: PatchBayProps) => {
           onClose={() => setBusPickerState({ isOpen: false, portRef: null, position: { x: 0, y: 0 } })}
           portRef={busPickerState.portRef}
           position={busPickerState.position}
+        />
+      )}
+
+      {/* Publish menu (output ports) */}
+      {publishMenuState.portRef && (
+        <PublishMenu
+          store={store}
+          isOpen={publishMenuState.isOpen}
+          onClose={() => setPublishMenuState({ isOpen: false, portRef: null, position: { x: 0, y: 0 } })}
+          portRef={publishMenuState.portRef}
+          position={publishMenuState.position}
         />
       )}
 

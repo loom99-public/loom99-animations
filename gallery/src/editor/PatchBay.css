@@ -464,7 +464,7 @@
 }
 
 /* =============================================================================
- * Bus Binding UI (WI-3)
+ * Bus Binding UI (WI-3 - Input Ports)
  * ============================================================================= */
 
 /* Port container - wraps port + binding slot + badge */
@@ -550,6 +550,93 @@
   color: #888;
   font-family: 'Courier New', monospace;
 }
+
+/* =============================================================================
+ * Bus Publishing UI (WI-4 - Output Ports)
+ * ============================================================================= */
+
+/* Bus-send affordance (dot/plus adjacent to output ports) */
+.bus-send-affordance {
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  background: #2a2a2a;
+  border: 1px solid #555;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.bus-send-affordance:hover {
+  background: #3a3a3a;
+  border-color: #777;
+  transform: scale(1.1);
+}
+
+.bus-send-affordance.publishing {
+  background: #3a2a3a;
+  border-color: #f472b6;
+}
+
+.bus-send-affordance.publishing:hover {
+  background: #4a2a3a;
+}
+
+.bus-send-dot {
+  font-size: 12px;
+  color: #777;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.bus-send-affordance.publishing .bus-send-dot {
+  color: #f472b6;
+}
+
+/* Bus publication badges container */
+.bus-publication-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Bus publication badge (shows "→ busName") */
+.bus-publication-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: #3a2a3a;
+  border: 1px solid #f472b6;
+  border-radius: 8px;
+  font-size: 10px;
+  color: #f472b6;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.bus-publication-badge:hover {
+  background: #4a2a3a;
+  border-color: #f98ec0;
+  color: #f98ec0;
+}
+
+.bus-publication-arrow {
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.bus-publication-name {
+  font-weight: 600;
+}
+
+/* =============================================================================
+ * Port Context Menu
+ * ============================================================================= */
 
 /* Port context menu (for unsubscribe) */
 .port-context-menu {

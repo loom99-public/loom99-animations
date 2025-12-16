@@ -25,7 +25,6 @@ import type {
   Vec2,
 } from './types';
 import type { Bus, Publisher, Listener } from '../types';
-import { topoSortBlocks, isPortTypeAssignable } from './compile';
 
 // =============================================================================
 // Type Guards
@@ -201,6 +200,111 @@ function combineSignalArtifacts(
 }
 
 // =============================================================================
+// Topological Sort with Bus Dependencies
+// =============================================================================
+
+/**
+ * Topological sort that considers both wire AND bus dependencies.
+ * A block B depends on block A if:
+ * 1. A has a wire output connected to B's input, OR
+ * 2. A publishes to a bus that B listens to
+ *
+ * This ensures publisher blocks compile before listener blocks.
+ */
+function topoSortBlocksWithBuses(
+  patch: CompilerPatch,
+  publishers: Publisher[],
+  listeners: Listener[],
+  errors: CompileError[]
+): readonly BlockId[] {
+  const ids = Array.from(patch.blocks.keys());
+
+  // Build adjacency + indegree
+  const adj = new Map<BlockId, Set<BlockId>>();
+  const indeg = new Map<BlockId, number>();
+
+  for (const id of ids) {
+    adj.set(id, new Set());
+    indeg.set(id, 0);
+  }
+
+  // Add edges from wire connections
+  for (const c of patch.connections) {
+    const a = c.from.blockId;
+    const b = c.to.blockId;
+    if (!adj.has(a) || !adj.has(b)) continue;
+    if (!adj.get(a)!.has(b)) {
+      adj.get(a)!.add(b);
+      indeg.set(b, (indeg.get(b) ?? 0) + 1);
+    }
+  }
+
+  // Add edges from bus dependencies: publisher block → listener block
+  // Group publishers by busId for efficient lookup
+  const publishersByBus = new Map<string, Publisher[]>();
+  for (const pub of publishers) {
+    if (!pub.enabled) continue;
+    const list = publishersByBus.get(pub.busId) ?? [];
+    list.push(pub);
+    publishersByBus.set(pub.busId, list);
+  }
+
+  // For each listener, add edges from all publishers on that bus
+  for (const listener of listeners) {
+    if (!listener.enabled) continue;
+    const listenerBlockId = listener.to.blockId;
+    if (!adj.has(listenerBlockId)) continue;
+
+    const busPublishers = publishersByBus.get(listener.busId) ?? [];
+    for (const pub of busPublishers) {
+      const pubBlockId = pub.from.blockId;
+      if (!adj.has(pubBlockId)) continue;
+
+      // Don't add self-loop (same block publishes and listens)
+      if (pubBlockId === listenerBlockId) continue;
+
+      // Add edge: publisher block → listener block
+      if (!adj.get(pubBlockId)!.has(listenerBlockId)) {
+        adj.get(pubBlockId)!.add(listenerBlockId);
+        indeg.set(listenerBlockId, (indeg.get(listenerBlockId) ?? 0) + 1);
+      }
+    }
+  }
+
+  // Kahn's algorithm
+  const queue: BlockId[] = [];
+  for (const id of ids) {
+    if ((indeg.get(id) ?? 0) === 0) queue.push(id);
+  }
+
+  // Stable order: sort by id
+  queue.sort();
+
+  const out: BlockId[] = [];
+  while (queue.length) {
+    const x = queue.shift()!;
+    out.push(x);
+    for (const y of adj.get(x) ?? []) {
+      indeg.set(y, (indeg.get(y) ?? 0) - 1);
+      if ((indeg.get(y) ?? 0) === 0) queue.push(y);
+    }
+    queue.sort();
+  }
+
+  if (out.length !== ids.length) {
+    // Find blocks in cycle for better error message
+    const inCycle = ids.filter(id => !out.includes(id));
+    errors.push({
+      code: 'CycleDetected',
+      message: `Cycle detected in patch graph. Blocks in cycle: ${inCycle.join(', ')}`,
+    });
+    return [];
+  }
+
+  return out;
+}
+
+// =============================================================================
 // Main Bus-Aware Compiler
 // =============================================================================
 
@@ -289,9 +393,9 @@ export function compileBusAwarePatch(
   if (errors.length) return { ok: false, errors };
 
   // =============================================================================
-  // 5. Topological sort blocks (wire dependencies only)
+  // 5. Topological sort blocks (wire AND bus dependencies)
   // =============================================================================
-  const order = topoSortBlocks(patch, errors);
+  const order = topoSortBlocksWithBuses(patch, publishers, listeners, errors);
   if (errors.length) return { ok: false, errors };
 
   // =============================================================================

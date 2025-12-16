@@ -104,7 +104,7 @@ export const BusPicker = observer((props: BusPickerProps) => {
     setIsCreationDialogOpen(true);
   };
 
-  const handleBusCreated = (busId: string) => {
+  const handleBusCreated = (_busId: string) => {
     // Auto-subscribe is handled by BusCreationDialog's autoSubscribeToBlock/Port props
     setIsCreationDialogOpen(false);
     onClose();

@@ -227,9 +227,7 @@ export const BusInspector = observer(({ store, busId }: BusInspectorProps) => {
     );
   }
 
-  const publishers = store.getPublishersByBus(busId);
   const allPublishers = store.publishers.filter(p => p.busId === busId);
-  const listeners = store.getListenersByBus(busId);
   const allListeners = store.listeners.filter(l => l.busId === busId);
   const typeDisplay = formatTypeDesc(bus.type);
   const domain = bus.type.domain as CoreDomain;

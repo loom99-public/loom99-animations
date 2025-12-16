@@ -121,7 +121,7 @@ export const PublishMenu = observer((props: PublishMenuProps) => {
     onClose();
   };
 
-  const handleBusCreated = (busId: string) => {
+  const handleBusCreated = (_busId: string) => {
     // Auto-publish is handled by BusCreationDialog's autoPublish props
     setIsCreationDialogOpen(false);
     onClose();

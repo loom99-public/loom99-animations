@@ -12,7 +12,7 @@ import type {
   LogComponent,
   SystemStatus,
 } from './logTypes';
-import { LOG_LEVELS, LOG_COMPONENTS } from './logTypes';
+import { LOG_COMPONENTS } from './logTypes';
 
 /**
  * Maximum number of log entries to keep (prevents memory bloat).

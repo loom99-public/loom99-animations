@@ -1,10 +1,11 @@
-import type { BlockSubcategory, LaneKind, LaneFlavor } from './types';
+import type { BlockSubcategory, LaneKind, LaneFlavor, SlotType } from './types';
+import type { BlockTags } from './blocks';
 
 export interface ExposedPort {
   id: string;
   label: string;
   direction: 'input' | 'output';
-  slotType: string;
+  slotType: SlotType;
   nodeId: string;
   nodePort: string;
 }
@@ -24,7 +25,7 @@ export interface CompositeDefinition {
   subcategory: BlockSubcategory;
   laneKind: LaneKind;
   laneFlavor?: LaneFlavor;
-  tags?: Record<string, unknown>;
+  tags?: BlockTags;
   graph: CompositeGraph;
   exposedInputs: readonly ExposedPort[];
   exposedOutputs: readonly ExposedPort[];

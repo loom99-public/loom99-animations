@@ -14,7 +14,7 @@ export interface ModalProps {
   zIndex?: number;
 }
 
-function useFocusTrap(enabled: boolean, containerRef: React.RefObject<HTMLDivElement>) {
+function useFocusTrap(enabled: boolean, containerRef: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     if (!enabled) return;
 

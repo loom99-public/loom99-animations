@@ -4,7 +4,7 @@
  * Converts existing hardcoded paths to PathEntry format.
  */
 
-import { LOGO_PATHS, TEXT_PATHS, HEART_PATHS } from '../../data/pathData';
+import { LOGO_PATHS, TEXT_PATHS, HEART_PATHS, type LineData } from '../../data/pathData';
 import type { PathEntry } from './types';
 import { generateThumbnail } from './thumbnail';
 

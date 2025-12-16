@@ -48,8 +48,6 @@ function MultiSelect<T extends string>({
   getLabel,
   onToggle,
 }: MultiSelectProps<T>) {
-  const allSelected = options.every((o) => selected.has(o));
-  const noneSelected = options.every((o) => !selected.has(o));
 
   return (
     <div className="log-filter">

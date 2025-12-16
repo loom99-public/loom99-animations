@@ -6,7 +6,7 @@
 
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
-import type { Bus, BusCombineMode, CoreDomain, Publisher } from './types';
+import type { Bus, BusCombineMode, CoreDomain } from './types';
 import type { EditorStore } from './store';
 import { BusViz } from './BusViz';
 import './BusBoard.css';

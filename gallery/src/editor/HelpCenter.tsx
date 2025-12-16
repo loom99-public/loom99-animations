@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 export type HelpCenterTopicId =
   | 'overview'
@@ -31,7 +31,7 @@ interface HelpNode {
   label: string;
   parentId?: HelpCenterTopicId;
   children?: HelpNode[];
-  render: () => JSX.Element;
+  render: () => React.ReactNode;
 }
 
 function OverviewPage({ onRetakeTour }: { onRetakeTour: () => void }) {

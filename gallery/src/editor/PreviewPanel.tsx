@@ -118,8 +118,10 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, store, onSho
     if (compilerService) {
       const compiled = compilerService.getProgram();
       if (compiled) {
-        player.setFactory(() => compiled);
-        lastGoodProgramRef.current = compiled;
+        // Cast to runtime RenderTree type (structurally compatible)
+        const program = compiled as unknown as Program<RenderTree>;
+        player.setFactory(() => program);
+        lastGoodProgramRef.current = program;
         setHasCompiledProgram(true);
         logStore.info('renderer', 'Loaded compiled program');
       } else {
@@ -164,11 +166,13 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, store, onSho
     const interval = setInterval(() => {
       // Check for program changes
       const compiled = compilerService.getProgram();
-      if (compiled && compiled !== lastGoodProgramRef.current) {
+      if (compiled && compiled !== (lastGoodProgramRef.current as unknown)) {
         const player = playerRef.current;
         if (player) {
-          player.setFactory(() => compiled);
-          lastGoodProgramRef.current = compiled;
+          // Cast to runtime RenderTree type (structurally compatible)
+          const program = compiled as unknown as Program<RenderTree>;
+          player.setFactory(() => program);
+          lastGoodProgramRef.current = program;
           setHasCompiledProgram(true);
           logStore.debug('renderer', 'Hot swapped to new compiled program');
         }

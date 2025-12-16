@@ -15,7 +15,7 @@
  * 3. User dropped a block to satisfy a specific input port
  */
 
-import type { Block, BlockId, Connection, SlotType, LaneId } from './types';
+import type { Block, BlockId, Connection, SlotType } from './types';
 import { areTypesCompatible } from './portUtils';
 import type { BlockDefinition } from './blocks';
 

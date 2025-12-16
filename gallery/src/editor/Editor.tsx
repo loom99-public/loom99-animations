@@ -38,6 +38,9 @@ import { HelpCenterModal } from './HelpCenter';
 type HelpTopic = 'intro' | 'library' | 'inspector' | 'preview' | 'patch' | 'controlSurface';
 const TOUR_COMPLETE_KEY = 'loom-editor-tour-complete';
 
+// P1/P2: Sidebar mode types
+type SidebarMode = 'hidden' | '1x' | '2x';
+
 interface HelpModalProps {
   topic: HelpTopic;
   onClose: () => void;
@@ -78,7 +81,7 @@ function HelpModal({ topic, onClose }: HelpModalProps) {
               <ul>
                 <li>The center lanes show how data flows: Scene → Phase → Fields → Spec → Program.</li>
                 <li>Connect outputs to inputs to move scenes, fields, and signals through the graph.</li>
-                <li>Think of it as a visual program where wires show the “why” behind the motion.</li>
+                <li>Think of it as a visual program where wires show the "why" behind the motion.</li>
               </ul>
             ),
           },
@@ -412,6 +415,15 @@ export const Editor = observer(() => {
   const [patchBayCollapsed, setPatchBayCollapsed] = useState(false);
   const [busBoardCollapsed, setBusBoardCollapsed] = useState(false);
   const [baySplit, setBaySplit] = useState(0.5); // patchbay vs busboard
+
+  // P1: Bay collective collapse state
+  const [bayCollective, setBayCollective] = useState(false);
+  const [savedBaySplit, setSavedBaySplit] = useState(0.5);
+
+  // P1/P2: Sidebar mode state
+  const [leftSidebarMode, setLeftSidebarMode] = useState<SidebarMode>('1x');
+  const [rightSidebarMode, setRightSidebarMode] = useState<SidebarMode>('1x');
+
   const [dragging, setDragging] = useState<null | 'left-split' | 'center-split' | 'bay-split'>(null);
   const leftColumnRef = useRef<HTMLDivElement | null>(null);
   const centerColumnRef = useRef<HTMLDivElement | null>(null);
@@ -421,6 +433,64 @@ export const Editor = observer(() => {
   const [showHelpNudge, setShowHelpNudge] = useState(false);
   const [helpCenterOpen, setHelpCenterOpen] = useState(false);
   const [isPathsModalOpen, setIsPathsModalOpen] = useState(false);
+
+  // P1: Bay collective collapse logic
+  const toggleBayCollective = () => {
+    if (bayCollective) {
+      // Expand both panels to saved split
+      setPatchBayCollapsed(false);
+      setBusBoardCollapsed(false);
+      setBaySplit(savedBaySplit);
+      setBayCollective(false);
+    } else {
+      // Save current split and collapse both
+      setSavedBaySplit(baySplit);
+      setPatchBayCollapsed(true);
+      setBusBoardCollapsed(true);
+      setBayCollective(true);
+    }
+  };
+
+  // P1: Clear bay collective state when manually expanding individual panels
+  useEffect(() => {
+    if (bayCollective && (!patchBayCollapsed || !busBoardCollapsed)) {
+      setBayCollective(false);
+    }
+  }, [patchBayCollapsed, busBoardCollapsed, bayCollective]);
+
+  // P1/P2: Sidebar mode helpers
+  const getLeftSidebarWidth = (): string => {
+    if (leftSidebarMode === 'hidden') return '0px';
+    if (leftSidebarMode === '2x') return '640px';
+    return '320px'; // 1x
+  };
+
+  const getRightSidebarWidth = (): string => {
+    if (rightSidebarMode === 'hidden') return '0px';
+    if (rightSidebarMode === '2x') return '840px';
+    return '420px'; // 1x
+  };
+
+  // P2: View preset functions
+  const applyDesignerView = () => {
+    setLeftSidebarMode('1x');
+    setLibraryCollapsed(false);
+    setInspectorCollapsed(false);
+    setPatchBayCollapsed(false);
+    setBusBoardCollapsed(false);
+    setBayCollective(false);
+    setCenterSplit(0.4);
+    setRightSidebarMode('1x');
+  };
+
+  const applyPerformanceView = () => {
+    setLeftSidebarMode('hidden');
+    setPatchBayCollapsed(true);
+    setBusBoardCollapsed(true);
+    setBayCollective(true);
+    setCenterSplit(0.7);
+    setRightSidebarMode('2x');
+  };
 
   // Set up auto-compile on patch changes
   useEffect(() => {
@@ -626,6 +696,9 @@ export const Editor = observer(() => {
     }
   }
 
+  // Compute dynamic grid template columns based on sidebar modes
+  const gridTemplateColumns = `${getLeftSidebarWidth()} minmax(0, 1fr) ${getRightSidebarWidth()}`;
+
   return (
     <DndContext
       onDragStart={handleDragStart}
@@ -647,103 +720,191 @@ export const Editor = observer(() => {
           isPathsModalOpen={isPathsModalOpen}
           showHelpNudge={showHelpNudge}
         />
-        <div className="editor-main">
-          <div className="editor-left" ref={leftColumnRef}>
-            <div
-              className={`left-panel library-panel ${libraryCollapsed ? 'collapsed' : ''}`}
-              style={{
-                flex: libraryCollapsed
-                  ? '0 0 auto'
-                  : inspectorCollapsed
-                    ? '1 1 0'
-                    : `${leftSplit} 1 0`,
-              }}
-            >
-              <div className="panel-header">
-                <span className="panel-title">Library</span>
-                <div className="panel-header-actions">
-                  <button
-                    className="panel-help-btn"
-                    onClick={() => {
-                      setHelpCenterOpen(true);
-                      setHelpTopic(null);
-                    }}
-                    title="What is the Library?"
-                  >
-                    ?
-                  </button>
-                  <button
-                    className="panel-toggle-btn"
-                    onClick={() => setLibraryCollapsed((v) => !v)}
-                    title={libraryCollapsed ? 'Show library' : 'Hide library'}
-                  >
-                    {libraryCollapsed ? 'Show' : 'Hide'}
-                  </button>
-                </div>
-              </div>
-              {!libraryCollapsed && <BlockLibrary store={store} />}
-            </div>
 
-            {!libraryCollapsed && !inspectorCollapsed && (
+        {/* P2: View preset buttons */}
+        <div style={{
+          display: 'flex',
+          gap: '8px',
+          padding: '4px 8px',
+          background: '#151515',
+          borderBottom: '1px solid #222',
+          justifyContent: 'center'
+        }}>
+          <button
+            onClick={applyDesignerView}
+            style={{
+              padding: '4px 12px',
+              fontSize: '11px',
+              background: '#222',
+              color: '#ccc',
+              border: '1px solid #333',
+              borderRadius: '4px',
+              cursor: 'pointer',
+            }}
+            title="Designer View: Balanced layout for building animations"
+          >
+            Designer View
+          </button>
+          <button
+            onClick={applyPerformanceView}
+            style={{
+              padding: '4px 12px',
+              fontSize: '11px',
+              background: '#222',
+              color: '#ccc',
+              border: '1px solid #333',
+              borderRadius: '4px',
+              cursor: 'pointer',
+            }}
+            title="Performance View: Focus on preview and controls"
+          >
+            Performance View
+          </button>
+        </div>
+
+        <div className="editor-main" style={{ gridTemplateColumns }}>
+          {/* Left Sidebar */}
+          {leftSidebarMode !== 'hidden' && (
+            <div className="editor-left" ref={leftColumnRef}>
               <div
-                className="vertical-resizer"
-                onMouseDown={() => setDragging('left-split')}
-                title="Drag to resize Library / Inspector"
-              />
-            )}
-
-            <div
-              className={`left-panel inspector-panel ${inspectorCollapsed ? 'collapsed' : ''}`}
-              style={{
-                flex: inspectorCollapsed
-                  ? '0 0 auto'
-                  : libraryCollapsed
-                    ? '1 1 0'
-                    : `${1 - leftSplit} 1 0`,
-              }}
-            >
-              <div className="panel-header">
-                <span className="panel-title">Inspector</span>
-                <div className="panel-header-actions">
-                  <button
-                    className="panel-help-btn"
-                    onClick={() => {
-                      setHelpCenterOpen(true);
-                      setHelpTopic(null);
-                    }}
-                    title="What is the Inspector?"
-                  >
-                    ?
-                  </button>
-                  <button
-                    className="panel-toggle-btn"
-                    onClick={() => setInspectorCollapsed((v) => !v)}
-                    title={inspectorCollapsed ? 'Show inspector' : 'Hide inspector'}
-                  >
-                    {inspectorCollapsed ? 'Show' : 'Hide'}
-                  </button>
+                className={`left-panel library-panel ${libraryCollapsed ? 'collapsed' : ''}`}
+                style={{
+                  flex: libraryCollapsed
+                    ? '0 0 auto'
+                    : inspectorCollapsed
+                      ? '1 1 0'
+                      : `${leftSplit} 1 0`,
+                }}
+              >
+                <div className="panel-header">
+                  <span className="panel-title">Library</span>
+                  <div className="panel-header-actions">
+                    {/* P1/P2: Sidebar mode toggle */}
+                    <button
+                      onClick={() => {
+                        setLeftSidebarMode(leftSidebarMode === '1x' ? '2x' : '1x');
+                      }}
+                      style={{
+                        padding: '2px 6px',
+                        fontSize: '10px',
+                        background: '#222',
+                        color: leftSidebarMode === '2x' ? '#4a9eff' : '#888',
+                        border: '1px solid #333',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                      }}
+                      title={leftSidebarMode === '1x' ? 'Expand to 2x width' : 'Collapse to 1x width'}
+                    >
+                      {leftSidebarMode === '1x' ? '1x' : '2x'}
+                    </button>
+                    <button
+                      className="panel-help-btn"
+                      onClick={() => {
+                        setHelpCenterOpen(true);
+                        setHelpTopic(null);
+                      }}
+                      title="What is the Library?"
+                    >
+                      ?
+                    </button>
+                    <button
+                      className="panel-toggle-btn"
+                      onClick={() => setLibraryCollapsed((v) => !v)}
+                      title={libraryCollapsed ? 'Show library' : 'Hide library'}
+                    >
+                      {libraryCollapsed ? 'Show' : 'Hide'}
+                    </button>
+                  </div>
                 </div>
+                {!libraryCollapsed && <BlockLibrary store={store} />}
               </div>
-              {!inspectorCollapsed && (
-                <div className="inspector-wrapper">
-                  <Inspector store={store} />
-                </div>
-              )}
-            </div>
-          </div>
 
-            <div className="editor-center" ref={centerColumnRef}>
-              <div className="editor-preview" style={{ flex: centerSplit }}>
-                <PreviewPanel
-                  compilerService={compilerService}
-                  isPlaying={store.uiState.isPlaying}
-                  store={store}
-                  onShowHelp={() => {
-                    setHelpCenterOpen(true);
-                    setHelpTopic(null);
-                  }}
+              {!libraryCollapsed && !inspectorCollapsed && (
+                <div
+                  className="vertical-resizer"
+                  onMouseDown={() => setDragging('left-split')}
+                  title="Drag to resize Library / Inspector"
                 />
+              )}
+
+              <div
+                className={`left-panel inspector-panel ${inspectorCollapsed ? 'collapsed' : ''}`}
+                style={{
+                  flex: inspectorCollapsed
+                    ? '0 0 auto'
+                    : libraryCollapsed
+                      ? '1 1 0'
+                      : `${1 - leftSplit} 1 0`,
+                }}
+              >
+                <div className="panel-header">
+                  <span className="panel-title">Inspector</span>
+                  <div className="panel-header-actions">
+                    <button
+                      className="panel-help-btn"
+                      onClick={() => {
+                        setHelpCenterOpen(true);
+                        setHelpTopic(null);
+                      }}
+                      title="What is the Inspector?"
+                    >
+                      ?
+                    </button>
+                    <button
+                      className="panel-toggle-btn"
+                      onClick={() => setInspectorCollapsed((v) => !v)}
+                      title={inspectorCollapsed ? 'Show inspector' : 'Hide inspector'}
+                    >
+                      {inspectorCollapsed ? 'Show' : 'Hide'}
+                    </button>
+                  </div>
+                </div>
+                {!inspectorCollapsed && (
+                  <div className="inspector-wrapper">
+                    <Inspector store={store} />
+                  </div>
+                )}
               </div>
+            </div>
+          )}
+
+          {/* P1: Left sidebar collapsed state - show expand button */}
+          {leftSidebarMode === 'hidden' && (
+            <div
+              style={{
+                width: '24px',
+                background: '#151515',
+                border: '1px solid #222',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                writingMode: 'vertical-rl',
+                fontSize: '10px',
+                color: '#888',
+                padding: '8px 4px',
+              }}
+              onClick={() => setLeftSidebarMode('1x')}
+              title="Show left sidebar"
+            >
+              Library
+            </div>
+          )}
+
+          {/* Center Column */}
+          <div className="editor-center" ref={centerColumnRef}>
+            <div className="editor-preview" style={{ flex: centerSplit }}>
+              <PreviewPanel
+                compilerService={compilerService}
+                isPlaying={store.uiState.isPlaying}
+                store={store}
+                onShowHelp={() => {
+                  setHelpCenterOpen(true);
+                  setHelpTopic(null);
+                }}
+              />
+            </div>
 
             <div
               className="horizontal-resizer"
@@ -752,6 +913,32 @@ export const Editor = observer(() => {
             />
 
             <div className="editor-bay" ref={bayRef} style={{ flex: 1 - centerSplit }}>
+              {/* P1: Bay collective collapse button */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                padding: '4px',
+                background: '#151515',
+                borderRadius: '6px',
+                marginBottom: '4px',
+              }}>
+                <button
+                  onClick={toggleBayCollective}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    background: bayCollective ? '#4a9eff' : '#222',
+                    color: bayCollective ? '#fff' : '#ccc',
+                    border: '1px solid #333',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                  }}
+                  title={bayCollective ? 'Expand Bay (Patch + Bus Board)' : 'Collapse Bay (Patch + Bus Board)'}
+                >
+                  {bayCollective ? '▸ Expand Bay' : '▾ Collapse Bay'}
+                </button>
+              </div>
+
               {/* PatchBay Panel */}
               <div
                 className={`bay-panel patch-panel ${patchBayCollapsed ? 'collapsed' : ''}`}
@@ -843,28 +1030,73 @@ export const Editor = observer(() => {
             </div>
           </div>
 
+          {/* Right Sidebar */}
+          {rightSidebarMode !== 'hidden' && (
             <div className="editor-right-panel">
               <div className="editor-control-surface">
                 <div className="panel-header">
                   <span className="panel-title">Control Surface</span>
                   <div className="panel-header-actions">
-                  <button
-                    className="panel-help-btn"
-                    onClick={() => {
-                      setHelpCenterOpen(true);
-                      setHelpTopic(null);
-                    }}
-                    title="What is the Control Surface?"
-                  >
-                    ?
-                  </button>
+                    {/* P1/P2: Sidebar mode toggle */}
+                    <button
+                      onClick={() => {
+                        setRightSidebarMode(rightSidebarMode === '1x' ? '2x' : '1x');
+                      }}
+                      style={{
+                        padding: '2px 6px',
+                        fontSize: '10px',
+                        background: '#222',
+                        color: rightSidebarMode === '2x' ? '#4a9eff' : '#888',
+                        border: '1px solid #333',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                      }}
+                      title={rightSidebarMode === '1x' ? 'Expand to 2x width' : 'Collapse to 1x width'}
+                    >
+                      {rightSidebarMode === '1x' ? '1x' : '2x'}
+                    </button>
+                    <button
+                      className="panel-help-btn"
+                      onClick={() => {
+                        setHelpCenterOpen(true);
+                        setHelpTopic(null);
+                      }}
+                      title="What is the Control Surface?"
+                    >
+                      ?
+                    </button>
+                  </div>
+                </div>
+                <div className="control-surface-body">
+                  <ControlSurfacePanel store={controlSurfaceStore} />
                 </div>
               </div>
-              <div className="control-surface-body">
-                <ControlSurfacePanel store={controlSurfaceStore} />
-              </div>
             </div>
-          </div>
+          )}
+
+          {/* P1: Right sidebar collapsed state - show expand button */}
+          {rightSidebarMode === 'hidden' && (
+            <div
+              style={{
+                width: '24px',
+                background: '#151515',
+                border: '1px solid #222',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                writingMode: 'vertical-rl',
+                fontSize: '10px',
+                color: '#888',
+                padding: '8px 4px',
+              }}
+              onClick={() => setRightSidebarMode('1x')}
+              title="Show control surface"
+            >
+              Controls
+            </div>
+          )}
         </div>
 
         <LogWindow />

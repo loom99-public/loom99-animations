@@ -17,7 +17,8 @@ export type HelpCenterTopicId =
   | 'library'
   | 'inspector'
   | 'preview'
-  | 'controlSurface';
+  | 'controlSurface'
+  | 'patch';
 
 export interface HelpCenterProps {
   isOpen: boolean;
@@ -552,6 +553,32 @@ function ControlSurfacePage() {
   );
 }
 
+function PatchPage() {
+  return (
+    <div className="help-center-page">
+      <h2>Patch Bay</h2>
+      <p>
+        The Patch Bay is where you connect blocks into a graph. Lanes organize blocks by role: Scene, Phase, Fields, Spec, Program, Output.
+      </p>
+      <p>
+        Drag blocks from the Library into lanes, then wire outputs to inputs. Wires flow left-to-right, showing how data moves through
+        your animation pipeline.
+      </p>
+      <ul>
+        <li><strong>Scene lane:</strong> Where your source geometry lives (SVG paths, text, shapes).</li>
+        <li><strong>Fields lane:</strong> Per-element values (positions, delays, durations, colors).</li>
+        <li><strong>Phase lane:</strong> Time structure (entrance, hold, exit phases).</li>
+        <li><strong>Spec lane:</strong> Animation specifications combining fields and timing.</li>
+        <li><strong>Program lane:</strong> The compiled animation program.</li>
+        <li><strong>Output lane:</strong> Rendering and output blocks.</li>
+      </ul>
+      <p>
+        Use lane descriptions and type hints to keep structure clear. The compiler validates that you&apos;re wiring compatible types together.
+      </p>
+    </div>
+  );
+}
+
 function buildTopics(onRetakeTour: () => void): HelpNode[] {
   return [
     {
@@ -605,8 +632,98 @@ function buildTopics(onRetakeTour: () => void): HelpNode[] {
       label: 'Control Surface',
       render: () => <ControlSurfacePage />,
     },
+    {
+      id: 'patch',
+      label: 'Patch Bay',
+      render: () => <PatchPage />,
+    },
   ];
 }
+
+/**
+ * Embedded help panel for sidebar - collapsible, shows single topic.
+ */
+export interface HelpPanelProps {
+  topicId: HelpCenterTopicId;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+  onNavigate: (topicId: HelpCenterTopicId) => void;
+  onRetakeTour: () => void;
+}
+
+export const HelpPanel = ({ topicId, collapsed, onToggleCollapse, onNavigate, onRetakeTour }: HelpPanelProps) => {
+  const topics = useMemo(() => buildTopics(onRetakeTour), [onRetakeTour]);
+
+  // Build flat map of all topics
+  const flatMap = useMemo(() => {
+    const map = new Map<HelpCenterTopicId, HelpNode>();
+    topics.forEach((node) => {
+      map.set(node.id, node);
+      node.children?.forEach((child) => map.set(child.id, child));
+    });
+    return map;
+  }, [topics]);
+
+  const activeNode = flatMap.get(topicId) ?? flatMap.get('overview')!;
+
+  // Get parent breadcrumb if this is a child topic
+  const parentNode = activeNode.parentId ? flatMap.get(activeNode.parentId) : null;
+
+  return (
+    <div className={`help-panel ${collapsed ? 'collapsed' : ''}`}>
+      <div className="panel-header help-panel-header" onClick={onToggleCollapse}>
+        <span className="panel-title">Help</span>
+        <div className="panel-header-actions">
+          <button
+            className="panel-collapse-icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleCollapse();
+            }}
+            title={collapsed ? 'Show help' : 'Hide help'}
+          >
+            {collapsed ? '▾' : '▴'}
+          </button>
+        </div>
+      </div>
+      {!collapsed && (
+        <div className="help-panel-body">
+          {/* Topic selector */}
+          <div className="help-panel-nav">
+            {parentNode && (
+              <button
+                className="help-panel-breadcrumb"
+                onClick={() => onNavigate(parentNode.id)}
+              >
+                ← {parentNode.label}
+              </button>
+            )}
+            <select
+              className="help-panel-select"
+              value={topicId}
+              onChange={(e) => onNavigate(e.target.value as HelpCenterTopicId)}
+            >
+              {topics.map((node) => (
+                <React.Fragment key={node.id}>
+                  <option value={node.id}>{node.label}</option>
+                  {node.children?.map((child) => (
+                    <option key={child.id} value={child.id}>
+                      &nbsp;&nbsp;{child.label}
+                    </option>
+                  ))}
+                </React.Fragment>
+              ))}
+            </select>
+          </div>
+          {/* Topic content */}
+          <div className="help-panel-content">
+            {activeNode.render()}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export function HelpCenterModal({ isOpen, initialTopicId = 'overview', onClose, onRetakeTour }: HelpCenterProps) {
   const topics = useMemo(() => buildTopics(onRetakeTour), [onRetakeTour]);

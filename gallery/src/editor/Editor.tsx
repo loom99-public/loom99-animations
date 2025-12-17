@@ -438,6 +438,9 @@ export const Editor = observer(() => {
   const [helpPanelCollapsed, setHelpPanelCollapsed] = useState(true); // collapsed by default
   const [helpPanelTopicId, setHelpPanelTopicId] = useState<HelpCenterTopicId>('overview');
 
+  // Controls panel collapsible state
+  const [controlsCollapsed, setControlsCollapsed] = useState(false);
+
   // P1: Bay collective collapse logic
   const toggleBayCollective = () => {
     if (bayCollective) {
@@ -953,13 +956,18 @@ export const Editor = observer(() => {
           {/* Right Sidebar */}
           {rightSidebarMode !== 'hidden' && (
             <div className="editor-right-panel">
-              <div className="editor-control-surface">
-                <div className="panel-header">
+              <div className={`editor-control-surface ${controlsCollapsed ? 'collapsed' : ''}`}>
+                <div
+                  className="panel-header"
+                  onClick={() => setControlsCollapsed((v) => !v)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <span className="panel-title">Controls</span>
                   <div className="panel-header-actions">
                     <button
                       className={`panel-collapse-icon ${rightSidebarMode === '2x' ? 'active' : ''}`}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         // Cycle: 1x → 2x → hidden → 1x
                         if (rightSidebarMode === '1x') setRightSidebarMode('2x');
                         else if (rightSidebarMode === '2x') setRightSidebarMode('hidden');
@@ -971,16 +979,31 @@ export const Editor = observer(() => {
                     </button>
                     <button
                       className="panel-collapse-icon"
-                      onClick={() => openHelpPanel('controlSurface')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openHelpPanel('controlSurface');
+                      }}
                       title="Help"
                     >
                       ?
                     </button>
+                    <button
+                      className="panel-collapse-icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setControlsCollapsed((v) => !v);
+                      }}
+                      title={controlsCollapsed ? 'Show controls' : 'Hide controls'}
+                    >
+                      {controlsCollapsed ? '▾' : '▴'}
+                    </button>
                   </div>
                 </div>
-                <div className="control-surface-body">
-                  <ControlSurfacePanel store={controlSurfaceStore} />
-                </div>
+                {!controlsCollapsed && (
+                  <div className="control-surface-body">
+                    <ControlSurfacePanel store={controlSurfaceStore} />
+                  </div>
+                )}
               </div>
 
               {/* Embedded Help Panel */}
@@ -990,6 +1013,9 @@ export const Editor = observer(() => {
                 onToggleCollapse={() => setHelpPanelCollapsed((v) => !v)}
                 onNavigate={setHelpPanelTopicId}
                 onRetakeTour={() => openTour('intro')}
+                onPopOut={() => {
+                  setHelpCenterOpen(true);
+                }}
               />
             </div>
           )}
@@ -1042,6 +1068,7 @@ export const Editor = observer(() => {
 
       <HelpCenterModal
         isOpen={helpCenterOpen}
+        initialTopicId={helpPanelTopicId}
         onClose={() => setHelpCenterOpen(false)}
         onRetakeTour={() => {
           setHelpCenterOpen(false);

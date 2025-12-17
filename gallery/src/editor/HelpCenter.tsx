@@ -649,9 +649,10 @@ export interface HelpPanelProps {
   onToggleCollapse: () => void;
   onNavigate: (topicId: HelpCenterTopicId) => void;
   onRetakeTour: () => void;
+  onPopOut: () => void; // Open in larger modal
 }
 
-export const HelpPanel = ({ topicId, collapsed, onToggleCollapse, onNavigate, onRetakeTour }: HelpPanelProps) => {
+export const HelpPanel = ({ topicId, collapsed, onToggleCollapse, onNavigate, onRetakeTour, onPopOut }: HelpPanelProps) => {
   const topics = useMemo(() => buildTopics(onRetakeTour), [onRetakeTour]);
 
   // Build flat map of all topics
@@ -674,6 +675,16 @@ export const HelpPanel = ({ topicId, collapsed, onToggleCollapse, onNavigate, on
       <div className="panel-header help-panel-header" onClick={onToggleCollapse}>
         <span className="panel-title">Help</span>
         <div className="panel-header-actions">
+          <button
+            className="panel-collapse-icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPopOut();
+            }}
+            title="Open in larger window"
+          >
+            ⤢
+          </button>
           <button
             className="panel-collapse-icon"
             onClick={(e) => {

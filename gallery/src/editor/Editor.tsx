@@ -33,7 +33,7 @@ import { ControlSurfaceStore, ControlSurfacePanel, generateSurfaceForMacro } fro
 import type { BlockDefinition } from './blocks';
 import type { LaneId } from './types';
 import './Editor.css';
-import { HelpCenterModal } from './HelpCenter';
+import { HelpCenterModal, HelpPanel, type HelpCenterTopicId } from './HelpCenter';
 
 type HelpTopic = 'intro' | 'library' | 'inspector' | 'preview' | 'patch' | 'controlSurface';
 const TOUR_COMPLETE_KEY = 'loom-editor-tour-complete';
@@ -434,6 +434,10 @@ export const Editor = observer(() => {
   const [helpCenterOpen, setHelpCenterOpen] = useState(false);
   const [isPathsModalOpen, setIsPathsModalOpen] = useState(false);
 
+  // Help panel state (embedded in right sidebar)
+  const [helpPanelCollapsed, setHelpPanelCollapsed] = useState(true); // collapsed by default
+  const [helpPanelTopicId, setHelpPanelTopicId] = useState<HelpCenterTopicId>('overview');
+
   // P1: Bay collective collapse logic
   const toggleBayCollective = () => {
     if (bayCollective) {
@@ -460,13 +464,13 @@ export const Editor = observer(() => {
 
   // P1/P2: Sidebar mode helpers
   const getLeftSidebarWidth = (): string => {
-    if (leftSidebarMode === 'hidden') return '0px';
+    if (leftSidebarMode === 'hidden') return '24px'; // collapsed tab width
     if (leftSidebarMode === '2x') return '640px';
     return '320px'; // 1x
   };
 
   const getRightSidebarWidth = (): string => {
-    if (rightSidebarMode === 'hidden') return '0px';
+    if (rightSidebarMode === 'hidden') return '24px'; // collapsed tab width
     if (rightSidebarMode === '2x') return '840px';
     return '420px'; // 1x
   };
@@ -530,6 +534,12 @@ export const Editor = observer(() => {
     setHelpCenterOpen(false);
     setHelpTopic(topic);
     setShowHelpNudge(false);
+  };
+
+  // Open help panel to specific topic
+  const openHelpPanel = (topicId: HelpCenterTopicId) => {
+    setHelpPanelTopicId(topicId);
+    setHelpPanelCollapsed(false);
   };
 
   // Keyboard shortcut for Path Manager
@@ -719,53 +729,14 @@ export const Editor = observer(() => {
           onOpenPaths={() => setIsPathsModalOpen(true)}
           isPathsModalOpen={isPathsModalOpen}
           showHelpNudge={showHelpNudge}
+          onDesignerView={applyDesignerView}
+          onPerformanceView={applyPerformanceView}
         />
-
-        {/* P2: View preset buttons */}
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          padding: '4px 8px',
-          background: '#151515',
-          borderBottom: '1px solid #222',
-          justifyContent: 'center'
-        }}>
-          <button
-            onClick={applyDesignerView}
-            style={{
-              padding: '4px 12px',
-              fontSize: '11px',
-              background: '#222',
-              color: '#ccc',
-              border: '1px solid #333',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-            title="Designer View: Balanced layout for building animations"
-          >
-            Designer View
-          </button>
-          <button
-            onClick={applyPerformanceView}
-            style={{
-              padding: '4px 12px',
-              fontSize: '11px',
-              background: '#222',
-              color: '#ccc',
-              border: '1px solid #333',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-            title="Performance View: Focus on preview and controls"
-          >
-            Performance View
-          </button>
-        </div>
 
         <div className="editor-main" style={{ gridTemplateColumns }}>
           {/* Left Sidebar */}
           {leftSidebarMode !== 'hidden' && (
-            <div className="editor-left" ref={leftColumnRef}>
+            <div className={`editor-left ${leftSidebarMode === '2x' ? 'editor-left-2x' : ''}`} ref={leftColumnRef}>
               <div
                 className={`left-panel library-panel ${libraryCollapsed ? 'collapsed' : ''}`}
                 style={{
@@ -779,40 +750,31 @@ export const Editor = observer(() => {
                 <div className="panel-header">
                   <span className="panel-title">Library</span>
                   <div className="panel-header-actions">
-                    {/* P1/P2: Sidebar mode toggle */}
                     <button
+                      className={`panel-collapse-icon ${leftSidebarMode === '2x' ? 'active' : ''}`}
                       onClick={() => {
-                        setLeftSidebarMode(leftSidebarMode === '1x' ? '2x' : '1x');
+                        // Cycle: 1x → 2x → hidden → 1x
+                        if (leftSidebarMode === '1x') setLeftSidebarMode('2x');
+                        else if (leftSidebarMode === '2x') setLeftSidebarMode('hidden');
+                        else setLeftSidebarMode('1x');
                       }}
-                      style={{
-                        padding: '2px 6px',
-                        fontSize: '10px',
-                        background: '#222',
-                        color: leftSidebarMode === '2x' ? '#4a9eff' : '#888',
-                        border: '1px solid #333',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                      }}
-                      title={leftSidebarMode === '1x' ? 'Expand to 2x width' : 'Collapse to 1x width'}
+                      title={`Sidebar: ${leftSidebarMode} (click to cycle)`}
                     >
-                      {leftSidebarMode === '1x' ? '1x' : '2x'}
+                      {leftSidebarMode === '2x' ? '⇔' : leftSidebarMode === '1x' ? '▶' : '◀'}
                     </button>
                     <button
-                      className="panel-help-btn"
-                      onClick={() => {
-                        setHelpCenterOpen(true);
-                        setHelpTopic(null);
-                      }}
-                      title="What is the Library?"
+                      className="panel-collapse-icon"
+                      onClick={() => openHelpPanel('library')}
+                      title="Help"
                     >
                       ?
                     </button>
                     <button
-                      className="panel-toggle-btn"
+                      className="panel-collapse-icon"
                       onClick={() => setLibraryCollapsed((v) => !v)}
                       title={libraryCollapsed ? 'Show library' : 'Hide library'}
                     >
-                      {libraryCollapsed ? 'Show' : 'Hide'}
+                      {libraryCollapsed ? '▾' : '▴'}
                     </button>
                   </div>
                 </div>
@@ -821,7 +783,7 @@ export const Editor = observer(() => {
 
               {!libraryCollapsed && !inspectorCollapsed && (
                 <div
-                  className="vertical-resizer"
+                  className={leftSidebarMode === '2x' ? 'horizontal-resizer-2x' : 'vertical-resizer'}
                   onMouseDown={() => setDragging('left-split')}
                   title="Drag to resize Library / Inspector"
                 />
@@ -841,21 +803,18 @@ export const Editor = observer(() => {
                   <span className="panel-title">Inspector</span>
                   <div className="panel-header-actions">
                     <button
-                      className="panel-help-btn"
-                      onClick={() => {
-                        setHelpCenterOpen(true);
-                        setHelpTopic(null);
-                      }}
-                      title="What is the Inspector?"
+                      className="panel-collapse-icon"
+                      onClick={() => openHelpPanel('inspector')}
+                      title="Help"
                     >
                       ?
                     </button>
                     <button
-                      className="panel-toggle-btn"
+                      className="panel-collapse-icon"
                       onClick={() => setInspectorCollapsed((v) => !v)}
                       title={inspectorCollapsed ? 'Show inspector' : 'Hide inspector'}
                     >
-                      {inspectorCollapsed ? 'Show' : 'Hide'}
+                      {inspectorCollapsed ? '▾' : '▴'}
                     </button>
                   </div>
                 </div>
@@ -868,23 +827,10 @@ export const Editor = observer(() => {
             </div>
           )}
 
-          {/* P1: Left sidebar collapsed state - show expand button */}
+          {/* Left sidebar collapsed state - show expand tab */}
           {leftSidebarMode === 'hidden' && (
             <div
-              style={{
-                width: '24px',
-                background: '#151515',
-                border: '1px solid #222',
-                borderRadius: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                writingMode: 'vertical-rl',
-                fontSize: '10px',
-                color: '#888',
-                padding: '8px 4px',
-              }}
+              className="sidebar-collapsed-tab"
               onClick={() => setLeftSidebarMode('1x')}
               title="Show left sidebar"
             >
@@ -899,10 +845,7 @@ export const Editor = observer(() => {
                 compilerService={compilerService}
                 isPlaying={store.uiState.isPlaying}
                 store={store}
-                onShowHelp={() => {
-                  setHelpCenterOpen(true);
-                  setHelpTopic(null);
-                }}
+                onShowHelp={() => openHelpPanel('preview')}
               />
             </div>
 
@@ -912,32 +855,15 @@ export const Editor = observer(() => {
               title="Drag to resize Preview / Bay"
             />
 
-            <div className="editor-bay" ref={bayRef} style={{ flex: 1 - centerSplit }}>
-              {/* P1: Bay collective collapse button */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                padding: '4px',
-                background: '#151515',
-                borderRadius: '6px',
-                marginBottom: '4px',
-              }}>
-                <button
-                  onClick={toggleBayCollective}
-                  style={{
-                    padding: '4px 10px',
-                    fontSize: '11px',
-                    background: bayCollective ? '#4a9eff' : '#222',
-                    color: bayCollective ? '#fff' : '#ccc',
-                    border: '1px solid #333',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                  }}
-                  title={bayCollective ? 'Expand Bay (Patch + Bus Board)' : 'Collapse Bay (Patch + Bus Board)'}
-                >
-                  {bayCollective ? '▸ Expand Bay' : '▾ Collapse Bay'}
-                </button>
-              </div>
+            <div className="editor-bay" ref={bayRef} style={{ flex: 1 - centerSplit, position: 'relative' }}>
+              {/* Tiny bay collapse toggle in corner */}
+              <button
+                className="bay-collapse-toggle"
+                onClick={toggleBayCollective}
+                title={bayCollective ? 'Expand Bay' : 'Collapse Bay'}
+              >
+                {bayCollective ? '▸' : '▾'}
+              </button>
 
               {/* PatchBay Panel */}
               <div
@@ -954,21 +880,18 @@ export const Editor = observer(() => {
                   <span className="panel-title">Patch</span>
                   <div className="panel-header-actions">
                     <button
-                      className="panel-help-btn"
-                      onClick={() => {
-                        setHelpCenterOpen(true);
-                        setHelpTopic(null);
-                      }}
-                      title="What is the Patch?"
+                      className="panel-collapse-icon"
+                      onClick={() => openHelpPanel('patch')}
+                      title="Help"
                     >
                       ?
                     </button>
                     <button
-                      className="panel-toggle-btn"
+                      className="panel-collapse-icon"
                       onClick={() => setPatchBayCollapsed((v) => !v)}
                       title={patchBayCollapsed ? 'Show patch' : 'Hide patch'}
                     >
-                      {patchBayCollapsed ? 'Show' : 'Hide'}
+                      {patchBayCollapsed ? '◂' : '▸'}
                     </button>
                   </div>
                 </div>
@@ -1000,24 +923,21 @@ export const Editor = observer(() => {
                 }}
               >
                 <div className="panel-header busboard-header">
-                  <span className="panel-title">Bus Board</span>
+                  <span className="panel-title">Bus</span>
                   <div className="panel-header-actions">
                     <button
-                      className="panel-help-btn"
-                      onClick={() => {
-                        setHelpCenterOpen(true);
-                        setHelpTopic(null);
-                      }}
-                      title="What is the Bus Board?"
+                      className="panel-collapse-icon"
+                      onClick={() => openHelpPanel('patch')}
+                      title="Help"
                     >
                       ?
                     </button>
                     <button
-                      className="panel-toggle-btn"
+                      className="panel-collapse-icon"
                       onClick={() => setBusBoardCollapsed((v) => !v)}
                       title={busBoardCollapsed ? 'Show bus board' : 'Hide bus board'}
                     >
-                      {busBoardCollapsed ? 'Show' : 'Hide'}
+                      {busBoardCollapsed ? '◂' : '▸'}
                     </button>
                   </div>
                 </div>
@@ -1035,33 +955,24 @@ export const Editor = observer(() => {
             <div className="editor-right-panel">
               <div className="editor-control-surface">
                 <div className="panel-header">
-                  <span className="panel-title">Control Surface</span>
+                  <span className="panel-title">Controls</span>
                   <div className="panel-header-actions">
-                    {/* P1/P2: Sidebar mode toggle */}
                     <button
+                      className={`panel-collapse-icon ${rightSidebarMode === '2x' ? 'active' : ''}`}
                       onClick={() => {
-                        setRightSidebarMode(rightSidebarMode === '1x' ? '2x' : '1x');
+                        // Cycle: 1x → 2x → hidden → 1x
+                        if (rightSidebarMode === '1x') setRightSidebarMode('2x');
+                        else if (rightSidebarMode === '2x') setRightSidebarMode('hidden');
+                        else setRightSidebarMode('1x');
                       }}
-                      style={{
-                        padding: '2px 6px',
-                        fontSize: '10px',
-                        background: '#222',
-                        color: rightSidebarMode === '2x' ? '#4a9eff' : '#888',
-                        border: '1px solid #333',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                      }}
-                      title={rightSidebarMode === '1x' ? 'Expand to 2x width' : 'Collapse to 1x width'}
+                      title={`Sidebar: ${rightSidebarMode} (click to cycle)`}
                     >
-                      {rightSidebarMode === '1x' ? '1x' : '2x'}
+                      {rightSidebarMode === '2x' ? '⇔' : rightSidebarMode === '1x' ? '◀' : '▶'}
                     </button>
                     <button
-                      className="panel-help-btn"
-                      onClick={() => {
-                        setHelpCenterOpen(true);
-                        setHelpTopic(null);
-                      }}
-                      title="What is the Control Surface?"
+                      className="panel-collapse-icon"
+                      onClick={() => openHelpPanel('controlSurface')}
+                      title="Help"
                     >
                       ?
                     </button>
@@ -1071,26 +982,22 @@ export const Editor = observer(() => {
                   <ControlSurfacePanel store={controlSurfaceStore} />
                 </div>
               </div>
+
+              {/* Embedded Help Panel */}
+              <HelpPanel
+                topicId={helpPanelTopicId}
+                collapsed={helpPanelCollapsed}
+                onToggleCollapse={() => setHelpPanelCollapsed((v) => !v)}
+                onNavigate={setHelpPanelTopicId}
+                onRetakeTour={() => openTour('intro')}
+              />
             </div>
           )}
 
-          {/* P1: Right sidebar collapsed state - show expand button */}
+          {/* Right sidebar collapsed state - show expand tab */}
           {rightSidebarMode === 'hidden' && (
             <div
-              style={{
-                width: '24px',
-                background: '#151515',
-                border: '1px solid #222',
-                borderRadius: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                writingMode: 'vertical-rl',
-                fontSize: '10px',
-                color: '#888',
-                padding: '8px 4px',
-              }}
+              className="sidebar-collapsed-tab right"
               onClick={() => setRightSidebarMode('1x')}
               title="Show control surface"
             >

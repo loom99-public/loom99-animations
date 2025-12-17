@@ -3,8 +3,6 @@
  * Used by line drawing animations for both logo and text targets
  */
 
-import type { Point } from '../compositors/PathMorphCompositor';
-
 export interface PathPoint {
   x: number;
   y: number;
@@ -773,20 +771,3 @@ export function pathPointsToSVGPath(points: PathPoint[]): string {
   return d;
 }
 
-/**
- * Convert PathPoint[] to Point[] for PathMorphCompositor
- */
-export function pathPointsToCompositorPoints(points: PathPoint[]): Point[] {
-  return points.map(point => ({
-    x: point.x,
-    y: point.y,
-    type: point.type,
-    controlX: point.cx,
-    controlY: point.cy,
-    radiusX: point.rx,
-    radiusY: point.ry,
-    rotation: point.rotation,
-    largeArc: point.largeArc === 1,
-    sweep: point.sweep === 1,
-  }));
-}

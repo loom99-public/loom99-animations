@@ -11,7 +11,6 @@ import { observer } from 'mobx-react-lite';
 import { useState, useRef, useEffect } from 'react';
 import type { EditorStore } from './store';
 import { PRESET_LAYOUTS } from './laneLayouts';
-import { StatusBadge } from './StatusBadge';
 import './SettingsToolbar.css';
 
 interface SettingsToolbarProps {
@@ -20,6 +19,8 @@ interface SettingsToolbarProps {
   onOpenPaths: () => void;
   isPathsModalOpen: boolean;
   showHelpNudge?: boolean;
+  onDesignerView?: () => void;
+  onPerformanceView?: () => void;
 }
 
 /**
@@ -192,7 +193,7 @@ function PathsIcon() {
 /**
  * Settings Toolbar component.
  */
-export const SettingsToolbar = observer(({ store, onShowHelp, onOpenPaths, isPathsModalOpen, showHelpNudge }: SettingsToolbarProps) => {
+export const SettingsToolbar = observer(({ store, onShowHelp, onOpenPaths, isPathsModalOpen, showHelpNudge, onDesignerView, onPerformanceView }: SettingsToolbarProps) => {
   const currentLayout = store.currentLayout;
 
   return (
@@ -304,6 +305,26 @@ export const SettingsToolbar = observer(({ store, onShowHelp, onOpenPaths, isPat
       </div>
 
       <div className="toolbar-right">
+        {/* View preset icons */}
+        {onDesignerView && (
+          <button
+            className="view-preset-btn"
+            onClick={onDesignerView}
+            title="Designer View: balanced layout"
+          >
+            🎨
+          </button>
+        )}
+        {onPerformanceView && (
+          <button
+            className="view-preset-btn"
+            onClick={onPerformanceView}
+            title="Performance View: preview focus"
+          >
+            🎬
+          </button>
+        )}
+
         <button
           className={`toolbar-help-btn ${showHelpNudge ? 'nudge' : ''}`}
           onClick={() => onShowHelp?.()}
@@ -344,8 +365,6 @@ export const SettingsToolbar = observer(({ store, onShowHelp, onOpenPaths, isPat
         </button>
 
         <div className="toolbar-divider" />
-
-        <StatusBadge />
 
         <span className="toolbar-status">
           {store.blocks.length} blocks · {store.connections.length} connections

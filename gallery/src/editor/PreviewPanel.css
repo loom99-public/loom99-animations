@@ -29,6 +29,28 @@
   letter-spacing: 0.5px;
 }
 
+.preview-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preview-help-btn {
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid #444;
+  background: transparent;
+  color: #aaa;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.preview-help-btn:hover {
+  background: #222;
+  border-color: #4a9eff;
+  color: #fff;
+}
+
 .preview-status {
   font-size: 11px;
   color: #666;

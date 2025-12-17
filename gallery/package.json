@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "NODE_OPTIONS='--max-old-space-size=4096' vitest",
+    "typecheck": "tsc -b",
+    "test": "tsc -b && NODE_OPTIONS='--max-old-space-size=4096' vitest",
+    "test:skip-typecheck": "NODE_OPTIONS='--max-old-space-size=4096' vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "test:e2e": "playwright test",
@@ -17,6 +19,7 @@
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
+    "imagetracerjs": "^1.2.6",
     "mobx": "^6.15.0",
     "mobx-react-lite": "^4.1.1",
     "react": "^19.2.3",

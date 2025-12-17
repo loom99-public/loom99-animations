@@ -16,6 +16,13 @@ export { ConstantFieldDurationBlock } from './ConstantFieldDuration';
 export { WaveStaggerBlock } from './WaveStagger';
 export { SizeVariationBlock } from './SizeVariation';
 export { ColorFieldBlock } from './ColorField';
+export { ElementIndexFieldBlock } from './ElementIndexField';
+export { RandomJitterFieldBlock } from './RandomJitterField';
+export { SinFieldBlock } from './SinField';
+export { SubFieldNumberBlock } from './SubFieldNumber';
+export { DivFieldNumberBlock } from './DivFieldNumber';
+export { FloorFieldNumberBlock } from './FloorFieldNumber';
+export { MakePointFieldBlock } from './MakePointField';
 
 // Timing/Stagger fields
 export { RandomStaggerBlock } from './RandomStagger';

@@ -61,7 +61,7 @@ export class KineticElement extends BaseElement {
     if (config.transformOrigin) {
       this.transformOrigin = config.transformOrigin;
     } else {
-      const bbox = this.svgTemplate.getBBox();
+      const bbox = (this.svgTemplate as SVGGraphicsElement).getBBox();
       this.transformOrigin = {
         x: bbox.x + bbox.width / 2,
         y: bbox.y + bbox.height / 2,

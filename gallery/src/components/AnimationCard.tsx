@@ -14,7 +14,7 @@ interface AnimationCardProps {
 
 type PreviewMode = 'none' | 'html' | 'v4' | 'compare';
 
-export function AnimationCard({ animation, cardIndex = 0 }: AnimationCardProps) {
+export function AnimationCard({ animation }: AnimationCardProps) {
   const [previewMode, setPreviewMode] = useState<PreviewMode>('none');
   const [v4Key, setV4Key] = useState(0); // Forces remount with new seed
 

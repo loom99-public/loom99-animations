@@ -7,7 +7,7 @@
  * Also provides Program→Program lifting.
  */
 
-import type { Compositor, CompositorCtx, CompositorCapabilities } from './compositor';
+import type { Compositor, CompositorCtx } from './compositor';
 import type { DrawNode, RenderTree } from '../runtime/renderTree';
 
 // =============================================================================
@@ -140,7 +140,7 @@ export function composeProgram<TreeT>(
   return {
     frame(timeMs: number, ctx: Omit<CompositorCtx, 'timeMs'>): TreeT {
       const tree = base.frame(timeMs, ctx);
-      return applyStack(tree, stack, { ...ctx, timeMs });
+      return applyStack(tree, stack, { ...ctx, timeMs } as CompositorCtx);
     },
   };
 }
@@ -165,6 +165,7 @@ import type { Program } from '../../anim-v4/core/types';
  * Adapt a V4 Program<RenderTree> to use compositor stack.
  *
  * This bridges the existing V4 animation system with the compositor middleware.
+ * Note: In the editor, RenderTree IS DrawNode (not a wrapper with root property).
  */
 export function withCompositors(
   program: Program<RenderTree>,
@@ -173,21 +174,17 @@ export function withCompositors(
 ): Program<RenderTree> {
   return {
     signal: (tMs, rtCtx) => {
+      // Editor's RenderTree is DrawNode directly
       const tree = program.signal(tMs, rtCtx);
 
-      // RenderTree has a root DrawNode - apply compositors to it
-      const composedRoot = applyStack(tree.root, stack, {
+      // Apply compositors to the tree (which is already a DrawNode)
+      const rtViewport = (rtCtx as { viewport?: { w: number; h: number; dpr: number } })?.viewport;
+      return applyStack(tree, stack, {
         timeMs: tMs,
         seed: baseSeed,
-        viewport: rtCtx?.viewport,
+        viewport: rtViewport ? { width: rtViewport.w, height: rtViewport.h } : undefined,
       });
-
-      return {
-        ...tree,
-        root: composedRoot,
-      };
     },
     event: program.event,
-    timeline: program.timeline,
   };
 }

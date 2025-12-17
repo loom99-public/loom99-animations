@@ -171,16 +171,16 @@ describe('TreeRewrite', () => {
     const tree = makeTestTree();
     const visited: string[] = [];
 
-    const result = drawNodeRewrite.mapNodes(tree, (node, path) => {
+    const result = drawNodeRewrite.mapNodes(tree, (node, _path) => {
       visited.push(node.id);
       return node;
     });
 
-    // All nodes visited
+    // All nodes visited: root + stroke-1 + stroke-2 + particles + p-1 + p-2 + p-3 = 7
     expect(visited).toContain('root');
     expect(visited).toContain('stroke-1');
     expect(visited).toContain('p-3');
-    expect(visited.length).toBe(6);
+    expect(visited.length).toBe(7);
 
     // Tree unchanged (identity map)
     expect(result).toBe(tree);
@@ -256,7 +256,7 @@ describe('Compositor', () => {
     const fadeParticles = scoped(
       'fade-particles',
       { selector: hasTag('particle') },
-      (node, ctx) => withOpacity(`${node.id}:fade`, 0.5, node)
+      (node, _ctx) => withOpacity(`${node.id}:fade`, 0.5, node)
     );
 
     const result = fadeParticles.apply(tree, { timeMs: 0, seed: 0 });

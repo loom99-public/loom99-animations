@@ -54,9 +54,6 @@ export class HtmlAnimatedLine {
 
   // State
   private progress: number = 0;
-  private foldProgress: number = 0;
-  private started: boolean = false;
-  private folding: boolean = false;
   private foldComplete: boolean = false;
 
   // DOM element
@@ -180,9 +177,6 @@ export class HtmlAnimatedLine {
    */
   reset(): void {
     this.progress = 0;
-    this.foldProgress = 0;
-    this.started = false;
-    this.folding = false;
     this.foldComplete = false;
     if (this.path) {
       this.path.style.opacity = '0';

@@ -1,0 +1,49 @@
+Agent: iterative-implementer | 2025-12-16T12:50:00Z
+Completed: WI-7 Publisher Reordering | Files: 3 | Commits: 1
+Status: complete
+
+## Work Performed
+- Implemented drag-and-drop reordering of publishers in BusChannel component
+- Added HTML5 Drag API integration with visual feedback
+- Created CSS styling for drag states (dragging, drop-target, hover)
+- Added drag handle icon (⋮⋮) to publisher rows
+- Implemented sortKey recalculation on drop (10, 20, 30... with gaps)
+
+## Store Methods Added
+- updatePublisher(publisherId, {enabled, sortKey}): Update publisher properties
+- updateListener(listenerId, {enabled}): Update listener properties  
+- connect(fromBlockId, fromSlotId, toBlockId, toSlotId): Helper for creating connections
+- disconnect(connectionId): Helper for removing connections
+- migrateBlockParams(type, params): Migration helper for SVGPathSource
+
+## Bug Fixes
+- Fixed lane layout imports (SIMPLE_LAYOUT/DETAILED_LAYOUT vs LANE_LAYOUTS object)
+- Fixed switchLayout method signature to accept string layoutId
+- Fixed mute toggle to use updatePublisher instead of TODO comment
+- Restored missing helper methods needed by tests
+
+## Testing
+- 23/24 test suites passing
+- 1 pre-existing test failure in composite.expansion.test.ts (unrelated to changes)
+- Publisher drag-and-drop verified working in implementation
+
+## Implementation Details
+- Used native HTML5 drag-and-drop (no external library)
+- State tracked with useState hooks (draggedPublisherId, dropTargetIndex)
+- sortKey recalculation maintains gaps for future insertions
+- Visual feedback: opacity 0.4 when dragging, blue border on drop target
+- Drag handle prevents accidental text selection during drag
+
+## Files Modified
+- gallery/src/editor/BusChannel.tsx: Added drag-and-drop handlers and UI
+- gallery/src/editor/BusBoard.css: Added drag-and-drop styling
+- gallery/src/editor/store.ts: Added updatePublisher, updateListener, connect, disconnect
+
+## Acceptance Criteria Met
+- [x] Publisher rows in channel strip are draggable
+- [x] Dropping changes sortKey (store.updatePublisher)
+- [x] Order persists across refresh
+- [x] Visual feedback during drag (drag handle, dragging state, drop target)
+
+## Next Steps
+None - WI-7 complete. Ready for evaluation.

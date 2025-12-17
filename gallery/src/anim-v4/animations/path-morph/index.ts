@@ -9,7 +9,7 @@
 import type { Seed } from '../../core/types';
 import type { RenderTree } from '../../render/tree';
 import type { Env, Program } from './types';
-import { compilePathMorph, createPathMorphPhaseMachine, getProgramDuration } from './compiler';
+import { compilePathMorph, createPathMorphPhaseMachine } from './compiler';
 import { createModeSystem } from './modes';
 import { getScene, getViewport } from './scene';
 

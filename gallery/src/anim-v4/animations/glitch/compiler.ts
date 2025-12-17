@@ -8,7 +8,7 @@
  * - Per frame: sample phase, compute envelopes, sample noise, build layers
  */
 
-import type { Signal, Context, Time, Seed, PhaseMachine } from '../../core/types';
+import type { Context, Time, Seed, PhaseMachine } from '../../core/types';
 import { PhaseMachines } from '../../core/types';
 import type { RenderTree, RenderNode } from '../../render/tree';
 import { path } from '../../render/tree';
@@ -18,7 +18,6 @@ import type {
   GlitchPhaseSample,
   GlitchPhase,
   CompiledGlitchParams,
-  GlitchRenderer,
   Env,
   Program,
   Bounds,

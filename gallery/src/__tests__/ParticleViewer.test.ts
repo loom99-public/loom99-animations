@@ -24,7 +24,7 @@ const mockSvg = {
 
 // Mock document
 vi.stubGlobal('document', {
-  createElementNS: vi.fn().mockImplementation((ns, tag) => {
+  createElementNS: vi.fn().mockImplementation((_ns, tag) => {
     if (tag === 'svg') return mockSvg;
     if (tag === 'path') return mockPath;
     return {};
@@ -308,9 +308,9 @@ describe('ParticleViewer Logic', () => {
     });
 
     it('uses correct dimensions for text target', () => {
-      const target = 'text';
-      const canvasWidth = target === 'logo' ? 600 : 700;
-      const canvasHeight = target === 'logo' ? 200 : 280;
+      // Text target uses larger canvas
+      const canvasWidth = 700;
+      const canvasHeight = 280;
 
       expect(canvasWidth).toBe(700);
       expect(canvasHeight).toBe(280);

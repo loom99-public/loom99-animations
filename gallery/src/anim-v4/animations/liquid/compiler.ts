@@ -14,13 +14,10 @@ import { PhaseMachines } from '../../core/types';
 import type { RenderTree } from '../../render/tree';
 import type {
   LiquidScene,
-  LiquidFields,
   LiquidPhases,
   LiquidPhaseSample,
   LiquidPhase,
   CompiledBlobParams,
-  LiquidRenderer,
-  GooParams,
   Env,
   Program,
   ExitPolicy,

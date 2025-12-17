@@ -197,3 +197,91 @@ Authoritative specs in `ui_example_docs/`:
 **Editor**:
 - Port types determine connection validity (not lane placement)
 - Lanes are UI organization, not semantic constraints
+
+## Block Systems (Three Distinct Concepts)
+
+The editor has **three different block-related systems** that serve different purposes:
+
+| System | Purpose | Key Function | When Expanded |
+|--------|---------|--------------|---------------|
+| **Primitive Blocks** | Single blocks with no internal structure | `store.addBlock(type, laneId, params)` | Never - already atomic |
+| **Macros** | Recipe starters that expand into visible blocks | `store.expandMacro(expansion)` | At drop time - user sees all blocks |
+| **Composites** | User-defined groupings with internal graph | `registerComposite(def)` | At compile time - internal nodes hidden |
+
+### Primitives
+Regular blocks like `RadialOrigin`, `PhaseMachine`, etc. Added via:
+```typescript
+const blockId = store.addBlock('RadialOrigin', 'fields', { radius: 100 });
+```
+
+### Macros (`macros.ts`)
+Pre-configured block arrangements. When dropped, they **expand immediately** and the user sees all individual blocks with connections. Example: `macro:radialBurst` expands into Scene + Phase + Fields + Spec blocks.
+
+### Composites (`composites.ts`)
+User-created groupings registered via `registerComposite()`. The internal graph is **hidden from the user** - they see one block. Expansion happens during compilation in `compiler/integration.ts:expandComposites()`.
+
+**CRITICAL**: These systems are NOT interchangeable. Don't confuse:
+- `addBlock()` (creates one block) with `expandMacro()` (creates many blocks)
+- Macro expansion (user sees all blocks) with composite expansion (user sees one block)
+
+## Store.ts Critical Architecture
+
+The `store.ts` file is the central MobX state. **Do not simplify or refactor without understanding dependencies.**
+
+### Critical Properties (DO NOT DELETE)
+
+```typescript
+// Observable state
+currentLayoutId: string           // Tracks active layout
+lanes: Lane[]                     // Must be created via createLanesFromLayout()
+
+// Computed getters (used by UI components)
+get currentLayout(): LaneLayout   // Used by SettingsToolbar, LayoutSelector
+get availableLayouts()            // Used by layout dropdown
+get activeLane()                  // Used by BlockLibrary filtering
+get selectedPortInfo()            // Used by Inspector wiring panel
+```
+
+### Critical Method Signatures
+
+```typescript
+// CORRECT - creates block, adds to lane, returns ID
+addBlock(type: BlockType, laneId: LaneId, params?): BlockId
+
+// WRONG - breaks all callers
+addBlock(block: Block): void  // ❌ DO NOT USE THIS SIGNATURE
+```
+
+### Files That Depend on Store Methods
+
+| Method | Used By |
+|--------|---------|
+| `addBlock(type, laneId, params)` | BlockLibrary.tsx, Inspector.tsx, Editor.tsx, tests |
+| `currentLayout` | SettingsToolbar.tsx, LayoutSelector.tsx |
+| `activeLane` | BlockLibrary.tsx |
+| `selectedPortInfo` | Inspector.tsx |
+| `switchLayout()` | SettingsToolbar.tsx, setAdvancedLaneMode() |
+
+## Refactoring Guidelines
+
+### Before Refactoring Store.ts
+
+1. **Run all tests first**: `cd gallery && pnpm test`
+2. **Search for usages**: Before changing any method signature, grep for all callers
+3. **Don't simplify methods** that have complex behavior (like `addBlock` handling macros)
+4. **Don't delete computed getters** - they're used by UI components even if they seem unused
+
+### Commit Message Standards
+
+Use descriptive commit messages, not:
+- ❌ "stuff working"
+- ❌ "add stuff"
+- ❌ "fix things"
+
+Use:
+- ✅ "Add currentLayoutId observable to fix SettingsToolbar crash"
+- ✅ "Fix addBlock signature to accept (type, laneId, params)"
+
+### Backup Files
+
+If you see `.backup`, `.bak`, `.bak2` files in the editor directory, these are remnants of experimental development. **Do not create new backup files** - use git instead. Delete existing backup files once functionality is verified working.

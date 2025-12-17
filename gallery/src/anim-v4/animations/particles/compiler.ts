@@ -22,7 +22,7 @@ import type {
   Env,
   Field,
 } from './types';
-import type { ModeSystem, ComposedMode } from './modes';
+import type { ModeSystem } from './modes';
 import { canonicalTrajectory, exitPosition, exitOpacity } from './trajectory';
 import { renderParticle, generateParticleGlowFilter, easeOutCubic, easeInCubic, hexToColor } from './render';
 import { createPRNG } from '../../core/rand';
@@ -58,7 +58,7 @@ const DEFAULT_START_POSITION: Field<{ x: number; y: number }> = (seed, index, _c
   };
 };
 
-const DEFAULT_DELAY: Field<number> = (seed, index, count, _env) => {
+const DEFAULT_DELAY: Field<number> = (_seed, index, count, _env) => {
   return (index / count) * 0.5;
 };
 
@@ -126,9 +126,6 @@ export function compileParticles(
 
   // Pre-generate glow filter
   const glowFilter = generateParticleGlowFilter(8);
-
-  // Get total duration
-  const totalDuration = PhaseMachines.total(phaseMachine);
 
   // Viewport
   const viewportWidth = env.viewport.w;

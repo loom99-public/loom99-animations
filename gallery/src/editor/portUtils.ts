@@ -7,6 +7,150 @@
 import type { SlotType, Connection, Block, Slot, PortRef } from './types';
 
 // =============================================================================
+// Slot Type Descriptors
+// =============================================================================
+
+type PortWorld =
+  | 'signal'
+  | 'field'
+  | 'scalar'
+  | 'event'
+  | 'scene'
+  | 'program'
+  | 'render'
+  | 'filter'
+  | 'stroke'
+  | 'unknown';
+
+export interface TypeDescriptor {
+  readonly raw: SlotType;
+  readonly world: PortWorld;
+  readonly domain: string | null;
+}
+
+export function formatTypeDescriptor(desc: TypeDescriptor): string {
+  const worldGlyph: Record<PortWorld, string> = {
+    signal: 'S',
+    field: 'F',
+    scalar: 'C',
+    event: 'E',
+    scene: 'SC',
+    program: 'P',
+    render: 'R',
+    filter: 'FX',
+    stroke: 'ST',
+    unknown: '?',
+  };
+  const world = worldGlyph[desc.world] ?? '?';
+  if (!desc.domain) return world;
+  return `${world} · ${desc.domain}`;
+}
+
+export function formatSlotType(type: SlotType): string {
+  return formatTypeDescriptor(describeSlotType(type));
+}
+
+/**
+ * Human-readable compatibility hint for a slot type.
+ */
+export function slotCompatibilityHint(type: SlotType): string {
+  const desc = describeSlotType(type);
+  if (desc.world === 'unknown') return `Requires matching type (${type}).`;
+  if (!desc.domain) return `Requires ${formatTypeDescriptor(desc)} ports.`;
+  return `Requires ${formatTypeDescriptor(desc)} (same world and domain).`;
+}
+
+function normalizeDomain(domain: string): string {
+  switch (domain.toLowerCase()) {
+    case 'point':
+    case 'vec2':
+      return 'vec2';
+    case 'duration':
+    case 'time':
+      return 'time';
+    case 'unit':
+    case 'phase':
+      return 'phase';
+    case 'phasesample':
+      return 'phase-sample';
+    case 'number':
+      return 'num';
+    case 'hsl':
+      return 'color';
+    case 'scenetargets':
+      return 'scene-targets';
+    case 'scenestrokes':
+      return 'scene-strokes';
+    case 'rendertree':
+      return 'render-tree';
+    default:
+      return domain.toLowerCase();
+  }
+}
+
+/**
+ * Parse a SlotType into a world + domain descriptor for compatibility checks and badges.
+ */
+export function describeSlotType(type: SlotType): TypeDescriptor {
+  // Field<T>
+  const fieldMatch = /^Field<(.*)>$/.exec(type);
+  if (fieldMatch) {
+    return {
+      raw: type,
+      world: 'field',
+      domain: normalizeDomain(fieldMatch[1] ?? ''),
+    };
+  }
+
+  // Signal<T>
+  const signalMatch = /^Signal<(.*)>$/.exec(type);
+  if (signalMatch) {
+    return {
+      raw: type,
+      world: 'signal',
+      domain: normalizeDomain(signalMatch[1] ?? ''),
+    };
+  }
+
+  // Scalar:*
+  const scalarMatch = /^Scalar:(.*)$/.exec(type);
+  if (scalarMatch) {
+    return {
+      raw: type,
+      world: 'scalar',
+      domain: normalizeDomain(scalarMatch[1] ?? ''),
+    };
+  }
+
+  // Events
+  if (type.startsWith('Event<')) {
+    return { raw: type, world: 'event', domain: 'event' };
+  }
+
+  // Scene-ish
+  if (type === 'Scene' || type === 'SceneTargets' || type === 'SceneStrokes') {
+    return { raw: type, world: 'scene', domain: normalizeDomain(type) };
+  }
+
+  // Program / Render
+  if (type === 'Program') return { raw: type, world: 'program', domain: 'program' };
+  if (type === 'RenderTree' || type === 'RenderNode' || type === 'RenderNode[]') {
+    return { raw: type, world: 'render', domain: normalizeDomain(type) };
+  }
+
+  // Filters / Stroke styles
+  if (type === 'FilterDef') return { raw: type, world: 'filter', domain: 'filter' };
+  if (type === 'StrokeStyle') return { raw: type, world: 'stroke', domain: 'stroke' };
+
+  // Element count (treated like numeric scalar)
+  if (type === 'ElementCount') {
+    return { raw: type, world: 'scalar', domain: 'num' };
+  }
+
+  return { raw: type, world: 'unknown', domain: null };
+}
+
+// =============================================================================
 // Type Compatibility
 // =============================================================================
 
@@ -22,20 +166,16 @@ export function areTypesCompatible(outputType: SlotType, inputType: SlotType): b
   // Exact match
   if (outputType === inputType) return true;
 
-  // Field compatibility: Field<Point> can connect to Field<*> inputs
-  // For now, be lenient with Field types
-  if (outputType.startsWith('Field<') && inputType.startsWith('Field<')) {
-    return true; // TODO: tighten this with proper generics
-  }
+  const outDesc = describeSlotType(outputType);
+  const inDesc = describeSlotType(inputType);
 
-  // Signal compatibility
-  if (outputType.startsWith('Signal<') && inputType.startsWith('Signal<')) {
-    return true;
-  }
-
-  // Scalar compatibility
-  if (outputType.startsWith('Scalar:') && inputType.startsWith('Scalar:')) {
-    return true;
+  // If both have a known world, enforce world + domain match
+  if (outDesc.world !== 'unknown' && inDesc.world !== 'unknown') {
+    if (outDesc.world !== inDesc.world) return false;
+    if (outDesc.domain && inDesc.domain) {
+      return outDesc.domain === inDesc.domain;
+    }
+    return outDesc.world === inDesc.world;
   }
 
   return false;

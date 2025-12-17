@@ -300,7 +300,7 @@ function drawParticles(ctx: CanvasRenderingContext2D, particles: HtmlParticle[],
   ctx.globalAlpha = 1;
 }
 
-function updateHtmlParticles(particles: HtmlParticle[], elapsedMs: number, entranceMs: number, holdMs: number, exitMs: number): void {
+function updateHtmlParticles(particles: HtmlParticle[], elapsedMs: number, entranceMs: number, holdMs: number, _exitMs: number): void {
   const holdStart = entranceMs;
   const exitStart = holdStart + holdMs;
 
@@ -795,7 +795,7 @@ function drawGlitch(ctx: CanvasRenderingContext2D, state: GlitchState, width: nu
   });
 }
 
-function drawLogoOnCanvas(ctx: CanvasRenderingContext2D, width: number, height: number, color: string): void {
+function drawLogoOnCanvas(ctx: CanvasRenderingContext2D, width: number, _height: number, color: string): void {
   const scale = width / 600;
 
   ctx.save();
@@ -1448,9 +1448,7 @@ function updateWaveRippleParts(parts: WaveRipplePart[], elapsedMs: number, varia
       const wavePhase = (index / parts.length) * Math.PI * 2;
       const waveOffset = Math.sin(wavePhase + progress * Math.PI * 6) * 40 * (1 - progress);
 
-      const svgCenterX = 300;
       const svgCenterY = 100;
-      const dx = svgCenterX - part.centerX;
       const dy = svgCenterY - part.centerY;
 
       part.translateY = dy * progress + waveOffset;
@@ -1511,7 +1509,6 @@ function updateTypewriterState(elapsedMs: number, text: string, variant: 'origin
   const CHAR_DELAY = variant === 'original' ? 120 : variant === 'varied' ? 100 : 80;
   const ENTRANCE_DURATION = text.length * CHAR_DELAY + 500;
   const HOLD_DURATION = 2000;
-  const EXIT_DURATION = 250;
   const exitStart = ENTRANCE_DURATION + HOLD_DURATION;
 
   const charOpacities = Array(text.length).fill(0);

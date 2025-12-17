@@ -54,7 +54,7 @@ interface EntryOriginPreset {
 function createEntryOriginPresets(): Record<EntryOriginMode, EntryOriginPreset> {
   return {
     radialRandom: {
-      getEntryOffset: (_center, _i, _n, env, rng) => {
+      getEntryOffset: (_center, _i, _n, _env, rng) => {
         // Random direction and distance
         const angle = rng.range(0, Math.PI * 2);
         const distance = rng.range(200, 600);
@@ -83,7 +83,7 @@ function createEntryOriginPresets(): Record<EntryOriginMode, EntryOriginPreset> 
       getEntryScale: (rng) => rng.range(0.3, 0.7),
     },
     spiral: {
-      getEntryOffset: (center, i, n, env, _rng) => {
+      getEntryOffset: (_center, i, n, _env, _rng) => {
         // Spiral in from outside
         const angle = (i / Math.max(1, n - 1)) * Math.PI * 4; // 2 full rotations
         const distance = 400 + i * 20;

@@ -100,10 +100,10 @@ export function scopedStyle(
   return scoped(
     id,
     selection,
-    (node, ctx) => {
+    (node, ctx, _ref) => {
       const patch = getStyle(node, ctx);
       if (!patch) return node;
-      return { ...node, ...patch };
+      return { ...node, ...patch } as DrawNode;
     },
     options
   );

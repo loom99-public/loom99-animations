@@ -15,7 +15,7 @@
  * Both produce the same result, but have different performance profiles.
  */
 
-import type { Signal, Stepper, Time, Input } from './types';
+import type { Signal, Stepper, Time, Context } from './types';
 
 // =============================================================================
 // Core Scan Primitive
@@ -39,7 +39,7 @@ export function scan<S>(
   initial: S,
   dt: number = 1 / 60
 ): Signal<S> {
-  return (t: Time, _input: Input) => {
+  return (t: Time, _ctx: Context) => {
     if (t <= 0) return initial;
 
     let state = initial;
@@ -65,7 +65,7 @@ export function scanWithInput<S, I>(
   inputSignal: Signal<I>,
   dt: number = 1 / 60
 ): Signal<S> {
-  return (t: Time, input: Input) => {
+  return (t: Time, ctx: Context) => {
     if (t <= 0) return initial;
 
     let state = initial;
@@ -73,7 +73,7 @@ export function scanWithInput<S, I>(
 
     while (currentTime < t) {
       const step = Math.min(dt, t - currentTime);
-      const stepInput = inputSignal(currentTime, input);
+      const stepInput = inputSignal(currentTime, ctx);
       state = stepper(state, step, stepInput);
       currentTime += step;
     }
@@ -108,7 +108,7 @@ export function memoizedScan<S>(
   // Track the furthest time we've computed
   let maxComputedTime = 0;
 
-  return (t: Time, _input: Input) => {
+  return (t: Time, _ctx: Context) => {
     if (t <= 0) return initial;
 
     // Find the nearest cached state before t
@@ -119,7 +119,7 @@ export function memoizedScan<S>(
       const nextCacheTime = maxComputedTime + cacheInterval;
       const startState = cache.get(maxComputedTime)!;
 
-      let state = startState;
+      let state: S = startState;
       let currentTime = maxComputedTime;
 
       while (currentTime < nextCacheTime) {
@@ -261,7 +261,7 @@ export function integrate(
   initial: number,
   dt: number = 1 / 60
 ): Signal<number> {
-  return (t: Time, input: Input) => {
+  return (t: Time, ctx: Context) => {
     if (t <= 0) return initial;
 
     let value = initial;
@@ -269,7 +269,7 @@ export function integrate(
 
     while (currentTime < t) {
       const step = Math.min(dt, t - currentTime);
-      value += derivative(currentTime, input) * step;
+      value += derivative(currentTime, ctx) * step;
       currentTime += step;
     }
 
@@ -285,7 +285,7 @@ export function integrate2D(
   initial: { x: number; y: number },
   dt: number = 1 / 60
 ): Signal<{ x: number; y: number }> {
-  return (t: Time, input: Input) => {
+  return (t: Time, ctx: Context) => {
     if (t <= 0) return initial;
 
     let x = initial.x;
@@ -294,7 +294,7 @@ export function integrate2D(
 
     while (currentTime < t) {
       const step = Math.min(dt, t - currentTime);
-      const v = velocity(currentTime, input);
+      const v = velocity(currentTime, ctx);
       x += v.x * step;
       y += v.y * step;
       currentTime += step;
@@ -330,7 +330,7 @@ export function accumulateClamped(
   max: number,
   dt: number = 1 / 60
 ): Signal<number> {
-  return (t: Time, input: Input) => {
+  return (t: Time, ctx: Context) => {
     if (t <= 0) return Math.max(min, Math.min(max, initial));
 
     let value = initial;
@@ -338,7 +338,7 @@ export function accumulateClamped(
 
     while (currentTime < t) {
       const step = Math.min(dt, t - currentTime);
-      value += rate(currentTime, input) * step;
+      value += rate(currentTime, ctx) * step;
       value = Math.max(min, Math.min(max, value));
       currentTime += step;
     }

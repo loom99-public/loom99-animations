@@ -11,11 +11,11 @@
  * - Randomize chaos controls (seed dice)
  */
 
-import { makeObservable, observable, action, computed, runInAction } from 'mobx';
+import { makeObservable, observable, action, computed } from 'mobx';
 import type { EditorStore } from '../store';
 import type {
   ControlSurface,
-  SurfaceSection,
+//  SurfaceSection,
   SurfaceControl,
   ControlId,
   SectionId,
@@ -23,10 +23,10 @@ import type {
   ValueMap,
   Combine,
   NumberControl,
-  EnumControl,
-  ToggleControl,
-  XYControl,
-  ColorControl,
+//  EnumControl,
+//  ToggleControl,
+//  XYControl,
+//  ColorControl,
 } from './types';
 import {
   createDefaultSurface,
@@ -41,24 +41,6 @@ import {
 // =============================================================================
 // Value Mapping
 // =============================================================================
-
-/**
- * Apply a curve function to a normalized [0,1] value.
- */
-function applyCurve(value: number, curve: ValueMap['curve']): number {
-  switch (curve) {
-    case 'exp':
-      return value * value;
-    case 'log':
-      return Math.sqrt(value);
-    case 'sCurve':
-      // Smooth S-curve (smoothstep)
-      return value * value * (3 - 2 * value);
-    case 'linear':
-    default:
-      return value;
-  }
-}
 
 /**
  * Apply a value map transformation to a raw control value.

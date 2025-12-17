@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { PathMorphCompositor, type Point, type PathMorphConfig } from '../compositors/PathMorphCompositor';
+import { PathMorphCompositor } from '../compositors/PathMorphCompositor';
 
 describe('PathMorphCompositor - Basic Path Morphing', () => {
   it('returns path starting at startPos when progress is 0', () => {

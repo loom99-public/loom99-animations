@@ -6,8 +6,7 @@
  */
 
 import { group as createGroup, renderTree } from '../../render/tree';
-import type { RenderNode, RenderTree } from '../../render/tree';
-import type { Transform3D, Transform3DRenderer } from './types';
+import type { Transform3DRenderer } from './types';
 import { project3DTo2D, matrix2DToSVG } from './projection';
 
 /**

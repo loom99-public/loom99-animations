@@ -5,12 +5,12 @@
  * Also shows block definition preview when clicking unplaced blocks.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import type { EditorStore } from './store';
 import type { PortRef, Block, Slot, BlockForm } from './types';
-import { getBlockDefinition, getBlockTags, BLOCK_DEFINITIONS, type BlockDefinition, type BlockTags } from './blocks';
-import { findCompatiblePorts, getConnectionsForPort, areTypesCompatible } from './portUtils';
+import { getBlockDefinition, getBlockTags, getBlockDefinitions, type BlockDefinition, type BlockTags, type CompoundGraph } from './blocks';
+import { findCompatiblePorts, getConnectionsForPort, areTypesCompatible, describeSlotType, formatSlotType, slotCompatibilityHint } from './portUtils';
 import './Inspector.css';
 
 interface InspectorProps {
@@ -51,6 +51,69 @@ function TagPills({ tags, hideKeys = [] }: { tags: BlockTags; hideKeys?: string[
   );
 }
 
+function CompositeGraphView({ graph }: { graph: CompoundGraph }) {
+  return (
+    <div className="composite-graph">
+      <div className="composite-graph-section">
+        <h4>Nodes</h4>
+        <ul className="composite-list">
+          {Object.entries(graph.nodes).map(([id, node]) => (
+            <li key={id}>
+              <span className="composite-node-id">{id}</span>
+              <span className="composite-node-type">{node.type}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {graph.edges.length > 0 && (
+        <div className="composite-graph-section">
+          <h4>Edges</h4>
+          <ul className="composite-list">
+            {graph.edges.map((edge, idx) => (
+              <li key={`${edge.from}-${edge.to}-${idx}`}>
+                <code>{edge.from}</code>
+                <span className="composite-arrow">→</span>
+                <code>{edge.to}</code>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {(Object.keys(graph.inputMap).length > 0 || Object.keys(graph.outputMap).length > 0) && (
+        <div className="composite-graph-section">
+          <h4>Exposed Ports</h4>
+          <div className="composite-ports">
+            <div>
+              <h5>Inputs</h5>
+              <ul className="composite-list">
+                {Object.entries(graph.inputMap).map(([ext, internal]) => (
+                  <li key={ext}>
+                    <code>{ext}</code>
+                    <span className="composite-arrow">→</span>
+                    <code>{internal}</code>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h5>Outputs</h5>
+              <ul className="composite-list">
+                {Object.entries(graph.outputMap).map(([ext, internal]) => (
+                  <li key={ext}>
+                    <code>{internal}</code>
+                    <span className="composite-arrow">→</span>
+                    <code>{ext}</code>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * Port wiring panel - shows when a port is selected.
  * Lists compatible ports and allows creating connections.
@@ -81,7 +144,7 @@ function PortWiringPanel({
     const results: Array<{ definition: BlockDefinition; slot: Slot }> = [];
     const lookingForDirection = portRef.direction === 'output' ? 'input' : 'output';
 
-    for (const def of BLOCK_DEFINITIONS) {
+    for (const def of getBlockDefinitions()) {
       const slotsToCheck = lookingForDirection === 'input' ? def.inputs : def.outputs;
       for (const targetSlot of slotsToCheck) {
         const isCompatible =
@@ -96,6 +159,88 @@ function PortWiringPanel({
     }
     return results;
   }, [portRef.direction, slot.type]);
+
+  const adapterDefinitions = useMemo(
+    () => getBlockDefinitions().filter((d) => d.category === 'Adapters'),
+    []
+  );
+
+  const { suggestions: adapterSuggestions, nearMisses } = useMemo(() => {
+    const suggestions: Array<{
+      block: Block;
+      slot: Slot;
+      adapter: BlockDefinition;
+      adapterInput: Slot;
+      adapterOutput: Slot;
+    }> = [];
+    const nearMisses: Array<{ block: Block; slot: Slot }> = [];
+    const sourceDesc = describeSlotType(slot.type);
+    if (!sourceDesc.domain) return { suggestions, nearMisses };
+    const lookingForDirection = portRef.direction === 'output' ? 'input' : 'output';
+
+    for (const b of store.blocks) {
+      if (b.id === block.id) continue;
+      const slotsToCheck = lookingForDirection === 'input' ? b.inputs : b.outputs;
+      for (const s of slotsToCheck) {
+        // Skip already compatible
+        const compatible =
+          portRef.direction === 'output'
+            ? areTypesCompatible(slot.type, s.type)
+            : areTypesCompatible(s.type, slot.type);
+        if (compatible) continue;
+
+        const desc = describeSlotType(s.type);
+        if (!desc.domain) continue;
+        // Same domain but different world -> likely needs adapter
+        const domainMatches = desc.domain === sourceDesc.domain;
+        const worldMismatch = desc.world !== sourceDesc.world;
+        if (domainMatches && worldMismatch) {
+          // Try to find an adapter that bridges
+          const adapter = adapterDefinitions.find((def) => {
+            // Adapter must have one input and one output that can bridge
+            for (const adapterInput of def.inputs) {
+              for (const adapterOutput of def.outputs) {
+                if (portRef.direction === 'output') {
+                  const inputOk = areTypesCompatible(slot.type, adapterInput.type);
+                  const outputOk = areTypesCompatible(adapterOutput.type, s.type);
+                  if (inputOk && outputOk) {
+                    suggestions.push({
+                      block: b,
+                      slot: s,
+                      adapter: def,
+                      adapterInput,
+                      adapterOutput,
+                    });
+                    return true;
+                  }
+                } else {
+                  const inputOk = areTypesCompatible(s.type, adapterInput.type);
+                  const outputOk = areTypesCompatible(adapterOutput.type, slot.type);
+                  if (inputOk && outputOk) {
+                    suggestions.push({
+                      block: b,
+                      slot: s,
+                      adapter: def,
+                      adapterInput,
+                      adapterOutput,
+                    });
+                    return true;
+                  }
+                }
+              }
+            }
+            return false;
+          });
+
+          if (!adapter) {
+            nearMisses.push({ block: b, slot: s });
+          }
+          break; // only list block once
+        }
+      }
+    }
+    return { suggestions, nearMisses };
+  }, [block.id, portRef.direction, slot.type, store.blocks.length, adapterDefinitions]);
 
   // Get existing connections for this port
   const existingConnections = getConnectionsForPort(
@@ -145,6 +290,58 @@ function PortWiringPanel({
     store.disconnect(connectionId);
   };
 
+  const findLaneIdForBlock = (blockId: string): string | null => {
+    const lane = store.lanes.find((l) => l.blockIds.includes(blockId));
+    return lane?.id ?? null;
+  };
+
+  const isInputOccupied = (blockId: string, slotId: string): boolean => {
+    return store.connections.some(
+      (c) => c.to.blockId === blockId && c.to.slotId === slotId
+    );
+  };
+
+  const handleInsertAdapter = (suggestion: {
+    block: Block;
+    slot: Slot;
+    adapter: BlockDefinition;
+    adapterInput: Slot;
+    adapterOutput: Slot;
+  }) => {
+    // Determine lane to place adapter
+    const laneByKind = store.lanes.find((l) => l.kind === suggestion.adapter.laneKind);
+    const laneOfTarget = findLaneIdForBlock(suggestion.block.id);
+    const laneFallback = store.lanes[0]?.id ?? null;
+    const laneId = laneByKind?.id ?? laneOfTarget ?? laneFallback;
+    if (!laneId) return;
+
+    // Guard against overwriting occupied inputs
+    if (portRef.direction === 'output' && isInputOccupied(suggestion.block.id, suggestion.slot.id)) {
+      return;
+    }
+    if (portRef.direction === 'input' && isInputOccupied(portRef.blockId, portRef.slotId)) {
+      return;
+    }
+
+    const adapterId = store.addBlock(
+      suggestion.adapter.type,
+      laneId,
+      suggestion.adapter.defaultParams
+    );
+
+    if (portRef.direction === 'output') {
+      // source -> adapter -> target
+      store.connect(portRef.blockId, portRef.slotId, adapterId, suggestion.adapterInput.id);
+      store.connect(adapterId, suggestion.adapterOutput.id, suggestion.block.id, suggestion.slot.id);
+    } else {
+      // target -> adapter -> source
+      store.connect(suggestion.block.id, suggestion.slot.id, adapterId, suggestion.adapterInput.id);
+      store.connect(adapterId, suggestion.adapterOutput.id, portRef.blockId, portRef.slotId);
+    }
+
+    store.setSelectedPort(null);
+  };
+
   // Hover highlighting - set hovered port in store
   const handleTargetHover = (target: PortRef | null) => {
     setHoveredTarget(target);
@@ -153,6 +350,29 @@ function PortWiringPanel({
 
   const definition = getBlockDefinition(block.type);
   const blockColor = definition?.color ?? '#666';
+
+  const renderTypeBadges = (type: Slot['type']) => {
+    const desc = describeSlotType(type);
+    const worldGlyph: Record<string, string | null> = {
+      signal: 'S',
+      field: 'F',
+      scalar: 'C',
+      event: 'E',
+      scene: 'SC',
+      program: 'P',
+      render: 'R',
+      filter: 'FX',
+      stroke: 'ST',
+      unknown: null,
+    };
+    const worldBadge = worldGlyph[desc.world] ?? null;
+    return (
+      <span className="port-badges">
+        {worldBadge && <span className={`port-badge world ${desc.world}`}>{worldBadge}</span>}
+        {desc.domain && <span className="port-badge domain">{desc.domain}</span>}
+      </span>
+    );
+  };
 
   return (
     <div className="port-wiring-panel">
@@ -175,6 +395,8 @@ function PortWiringPanel({
             <div className="wiring-info-row">
               <span className="wiring-info-label">Type:</span>
               <code className="wiring-info-value">{slot.type}</code>
+              {renderTypeBadges(slot.type)}
+              <span className="wiring-info-hint">{formatSlotType(slot.type)}</span>
             </div>
           </div>
         </div>
@@ -194,7 +416,10 @@ function PortWiringPanel({
                 return (
                   <li key={conn.id} className="wiring-connection-item">
                     <span className="wiring-target-block">{otherBlock?.label ?? 'Unknown'}</span>
-                    <span className="wiring-target-slot">{otherSlot?.label ?? otherSlotId}</span>
+                    <span className="wiring-target-slot">
+                      {otherSlot?.label ?? otherSlotId}
+                      {otherSlot ? renderTypeBadges(otherSlot.type) : null}
+                    </span>
                     <button
                       className="wiring-disconnect-btn"
                       onClick={(e) => {
@@ -219,7 +444,9 @@ function PortWiringPanel({
             <span className="wiring-count">{compatible.length}</span>
           </h4>
           {compatible.length === 0 ? (
-            <p className="wiring-empty">No compatible ports found</p>
+            <p className="wiring-empty">
+              No compatible ports found. {slotCompatibilityHint(slot.type)}
+            </p>
           ) : (
             <ul className="wiring-target-list">
               {compatible.map((target) => (
@@ -236,7 +463,10 @@ function PortWiringPanel({
                   onClick={() => handleConnect(target)}
                 >
                   <span className="wiring-target-block">{target.block.label}</span>
-                  <span className="wiring-target-slot">{target.slot.label}</span>
+                  <span className="wiring-target-slot">
+                    {target.slot.label}
+                    {renderTypeBadges(target.slot.type)}
+                  </span>
                   <code className="wiring-target-type">{target.slot.type}</code>
                 </li>
               ))}
@@ -264,8 +494,63 @@ function PortWiringPanel({
                     style={{ backgroundColor: def.color }}
                   />
                   <span className="wiring-library-block">{def.label}</span>
-                  <span className="wiring-library-slot">{targetSlot.label}</span>
+                  <span className="wiring-library-slot">
+                    {targetSlot.label}
+                    {renderTypeBadges(targetSlot.type)}
+                  </span>
                   <code className="wiring-library-type">{targetSlot.type}</code>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Adapter suggestions */}
+        {adapterSuggestions.length > 0 && (
+          <div className="wiring-section">
+            <h4>Adapter suggestions</h4>
+            <p className="wiring-hint">
+              These ports share the domain but differ in world (S vs F vs C). Insert an adapter to bridge them.
+            </p>
+            <ul className="wiring-target-list">
+              {adapterSuggestions.map((target) => (
+                <li key={`${target.block.id}:${target.slot.id}:${target.adapter.type}`} className="wiring-target-item near-match">
+                  <div className="wiring-target-block">{target.block.label}</div>
+                  <div className="wiring-target-slot">
+                    {target.slot.label}
+                    {renderTypeBadges(target.slot.type)}
+                  </div>
+                  <div className="wiring-target-type">
+                    <code>{target.slot.type}</code>
+                  </div>
+                  <button
+                    className="wiring-adapter-btn"
+                    onClick={() => handleInsertAdapter(target)}
+                  >
+                    Insert {target.adapter.label ?? target.adapter.type}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Near matches without adapter */}
+        {nearMisses.length > 0 && (
+          <div className="wiring-section">
+            <h4>Near matches (no adapter yet)</h4>
+            <p className="wiring-hint">
+              Same domain, different world. Add or create an adapter block to bridge these.
+            </p>
+            <ul className="wiring-target-list">
+              {nearMisses.map((target) => (
+                <li key={`${target.block.id}:${target.slot.id}`} className="wiring-target-item near-match">
+                  <span className="wiring-target-block">{target.block.label}</span>
+                  <span className="wiring-target-slot">
+                    {target.slot.label}
+                    {renderTypeBadges(target.slot.type)}
+                  </span>
+                  <code className="wiring-target-type">{target.slot.type}</code>
                 </li>
               ))}
             </ul>
@@ -281,6 +566,9 @@ function PortWiringPanel({
  */
 function DefinitionPreview({ definition }: { definition: BlockDefinition }) {
   const tags = getBlockTags(definition);
+  const isComposite = definition.form === 'composite';
+  const isLegacyComposite = definition.form === 'legacy-composite';
+  const [showCompositeGraph, setShowCompositeGraph] = useState(false);
 
   return (
     <div className="inspector">
@@ -290,9 +578,8 @@ function DefinitionPreview({ definition }: { definition: BlockDefinition }) {
           <span className="block-preview-badge">Preview</span>
           <span className="block-tier-badge">{formatFormLabel(definition.form)}</span>
           <span className="block-subcategory-badge">{definition.subcategory}</span>
-          {tags.legacyCategory && (
-            <span className="block-legacy-badge">{String(tags.legacyCategory)}</span>
-          )}
+          {isComposite && <span className="block-composite-badge">Composite</span>}
+          {isLegacyComposite && <span className="block-legacy-badge">Legacy Composite</span>}
           <span
             className="block-category"
             style={{ backgroundColor: definition.color }}
@@ -312,6 +599,21 @@ function DefinitionPreview({ definition }: { definition: BlockDefinition }) {
           <h3>Type</h3>
           <code className="block-type-code">{definition.type}</code>
         </div>
+
+        {isComposite && definition.primitiveGraph && (
+          <div className="inspector-section">
+            <div className="composite-header">
+              <h3>Composite Internals</h3>
+              <button
+                className="composite-toggle"
+                onClick={() => setShowCompositeGraph((v) => !v)}
+              >
+                {showCompositeGraph ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            {showCompositeGraph && <CompositeGraphView graph={definition.primitiveGraph} />}
+          </div>
+        )}
 
         <div className="inspector-section">
           <h3>Tags</h3>
@@ -376,6 +678,11 @@ export const Inspector = observer(({ store }: InspectorProps) => {
   const block = store.selectedBlock;
   const previewedDefinition = store.previewedDefinition;
   const selectedPortInfo = store.selectedPortInfo;
+  const [showCompositeGraph, setShowCompositeGraph] = useState(false);
+
+  useEffect(() => {
+    setShowCompositeGraph(false);
+  }, [block?.type, previewedDefinition?.type]);
 
   // Show port wiring panel if a port is selected
   if (selectedPortInfo) {
@@ -408,6 +715,7 @@ export const Inspector = observer(({ store }: InspectorProps) => {
   const definition = getBlockDefinition(block.type);
   const blockColor = definition?.color ?? '#666';
   const tags = definition ? getBlockTags(definition) : null;
+  const isComposite = definition?.form === 'composite' && definition.primitiveGraph;
 
   return (
     <div className="inspector">
@@ -420,9 +728,6 @@ export const Inspector = observer(({ store }: InspectorProps) => {
               <span className="block-tier-badge">{formatFormLabel(definition.form)}</span>
               <span className="block-subcategory-badge">{definition.subcategory}</span>
             </>
-          )}
-          {tags?.legacyCategory && (
-            <span className="block-legacy-badge">{String(tags.legacyCategory)}</span>
           )}
           <span
             className="block-category"
@@ -439,6 +744,21 @@ export const Inspector = observer(({ store }: InspectorProps) => {
           <h3>Type</h3>
           <code className="block-type-code">{block.type}</code>
         </div>
+
+        {isComposite && definition?.primitiveGraph && (
+          <div className="inspector-section">
+            <div className="composite-header">
+              <h3>Composite Internals</h3>
+              <button
+                className="composite-toggle"
+                onClick={() => setShowCompositeGraph((v) => !v)}
+              >
+                {showCompositeGraph ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            {showCompositeGraph && <CompositeGraphView graph={definition.primitiveGraph} />}
+          </div>
+        )}
 
         {tags && (
           <div className="inspector-section">

@@ -1,0 +1,65 @@
+Agent: iterative-implementer | 2025-12-16T06:33:00Z
+Completed: WI-5 Bus Inspector Panel | Files: 5 | Commits: 1
+Status: complete
+
+Work Performed:
+- Implemented Bus Inspector Panel component with all four required sections
+- Added selectedBusId to EditorUIState for bus selection tracking
+- Added selectBus(), updatePublisher(), updateListener() actions to store
+- Integrated BusInspector into Inspector component with mode switching
+- Created typed default value editors for all core domains
+- Added type helper functions to types.ts
+
+Key Features Implemented:
+Section A - Summary:
+  ✓ Inline editable bus name
+  ✓ Read-only type descriptor display
+  ✓ Combine mode dropdown (domain-specific options)
+  ✓ Default value editor (number, vec2, color, boolean, time, phase, rate, trigger)
+
+Section B - Publishers List:
+  ✓ Shows all publishers sorted by sortKey
+  ✓ Block name + port name display
+  ✓ Jump to block functionality
+  ✓ Enable/disable toggle per publisher
+  ✓ Empty state handling
+
+Section C - Listeners List:
+  ✓ Shows all listeners
+  ✓ Block name + port name display
+  ✓ Jump to block functionality
+  ✓ Enable/disable toggle per listener
+  ✓ Empty state handling
+
+Section D - Diagnostics:
+  ✓ Stub section with placeholder
+
+Files Created:
+- gallery/src/editor/BusInspector.tsx (352 lines)
+- gallery/src/editor/BusInspector.css (254 lines)
+
+Files Modified:
+- gallery/src/editor/types.ts (added selectedBusId to EditorUIState, type helpers)
+- gallery/src/editor/store.ts (added selectBus, updatePublisher, updateListener)
+- gallery/src/editor/Inspector.tsx (integrated BusInspector)
+
+Testing:
+✓ All 457 tests passing
+✓ No TypeScript errors
+✓ No regressions in existing functionality
+
+Acceptance Criteria Met:
+✓ Selecting bus switches Inspector to bus mode
+✓ Name editable inline
+✓ Combine mode dropdown functional
+✓ Default value editor typed by domain
+✓ Publishers list with jump-to-block
+✓ Listeners list with jump-to-block
+✓ Enable/disable toggles for publishers/listeners
+✓ Empty states for no publishers/listeners
+✓ Diagnostics section with stub
+
+Next Steps:
+- WI-6: Live Bus Visualization (static placeholders)
+- Test bus inspector UI manually in browser
+- Consider UX improvements for jump-to-block (scroll into view)

@@ -7,7 +7,7 @@
  * - Deterministic, phase-driven, scrubbable
  */
 
-import type { Seed, Time, Context, Vec2, PhaseMachine, PhaseSample } from '../../core/types';
+import type { Seed, Time, Context, Vec2, PhaseMachine } from '../../core/types';
 import type { RenderTree, RenderNode, Color } from '../../render/tree';
 
 // =============================================================================

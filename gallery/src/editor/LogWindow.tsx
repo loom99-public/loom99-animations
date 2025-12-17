@@ -15,6 +15,7 @@ import {
   LOG_COMPONENTS,
   LOG_COMPONENT_CONFIG,
 } from './logTypes';
+import { StatusBadge } from './StatusBadge';
 import './LogWindow.css';
 
 type LogSize = 'collapsed' | 'compact' | 'full';
@@ -48,8 +49,6 @@ function MultiSelect<T extends string>({
   getLabel,
   onToggle,
 }: MultiSelectProps<T>) {
-  const allSelected = options.every((o) => selected.has(o));
-  const noneSelected = options.every((o) => !selected.has(o));
 
   return (
     <div className="log-filter">
@@ -109,26 +108,19 @@ export const LogWindow = observer(() => {
 
   return (
     <div className={`log-window log-window-${size}`}>
-      {/* Header bar - always visible */}
-      <div className="log-header">
-        <button
-          className="log-size-btn"
-          onClick={cycleSize}
-          title={sizeTitle}
-        >
-          {sizeIcon}
-        </button>
+      {/* Header bar - clickable to cycle sizes */}
+      <div
+        className="log-header"
+        onClick={cycleSize}
+        title={sizeTitle}
+        style={{ cursor: 'pointer' }}
+      >
+        <span className="log-size-icon">{sizeIcon}</span>
         <span className="log-title">Logs</span>
-        {logStore.errorCount > 0 && (
-          <span className="log-badge log-badge-error">{logStore.errorCount}</span>
-        )}
-        {logStore.warningCount > 0 && (
-          <span className="log-badge log-badge-warning">{logStore.warningCount}</span>
-        )}
 
         {size !== 'collapsed' && (
           <>
-            <div className="log-filters">
+            <div className="log-filters" onClick={(e) => e.stopPropagation()}>
               <MultiSelect
                 label="Level"
                 options={LOG_LEVELS}
@@ -144,7 +136,11 @@ export const LogWindow = observer(() => {
                 onToggle={handleToggleComponent}
               />
             </div>
-            <label className="log-auto-clear-option" title="Auto-clear logs when loading a macro">
+            <label
+              className="log-auto-clear-option"
+              title="Auto-clear logs when loading a macro"
+              onClick={(e) => e.stopPropagation()}
+            >
               <input
                 type="checkbox"
                 checked={logStore.autoClearOnMacro}
@@ -152,11 +148,22 @@ export const LogWindow = observer(() => {
               />
               <span>Auto-clear</span>
             </label>
-            <button className="log-clear-btn" onClick={handleClear}>
+            <button className="log-clear-btn" onClick={(e) => { e.stopPropagation(); handleClear(); }}>
               Clear
             </button>
           </>
         )}
+
+        {/* Right side: badges + status */}
+        <div className="log-right-group">
+          {logStore.errorCount > 0 && (
+            <span className="log-badge log-badge-error">{logStore.errorCount}</span>
+          )}
+          {logStore.warningCount > 0 && (
+            <span className="log-badge log-badge-warning">{logStore.warningCount}</span>
+          )}
+          <StatusBadge />
+        </div>
       </div>
 
       {/* Log entries - hidden when collapsed */}

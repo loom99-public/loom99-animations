@@ -11,9 +11,9 @@
  * - Variance: procedural (coherent) vs varied (chaotic)
  */
 
-import type { Seed, Vec2, CompileCtx } from '../../core/types';
+import type { Vec2 } from '../../core/types';
 import { createPRNG } from '../../core/rand';
-import type { Transform3DFields, Field, EaseKind } from './types';
+import type { Transform3DFields } from './types';
 
 // =============================================================================
 // Mode Types
@@ -48,46 +48,46 @@ interface EntryPosePreset {
 
 const ENTRY_POSE_PRESETS: Record<EntryPoseMode, EntryPosePreset> = {
   tiltLeft: {
-    getTranslate: (rng, deep) => ({
+    getTranslate: (rng, _deep) => ({
       x: rng.range(-300, -150),
       y: rng.range(-50, 50),
     }),
-    getZ: (rng, deep) => rng.range(deep ? 200 : 100, deep ? 400 : 200),
-    getRotX: (rng, varied) => rng.range(varied ? -45 : -20, varied ? 45 : 20),
-    getRotY: (rng, varied) => rng.range(varied ? -60 : -40, varied ? -20 : -30),
+    getZ: (rng, _deep) => rng.range(100, 200),
+    getRotX: (rng, _varied) => rng.range(-20, 20),
+    getRotY: (rng, _varied) => rng.range(-40, -30),
     getRotZ: (rng) => rng.range(-30, 30),
     getScale: (rng) => rng.range(0.6, 0.9),
   },
   tiltRight: {
-    getTranslate: (rng, deep) => ({
+    getTranslate: (rng, _deep) => ({
       x: rng.range(150, 300),
       y: rng.range(-50, 50),
     }),
-    getZ: (rng, deep) => rng.range(deep ? 200 : 100, deep ? 400 : 200),
-    getRotX: (rng, varied) => rng.range(varied ? -45 : -20, varied ? 45 : 20),
-    getRotY: (rng, varied) => rng.range(varied ? 20 : 30, varied ? 60 : 40),
+    getZ: (rng, _deep) => rng.range(100, 200),
+    getRotX: (rng, _varied) => rng.range(-20, 20),
+    getRotY: (rng, _varied) => rng.range(30, 40),
     getRotZ: (rng) => rng.range(-30, 30),
     getScale: (rng) => rng.range(0.6, 0.9),
   },
   flipTop: {
-    getTranslate: (rng, deep) => ({
+    getTranslate: (rng, _deep) => ({
       x: rng.range(-50, 50),
       y: rng.range(-300, -150),
     }),
-    getZ: (rng, deep) => rng.range(deep ? 150 : 80, deep ? 350 : 180),
-    getRotX: (rng, varied) => rng.range(varied ? -60 : -40, varied ? -20 : -30),
-    getRotY: (rng, varied) => rng.range(varied ? -30 : -15, varied ? 30 : 15),
+    getZ: (rng, _deep) => rng.range(80, 180),
+    getRotX: (rng, _varied) => rng.range(-40, -30),
+    getRotY: (rng, _varied) => rng.range(-15, 15),
     getRotZ: (rng) => rng.range(-20, 20),
     getScale: (rng) => rng.range(0.7, 1.0),
   },
   scatter3D: {
-    getTranslate: (rng, deep) => ({
+    getTranslate: (rng, _deep) => ({
       x: rng.range(-400, 400),
       y: rng.range(-400, 400),
     }),
-    getZ: (rng, deep) => rng.range(deep ? 100 : 50, deep ? 500 : 250),
-    getRotX: (rng, varied) => rng.range(-90, 90),
-    getRotY: (rng, varied) => rng.range(-90, 90),
+    getZ: (rng, _deep) => rng.range(50, 250),
+    getRotX: (rng, _varied) => rng.range(-90, 90),
+    getRotY: (rng, _varied) => rng.range(-90, 90),
     getRotZ: (rng) => rng.range(-180, 180),
     getScale: (rng) => rng.range(0.4, 1.1),
   },
@@ -172,7 +172,7 @@ export function createTransform3DFields(config: Transform3DModeConfig): Transfor
   const isVaried = config.variance === 'varied';
 
   return {
-    delay: (seed, n, ctx) => {
+    delay: (seed, n, _ctx) => {
       const rng = createPRNG(seed);
       return Array.from({ length: n }, (_, i) => {
         const stagger = timingPreset.delayStagger * i;
@@ -181,7 +181,7 @@ export function createTransform3DFields(config: Transform3DModeConfig): Transfor
       });
     },
 
-    duration: (seed, n, ctx) => {
+    duration: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 1);
       return Array.from({ length: n }, () =>
         rng.range(
@@ -191,72 +191,72 @@ export function createTransform3DFields(config: Transform3DModeConfig): Transfor
       );
     },
 
-    entryTranslate: (seed, n, ctx) => {
+    entryTranslate: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 2);
       return Array.from({ length: n }, () => entryPreset.getTranslate(rng, isDeep));
     },
 
-    entryZ: (seed, n, ctx) => {
+    entryZ: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 3);
       return Array.from({ length: n }, () => entryPreset.getZ(rng, isDeep));
     },
 
-    entryRotXDeg: (seed, n, ctx) => {
+    entryRotXDeg: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 4);
       return Array.from({ length: n }, () => entryPreset.getRotX(rng, isVaried));
     },
 
-    entryRotYDeg: (seed, n, ctx) => {
+    entryRotYDeg: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 5);
       return Array.from({ length: n }, () => entryPreset.getRotY(rng, isVaried));
     },
 
-    entryRotZDeg: (seed, n, ctx) => {
+    entryRotZDeg: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 6);
       return Array.from({ length: n }, () => entryPreset.getRotZ(rng));
     },
 
-    entryScale: (seed, n, ctx) => {
+    entryScale: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 7);
       return Array.from({ length: n }, () => entryPreset.getScale(rng));
     },
 
-    ease: (seed, n, ctx) => {
+    ease: (_seed, n, _ctx) => {
       return Array(n).fill(isVaried ? 'easeOutQuint' : 'easeOutCubic');
     },
 
-    overshoot: (seed, n, ctx) => {
+    overshoot: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 8);
       return Array.from({ length: n }, () =>
         isVaried ? rng.range(1.2, 2.0) : 1.6
       );
     },
 
-    opacity: (seed, n, ctx) => {
+    opacity: (_seed, n, _ctx) => {
       return Array(n).fill(1);
     },
 
-    exitTranslate: (seed, n, ctx) => {
+    exitTranslate: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 9);
       return Array.from({ length: n }, () => exitPreset.getTranslate(rng));
     },
 
-    exitZ: (seed, n, ctx) => {
+    exitZ: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 10);
       return Array.from({ length: n }, () => exitPreset.getZ(rng));
     },
 
-    exitRotXDeg: (seed, n, ctx) => {
+    exitRotXDeg: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 11);
       return Array.from({ length: n }, () => exitPreset.getRotX(rng));
     },
 
-    exitRotYDeg: (seed, n, ctx) => {
+    exitRotYDeg: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 12);
       return Array.from({ length: n }, () => exitPreset.getRotY(rng));
     },
 
-    exitRotZDeg: (seed, n, ctx) => {
+    exitRotZDeg: (seed, n, _ctx) => {
       const rng = createPRNG(seed + 13);
       return Array.from({ length: n }, () => exitPreset.getRotZ(rng));
     },

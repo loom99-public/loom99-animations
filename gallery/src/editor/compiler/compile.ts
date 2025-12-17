@@ -23,11 +23,10 @@ import type {
   CompilerPatch,
   PortRef,
   PortType,
-  Program,
-  RenderTree,
   Seed,
   ValueKind,
 } from './types';
+import { compileBusAwarePatch, isBusAwarePatch } from './compileBusAware';
 
 // =============================================================================
 // Main Compiler Entry Point
@@ -37,6 +36,25 @@ export function compilePatch(
   patch: CompilerPatch,
   registry: BlockRegistry,
   seed: Seed,
+  ctx: CompileCtx
+): CompileResult {
+  // Route to bus-aware compiler if patch has buses
+  if (isBusAwarePatch(patch)) {
+    return compileBusAwarePatch(patch, registry, seed, ctx);
+  }
+
+  // Wire-only compilation (Phase 1 logic)
+  return compilePatchWireOnly(patch, registry, seed, ctx);
+}
+
+/**
+ * Wire-only compilation (original Phase 1 implementation).
+ * Used for backward compatibility with non-bus patches.
+ */
+function compilePatchWireOnly(
+  patch: CompilerPatch,
+  registry: BlockRegistry,
+  _seed: Seed,
   ctx: CompileCtx
 ): CompileResult {
   const errors: CompileError[] = [];
@@ -63,7 +81,6 @@ export function compilePatch(
 
   // 2) Build connection indices (detect multiple writers to same input)
   const incoming = indexIncoming(patch.connections);
-  const outgoing = indexOutgoing(patch.connections);
 
   for (const [toKey, conns] of incoming.entries()) {
     if (conns.length > 1) {
@@ -284,6 +301,7 @@ export function isPortTypeAssignable(from: PortType, to: PortType): boolean {
     ['Field:Point', 'Field:vec2'],
     ['ElementCount', 'Scalar:number'],
     ['RenderTree', 'RenderTreeProgram'],
+    ['Signal:number', 'Signal:Unit'],
   ];
 
   for (const set of compatibleSets) {
@@ -307,6 +325,7 @@ function isKindAssignable(fromKind: Artifact['kind'], toKind: ValueKind): boolea
     ['Field:Point', 'Field:vec2'],
     ['ElementCount', 'Scalar:number'],
     ['RenderTree', 'RenderTreeProgram'],
+    ['Signal:number', 'Signal:Unit'],
   ];
 
   for (const set of compatibleSets) {
@@ -326,19 +345,6 @@ function indexIncoming(
   const m = new Map<string, CompilerConnection[]>();
   for (const c of conns) {
     const k = keyOf(c.to.blockId, c.to.port);
-    const arr = m.get(k) ?? [];
-    arr.push(c);
-    m.set(k, arr);
-  }
-  return m;
-}
-
-function indexOutgoing(
-  conns: readonly CompilerConnection[]
-): Map<string, CompilerConnection[]> {
-  const m = new Map<string, CompilerConnection[]>();
-  for (const c of conns) {
-    const k = keyOf(c.from.blockId, c.from.port);
     const arr = m.get(k) ?? [];
     arr.push(c);
     m.set(k, arr);
@@ -422,7 +428,7 @@ function inferOutputPort(
   patch: CompilerPatch,
   registry: BlockRegistry,
   compiled: Map<string, Artifact>,
-  errors: CompileError[]
+  _errors: CompileError[]
 ): PortRef | null {
   // Heuristic: find all produced RenderTreeProgram ports that are NOT used as a source.
   // If exactly one, pick it.

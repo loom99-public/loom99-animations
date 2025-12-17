@@ -5,7 +5,7 @@
  * The scene contains a group of all paths as a single render node.
  */
 
-import type { GlitchScene, Bounds } from './types';
+import type { GlitchScene } from './types';
 import { group, path } from '../../render/tree';
 import { LOGO_PATHS, TEXT_PATHS, pathPointsToSVGPath } from '../../../data/pathData';
 

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://repomix.com/schemas/latest/schema.json",
+  "input": {
+    "maxFileSize": 52428800
+  },
+  "output": {
+    "filePath": "repomix-output.xml",
+    "style": "xml",
+    "parsableStyle": false,
+    "fileSummary": true,
+    "directoryStructure": true,
+    "files": true,
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "compress": false,
+    "topFilesLength": 5,
+    "showLineNumbers": false,
+    "truncateBase64": false,
+    "copyToClipboard": false,
+    "includeFullDirectoryStructure": false,
+    "tokenCountTree": false,
+    "git": {
+      "sortByChanges": true,
+      "sortByChangesMaxCommits": 100,
+      "includeDiffs": false,
+      "includeLogs": false,
+      "includeLogsCount": 50
+    }
+  },
+  "include": [
+    "gallery/src/editor/**/*",
+    "gallery/package.json",
+    "gallery/tsconfig.json",
+    "CLAUDE.md"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDotIgnore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      ".agent_planning/**/*",
+      "feature_planning_docs/**/*",
+      "gallery/src/editor/feature_planning_docs/**/*",
+      "*.log",
+      "SUMMARY-*.txt",
+      "PLAN-*.md",
+      "STATUS-*.md",
+      "EVAL-*.md",
+      "EXEC-*.md",
+      "WORK-*.md",
+      "TASK-*.md",
+      "repomix-output.xml",
+      ".repomixignore",
+      "AGENTS.md",
+      "ui_example_docs/**/*",
+      "animations/**/*",
+      "gallery/src/anim-v4/**/*",
+      "gallery/src/data/**/*",
+      "gallery/src/components/**/*",
+      "gallery/src/pages/**/*",
+      "gallery/src/main.tsx",
+      "gallery/src/App.tsx",
+      "gallery/src/index.html",
+      "gallery/vite.config.ts",
+      "gallery/dist/**/*",
+      "gallery/node_modules/**/*",
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "__tests__/**/*"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  },
+  "tokenCount": {
+    "encoding": "o200k_base"
+  }
+}

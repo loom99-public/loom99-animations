@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { ParticleCompositor, type Particle, type ParticleState } from '../compositors/ParticleCompositor';
+import { ParticleCompositor, type Particle } from '../compositors/ParticleCompositor';
 
 describe('ParticleCompositor - Basic Particle Animation', () => {
   it('returns particles at start position when progress is 0', () => {
@@ -172,7 +172,6 @@ describe('ParticleCompositor - Easing', () => {
 
     // With easeOutCubic, progress is faster early, slower late
     const states25 = compositor.update(0.25);
-    const states50 = compositor.update(0.5);
     const states75 = compositor.update(0.75);
 
     // At 25%, should have moved more than 25% of the way (fast start)

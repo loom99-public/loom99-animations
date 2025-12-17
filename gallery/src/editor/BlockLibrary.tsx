@@ -11,11 +11,12 @@ import { useDraggable } from '@dnd-kit/core';
 import type { EditorStore } from './store';
 import { ALL_SUBCATEGORIES, type BlockSubcategory, type BlockForm } from './types';
 import {
-  BLOCK_DEFINITIONS,
+  getBlockDefinitions,
   getBlocksForPalette,
   getBlockTags,
   type BlockDefinition,
 } from './blocks';
+import { listCompositeDefinitions } from './composites';
 import './BlockLibrary.css';
 
 const FORM_ORDER: BlockForm[] = ['macro', 'composite', 'legacy-composite', 'primitive'];
@@ -61,9 +62,10 @@ function groupBlocksByForm(blocks: readonly BlockDefinition[]): FormGroup[] {
       formMap.set(block.form, subcategoryMap);
     }
 
-    const list = subcategoryMap.get(block.subcategory) ?? [];
+    const subcategory = block.subcategory ?? 'Other';
+    const list = subcategoryMap.get(subcategory) ?? [];
     list.push(block);
-    subcategoryMap.set(block.subcategory, list);
+    subcategoryMap.set(subcategory, list);
   }
 
   return FORM_ORDER.map((form) => {
@@ -175,9 +177,11 @@ export const BlockLibrary = observer(({ store }: BlockLibraryProps) => {
   const activeLane = store.activeLane;
   const filterByLane = store.settings.filterByLane;
 
+  const blockDefs = useMemo(() => getBlockDefinitions(), [store.composites.length]);
+
   const formGroups = useMemo(
-    () => groupBlocksByForm(BLOCK_DEFINITIONS),
-    [BLOCK_DEFINITIONS]
+    () => groupBlocksByForm(blockDefs),
+    [blockDefs]
   );
 
   /**
@@ -197,13 +201,13 @@ export const BlockLibrary = observer(({ store }: BlockLibraryProps) => {
       activeLane?.kind,
       activeLane?.flavor
     );
-  }, [filterByLane, activeLane?.kind, activeLane?.flavor]);
+  }, [filterByLane, activeLane?.kind, activeLane?.flavor, blockDefs]);
 
   // Filter by search term
   const searchFilteredBlocks = useMemo(() => {
     if (!search.trim()) return null;
     const term = search.toLowerCase();
-    return BLOCK_DEFINITIONS.filter((b) => {
+    return blockDefs.filter((b) => {
       const labelsMatch =
         b.label.toLowerCase().includes(term) ||
         b.description.toLowerCase().includes(term) ||
@@ -236,7 +240,7 @@ export const BlockLibrary = observer(({ store }: BlockLibraryProps) => {
 
       return labelsMatch || tagsMatch;
     });
-  }, [search, BLOCK_DEFINITIONS]);
+  }, [search, blockDefs]);
 
   const toggleForm = (form: BlockForm) => {
     setCollapsedForms((prev) => {
@@ -265,10 +269,17 @@ export const BlockLibrary = observer(({ store }: BlockLibraryProps) => {
   // Determine if we're in filtered mode (active lane + filter enabled)
   const isFiltered = filterByLane && activeLane !== null;
 
+  const compositeCount = listCompositeDefinitions().length;
+
   return (
     <div className="block-library">
       <div className="library-header">
-        <h2>Blocks <span className="library-total-count">({BLOCK_DEFINITIONS.length})</span></h2>
+        <h2>Blocks <span className="library-total-count">({blockDefs.length})</span></h2>
+        {compositeCount > 0 && (
+          <div className="library-composite-badge" title="User composites available">
+            {compositeCount} composites
+          </div>
+        )}
         {isFiltered && (
           <div className="library-filter-badge" title={`Showing blocks for ${activeLane.label}`}>
             {activeLane.kind}

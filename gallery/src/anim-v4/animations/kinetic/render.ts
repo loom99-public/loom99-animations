@@ -9,7 +9,7 @@
  * - Compose all parts into final render tree
  */
 
-import type { RenderNode, RenderTree, Color, GroupNode, Style } from '../../render/tree';
+import type { RenderNode, Color, Style } from '../../render/tree';
 import { group, renderTree } from '../../render/tree';
 import type { KineticRenderer, Transform2D } from './types';
 
@@ -70,18 +70,6 @@ function buildTransformString(t: Transform2D): string {
   return parts.join(' ');
 }
 
-/**
- * Apply a style update to a node, preserving existing styles.
- */
-function applyStyle(node: RenderNode, styleUpdate: Partial<Style>): RenderNode {
-  return {
-    ...node,
-    style: {
-      ...node.style,
-      ...styleUpdate,
-    },
-  };
-}
 
 /**
  * Deep clone a render node, applying transform and opacity.

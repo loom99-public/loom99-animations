@@ -11,7 +11,7 @@
  * - Resources live in a separate "defs" channel on the tree
  */
 
-import type { DrawNode, GroupNode, EffectNode, Effect } from '../runtime/renderTree';
+import type { DrawNode } from '../runtime/renderTree';
 
 // =============================================================================
 // Resource Types

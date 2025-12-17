@@ -1,0 +1,74 @@
+Agent: iterative-implementer | 2025-12-16T14:06:20Z
+Completed: Bus Creation Flow (WI-2) | Files: 3 | Commits: 1
+Status: complete
+
+Work Item: WI-2 - Bus Creation Flow
+Implementation: Complete
+
+Files Created:
+- gallery/src/editor/BusCreationDialog.tsx (285 lines)
+- gallery/src/editor/BusCreationDialog.css (137 lines)
+
+Files Modified:
+- gallery/src/editor/BusBoard.tsx (+20 lines)
+
+Commit: 8513f98 - Implement Phase 3 Bus Creation Flow (WI-2)
+
+Features Implemented:
+1. BusCreationDialog modal component with three entry paths:
+   - From Bus Board "New Bus" button (implemented)
+   - From output port (ready via props, will be called by WI-4)
+   - From input port (ready via props, will be called by WI-3)
+
+2. Type Picker:
+   - Signal types only (no Field types)
+   - Core domains only: number, vec2, color, boolean, time, phase, rate, trigger
+   - Uses isBusEligible() filter
+
+3. Combine Mode Picker:
+   - Domain-appropriate options per spec
+   - number: sum, average, max, min, last
+   - vec2: sum, average, last
+   - color: layer, last
+   - phase/time/rate/trigger/boolean: last
+
+4. Default Values:
+   - Names: energy, position, palette, phaseA, clock, speed, pulse, gate
+   - Combine modes: sum (number/vec2), layer (color), last (others)
+
+5. Validation:
+   - Empty name rejected with error message
+   - Duplicate name rejected (case-insensitive)
+   - Non-empty unique names accepted
+
+6. Dialog Behavior:
+   - Create button calls store.createBus()
+   - Auto-publish/subscribe when props provided
+   - Cancel/Escape closes dialog
+   - New bus appears immediately in Bus Board
+
+7. Props Interface:
+   - suggestedType/suggestedName for pre-filling
+   - autoPublishFromBlock/Port for auto-publish after creation
+   - autoSubscribeToBlock/Port for auto-subscribe after creation
+   - onCreated callback receives busId
+
+Acceptance Criteria Met:
+✓ "New Bus" button opens creation dialog
+✓ Dialog: name, type picker, combine mode picker
+✓ Name validation (no duplicates, case-insensitive)
+✓ Default suggestions work (name based on domain)
+✓ Creating bus calls store.createBus() and appears immediately
+✓ Dialog closes on create, cancel, or Escape
+✓ Type picker shows only Signal/core domains
+✓ Combine mode picker shows domain-appropriate options
+✓ Pre-fill works when suggestedType/suggestedName provided
+✓ Auto-publish/subscribe works when those props provided
+
+Tests: All 457 tests pass
+TypeScript: Compiles without errors
+
+Next Steps:
+- WI-3: Input Port Bus Binding UI (BusPicker)
+- WI-4: Output Port Bus Publishing UI (PublishMenu)
+- Both will use BusCreationDialog for "Create new bus" flows

@@ -20,7 +20,7 @@ function sampleLine(
   start: Vec2,
   end: Vec2,
   spacing: number,
-  color: string,
+  _color: string,
   groupId: number
 ): LiquidTarget[] {
   const targets: LiquidTarget[] = [];
@@ -93,8 +93,6 @@ function sampleArc(
 
   // Approximate arc as series of line segments
   // This is simplified - a proper implementation would use the arc equation
-  const cx = (start.x + end.x) / 2;
-  const cy = (start.y + end.y) / 2;
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const chord = Math.sqrt(dx * dx + dy * dy);
@@ -127,8 +125,8 @@ function sampleArc(
  * Sample points along a path defined by PathPoint[].
  */
 function samplePath(
-  startX: number,
-  startY: number,
+  _startX: number,
+  _startY: number,
   points: PathPoint[],
   spacing: number,
   groupId: number

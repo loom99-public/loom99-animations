@@ -9,7 +9,7 @@
 
 import type { BlockCompiler, Field } from '../../types';
 
-type DecayCurve = 'linear' | 'exponential' | 'easeOut' | 'sudden';
+// type DecayCurve = 'linear' | 'exponential' | 'easeOut' | 'sudden';
 
 export const DecayEnvelopeBlock: BlockCompiler = {
   type: 'DecayEnvelope',
@@ -17,10 +17,7 @@ export const DecayEnvelopeBlock: BlockCompiler = {
   outputs: [{ name: 'decay', type: { kind: 'Field:number' } }],
 
   compile({ params }) {
-    const curve = (params.curve as DecayCurve) ?? 'exponential';
     const rate = Number(params.rate ?? 1.0);
-    const startValue = Number(params.startValue ?? 1.0);
-    const endValue = Number(params.endValue ?? 0.0);
     const variation = Number(params.variation ?? 0.1);
 
     const decay: Field<number> = (seed, n) => {

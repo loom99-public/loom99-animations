@@ -15,7 +15,7 @@ import type {
 } from '../../types';
 import type { RenderTree, DrawNode } from '../../../runtime/renderTree';
 import { circle, group, withOpacity } from '../../../runtime/renderTree';
-import { clamp01, easeOutCubic, easeInCubic, easeInOutCubic, lerp } from '../helpers';
+import { clamp01, easeInCubic, easeInOutCubic, lerp } from '../helpers';
 
 /**
  * Linear interpolation between two Vec2 points.

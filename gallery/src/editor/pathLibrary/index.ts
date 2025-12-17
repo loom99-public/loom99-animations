@@ -10,8 +10,9 @@ import type { PathEntry, PathLibraryState, PathLibraryEvent, PathLibraryListener
 import { getBuiltinPaths } from './builtins';
 import { loadLibrary, saveLibrary } from './storage';
 import { parseSVGString, validateSVG } from './parser';
+import { generateThumbnail } from './thumbnail';
 
-const STORAGE_KEY = 'loom99-path-library';
+const DEFAULT_VIEWBOX = '0 0 600 200';
 
 /**
  * PathLibrary - singleton service for managing SVG paths
@@ -193,6 +194,7 @@ class PathLibrary {
       name: entry.name,
       data: entry.data,
       meta: entry.meta,
+      thumbnail: entry.thumbnail,
     }, null, 2);
   }
 
@@ -218,13 +220,15 @@ class PathLibrary {
     }
 
     // Create the entry
-    const entryName = name || `Imported ${new Date().toLocaleTimeString()}`;
+    const entryName = this.ensureUniqueName(name || `Imported ${new Date().toLocaleTimeString()}`);
+    const viewBox = result.viewBox || DEFAULT_VIEWBOX;
     const entry = this.add({
       name: entryName,
       source: 'pasted',
       data: result.data,
+      thumbnail: generateThumbnail(result.data, viewBox),
       meta: {
-        viewBox: result.viewBox,
+        viewBox,
         originalSVG: svgString,
       },
     });
@@ -249,12 +253,18 @@ class PathLibrary {
         return { success: false, error: 'Invalid JSON format: data array is empty' };
       }
 
+      const meta = parsed.meta && typeof parsed.meta === 'object' ? parsed.meta : {};
+      const viewBox = meta.viewBox || DEFAULT_VIEWBOX;
+      const name = this.ensureUniqueName(parsed.name);
+      const thumbnail = parsed.thumbnail ?? generateThumbnail(parsed.data, viewBox);
+
       // Create the entry
       const entry = this.add({
-        name: parsed.name,
+        name,
         source: 'imported',
         data: parsed.data,
-        meta: parsed.meta,
+        thumbnail,
+        meta: { ...meta, viewBox },
       });
 
       return { success: true, entry };
@@ -285,6 +295,21 @@ class PathLibrary {
         console.error('PathLibrary listener error:', err);
       }
     });
+  }
+
+  /**
+   * Ensure path names remain unique for display
+   */
+  private ensureUniqueName(baseName: string): string {
+    const names = this.state.entries.map(e => e.name);
+    if (!names.includes(baseName)) return baseName;
+
+    let counter = 2;
+    while (names.includes(`${baseName} ${counter}`)) {
+      counter++;
+    }
+
+    return `${baseName} ${counter}`;
   }
 
   /**

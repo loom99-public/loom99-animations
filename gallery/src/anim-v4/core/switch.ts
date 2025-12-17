@@ -312,9 +312,9 @@ export function select<A>(
   if (signals.length === 0) {
     throw new Error('select requires at least one signal');
   }
-  return (t: Time, input: Input) => {
-    const index = Math.max(0, Math.min(signals.length - 1, Math.floor(indexSignal(t, input))));
-    return signals[index](t, input);
+  return (t: Time, ctx: Context) => {
+    const index = Math.max(0, Math.min(signals.length - 1, Math.floor(indexSignal(t, ctx))));
+    return signals[index](t, ctx);
   };
 }
 
@@ -326,9 +326,9 @@ export function selectBy<K extends string, A>(
   signals: Record<K, Signal<A>>,
   fallback: Signal<A>
 ): Signal<A> {
-  return (t: Time, input: Input) => {
-    const key = keySignal(t, input);
+  return (t: Time, ctx: Context) => {
+    const key = keySignal(t, ctx);
     const signal = signals[key];
-    return signal ? signal(t, input) : fallback(t, input);
+    return signal ? signal(t, ctx) : fallback(t, ctx);
   };
 }

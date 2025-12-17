@@ -5,7 +5,6 @@
  * Based on ui_example_docs/particle.md
  */
 
-import type { Vec2 } from '../../core/types';
 import type { CircleNode, FilterDef } from '../../render/tree';
 import { circle, glowFilter } from '../../render/tree';
 import type { Color, ParticleState } from './types';

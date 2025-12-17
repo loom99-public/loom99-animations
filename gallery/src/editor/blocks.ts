@@ -10,6 +10,7 @@
  */
 
 import type { BlockCategory, BlockForm, BlockSubcategory, Slot, BlockParams, SlotType, LaneKind, LaneFlavor } from './types';
+import { listCompositeDefinitions } from './composites';
 import { pathLibrary } from './pathLibrary';
 
 // =============================================================================
@@ -53,9 +54,9 @@ export interface BlockDefinition {
   readonly label: string;
 
   /**
-   * Block form: primitive, compound, legacy-composite, or macro
+   * Block form: primitive, composite, legacy-composite, or macro
    * - primitive: Irreducible atomic operations
-   * - compound: Built from primitives, single unit in UI
+   * - composite: Built from primitives, single unit in UI
    * - legacy-composite: Existing blocks pending migration
    * - macro: Expands into visible blocks when added
    */
@@ -64,8 +65,9 @@ export interface BlockDefinition {
   /**
    * Subcategory within form for organization.
    * e.g., 'Sources', 'Fields', 'Timing', 'Spatial', 'Math', etc.
+   * Optional - defaults to category mapping for legacy blocks.
    */
-  readonly subcategory: BlockSubcategory;
+  readonly subcategory?: BlockSubcategory;
 
   /**
    * Category for library organization.
@@ -105,7 +107,7 @@ export interface BlockDefinition {
   // === Compound-specific fields ===
 
   /**
-   * For compounds: the primitive graph that defines this block.
+   * For composites: the primitive graph that defines this block.
    * For primitives: undefined.
    * For legacy-composite: undefined (pending migration).
    */
@@ -423,7 +425,7 @@ export const MacroLiquid: BlockDefinition = {
 export const SVGPathSource: BlockDefinition = {
   type: 'SVGPathSource',
   label: 'SVG Paths',
-  form: 'legacy-composite',
+  form: 'primitive',
   subcategory: 'Sources',
   category: 'Scene',
   description: 'Load SVG path data from the path library',
@@ -451,7 +453,7 @@ export const SVGPathSource: BlockDefinition = {
 export const SamplePoints: BlockDefinition = {
   type: 'SamplePoints',
   label: 'Sample Points',
-  form: 'legacy-composite',
+  form: 'primitive',
   subcategory: 'Sources',
   category: 'Derivers',
   description: 'Extract point targets from scene paths',
@@ -483,7 +485,7 @@ export const SamplePoints: BlockDefinition = {
 export const RadialOrigin: BlockDefinition = {
   type: 'RadialOrigin',
   label: 'Radial Origin',
-  form: 'legacy-composite',
+  form: 'primitive',
   subcategory: 'Spatial',
   category: 'Fields',
   description: 'Generate start positions in a radial pattern around a center point',
@@ -512,12 +514,12 @@ export const RadialOrigin: BlockDefinition = {
 export const LinearStagger: BlockDefinition = {
   type: 'LinearStagger',
   label: 'Linear Stagger',
-  form: 'legacy-composite',
+  form: 'composite',
   subcategory: 'Timing',
   category: 'Fields',
   description: 'Generate delays that increase linearly by element index',
   inputs: [],
-  outputs: [output('delays', 'Delays', 'Field<Duration>')],
+  outputs: [output('delays', 'Delays', 'Field<number>')],
   defaultParams: {
     baseStagger: 0.08,
     jitter: 0.2,
@@ -530,12 +532,31 @@ export const LinearStagger: BlockDefinition = {
   laneKind: 'Fields',
   laneFlavor: 'Timing',
   priority: 1,
+  primitiveGraph: {
+    nodes: {
+      idx: { type: 'elementIndexField' },
+      base: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'baseStagger' } } },
+      product: { type: 'mulFieldNumber' },
+      jitter: { type: 'randomJitterField', params: { amplitude: { __fromParam: 'baseStagger' }, jitter: { __fromParam: 'jitter' } } },
+      sum: { type: 'addFieldNumber' },
+    },
+    edges: [
+      { from: 'idx.out', to: 'product.a' },
+      { from: 'base.out', to: 'product.b' },
+      { from: 'product.out', to: 'sum.a' },
+      { from: 'jitter.out', to: 'sum.b' },
+    ],
+    inputMap: {},
+    outputMap: {
+      delays: 'sum.out',
+    },
+  },
 };
 
 export const RegionField: BlockDefinition = {
   type: 'regionField',
   label: 'Region Field',
-  form: 'legacy-composite',
+  form: 'composite',
   subcategory: 'Spatial',
   category: 'Fields',
   description: 'Generate random points within a rectangular region',
@@ -557,17 +578,42 @@ export const RegionField: BlockDefinition = {
   laneKind: 'Fields',
   laneFlavor: 'Motion',
   priority: 2,
+  primitiveGraph: {
+    nodes: {
+      xCenter: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'x' } } },
+      yCenter: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'y' } } },
+      width: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'width' } } },
+      height: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'height' } } },
+      jitterX: { type: 'randomJitterField', params: { amplitude: { __fromParam: 'width' }, jitter: 0.5 } },
+      jitterY: { type: 'randomJitterField', params: { amplitude: { __fromParam: 'height' }, jitter: 0.5 } },
+      addX: { type: 'addFieldNumber' },
+      addY: { type: 'addFieldNumber' },
+      point: { type: 'makePointField' },
+    },
+    edges: [
+      { from: 'xCenter.out', to: 'addX.a' },
+      { from: 'jitterX.out', to: 'addX.b' },
+      { from: 'yCenter.out', to: 'addY.a' },
+      { from: 'jitterY.out', to: 'addY.b' },
+      { from: 'addX.out', to: 'point.x' },
+      { from: 'addY.out', to: 'point.y' },
+    ],
+    inputMap: {},
+    outputMap: {
+      positions: 'point.out',
+    },
+  },
 };
 
 export const ConstantFieldDuration: BlockDefinition = {
   type: 'constantFieldDuration',
   label: 'Constant Duration',
-  form: 'legacy-composite',
+  form: 'composite',
   subcategory: 'Timing',
   category: 'Fields',
   description: 'Same duration for all elements',
   inputs: [],
-  outputs: [output('durations', 'Durations', 'Field<Duration>')],
+  outputs: [output('durations', 'Durations', 'Field<number>')],
   defaultParams: {
     duration: 1.0,
   },
@@ -578,17 +624,27 @@ export const ConstantFieldDuration: BlockDefinition = {
   laneKind: 'Fields',
   laneFlavor: 'Timing',
   priority: 2,
+  primitiveGraph: {
+    nodes: {
+      lift: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'duration' } } },
+    },
+    edges: [],
+    inputMap: {},
+    outputMap: {
+      durations: 'lift.out',
+    },
+  },
 };
 
 export const WaveStagger: BlockDefinition = {
   type: 'WaveStagger',
   label: 'Wave Stagger',
-  form: 'legacy-composite',
+  form: 'composite',
   subcategory: 'Timing',
   category: 'Fields',
   description: 'Generate wave-based delays for organic staggering effects',
   inputs: [],
-  outputs: [output('delays', 'Delays', 'Field<Duration>')],
+  outputs: [output('delays', 'Delays', 'Field<number>')],
   defaultParams: {
     frequency: 1.0,
     amplitude: 0.3,
@@ -607,37 +663,154 @@ export const WaveStagger: BlockDefinition = {
   laneKind: 'Fields',
   laneFlavor: 'Timing',
   priority: 3,
+  primitiveGraph: {
+    nodes: {
+      idx: { type: 'elementIndexField' },
+      freq: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'frequency' } } },
+      phaseConst: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'phase' } } },
+      baseConst: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'baseDelay' } } },
+      ampConst: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'amplitude' } } },
+      mulIdx: { type: 'mulFieldNumber' },
+      addPhase: { type: 'addFieldNumber' },
+      sine: { type: 'sinFieldNumber' },
+      mulAmp: { type: 'mulFieldNumber' },
+      jitter: { type: 'randomJitterField', params: { amplitude: { __fromParam: 'baseDelay' }, jitter: { __fromParam: 'jitter' } } },
+      basePlusWave: { type: 'addFieldNumber' },
+      sum: { type: 'addFieldNumber' },
+    },
+    edges: [
+      { from: 'idx.out', to: 'mulIdx.a' },
+      { from: 'freq.out', to: 'mulIdx.b' },
+      { from: 'mulIdx.out', to: 'addPhase.a' },
+      { from: 'phaseConst.out', to: 'addPhase.b' },
+      { from: 'addPhase.out', to: 'sine.in' },
+      { from: 'sine.out', to: 'mulAmp.a' },
+      { from: 'ampConst.out', to: 'mulAmp.b' },
+      { from: 'baseConst.out', to: 'basePlusWave.a' },
+      { from: 'mulAmp.out', to: 'basePlusWave.b' },
+      { from: 'basePlusWave.out', to: 'sum.a' },
+      { from: 'jitter.out', to: 'sum.b' },
+    ],
+    inputMap: {},
+    outputMap: {
+      delays: 'sum.out',
+    },
+  },
+};
+
+export const ElementIndexField: BlockDefinition = {
+  type: 'elementIndexField',
+  label: 'Element Index',
+  form: 'primitive',
+  subcategory: 'Timing',
+  category: 'Fields',
+  description: 'Per-element index (0..n-1) as Field<number>',
+  inputs: [],
+  outputs: [output('out', 'Index', 'Field<number>')],
+  defaultParams: {},
+  paramSchema: [],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  laneFlavor: 'Timing',
+  priority: 1,
+};
+
+export const RandomJitterField: BlockDefinition = {
+  type: 'randomJitterField',
+  label: 'Random Jitter',
+  form: 'primitive',
+  subcategory: 'Timing',
+  category: 'Fields',
+  description: 'Random per-element jitter in range [-amp, amp]',
+  inputs: [],
+  outputs: [output('out', 'Jitter', 'Field<number>')],
+  defaultParams: {
+    amplitude: 0.01,
+    jitter: 0.0,
+  },
+  paramSchema: [
+    { key: 'amplitude', label: 'Amplitude (s)', type: 'number', min: 0, max: 1, step: 0.005, defaultValue: 0.01 },
+    { key: 'jitter', label: 'Jitter Factor', type: 'number', min: 0, max: 1, step: 0.05, defaultValue: 0 },
+  ],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  laneFlavor: 'Timing',
+  priority: 2,
+};
+
+export const AddFieldNumber: BlockDefinition = {
+  type: 'addFieldNumber',
+  label: 'Add Field',
+  form: 'primitive',
+  subcategory: 'Timing',
+  category: 'Fields',
+  description: 'Element-wise add two number fields',
+  inputs: [
+    input('a', 'A', 'Field<number>'),
+    input('b', 'B', 'Field<number>'),
+  ],
+  outputs: [output('out', 'Out', 'Field<number>')],
+  defaultParams: {},
+  paramSchema: [],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  laneFlavor: 'Timing',
+  priority: 3,
+};
+
+export const MulFieldNumber: BlockDefinition = {
+  type: 'mulFieldNumber',
+  label: 'Multiply Field',
+  form: 'primitive',
+  subcategory: 'Timing',
+  category: 'Fields',
+  description: 'Element-wise multiply two number fields',
+  inputs: [
+    input('a', 'A', 'Field<number>'),
+    input('b', 'B', 'Field<number>'),
+  ],
+  outputs: [output('out', 'Out', 'Field<number>')],
+  defaultParams: {},
+  paramSchema: [],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  laneFlavor: 'Timing',
+  priority: 3,
+};
+
+export const SinFieldNumber: BlockDefinition = {
+  type: 'sinFieldNumber',
+  label: 'Sin Field',
+  form: 'primitive',
+  subcategory: 'Timing',
+  category: 'Fields',
+  description: 'Element-wise Math.sin on Field<number>',
+  inputs: [input('in', 'In', 'Field<number>')],
+  outputs: [output('out', 'Out', 'Field<number>')],
+  defaultParams: {},
+  paramSchema: [],
+  color: '#a855f7',
+  laneKind: 'Fields',
+  laneFlavor: 'Timing',
+  priority: 3,
 };
 
 export const SizeVariation: BlockDefinition = {
   type: 'SizeVariation',
   label: 'Size Variation',
-  form: 'legacy-composite',
+  form: 'composite',
   subcategory: 'Style',
   category: 'Fields',
   description: 'Generate per-element size multipliers for varied effects',
   inputs: [],
   outputs: [output('sizes', 'Sizes', 'Field<number>')],
   defaultParams: {
-    mode: 'random',
     baseSize: 1.0,
     variation: 0.5,
     minSize: 0.3,
     maxSize: 2.0,
   },
   paramSchema: [
-    {
-      key: 'mode',
-      label: 'Mode',
-      type: 'select',
-      options: [
-        { value: 'uniform', label: 'Uniform' },
-        { value: 'random', label: 'Random' },
-        { value: 'distanceFade', label: 'Distance Fade' },
-        { value: 'pulse', label: 'Pulse' },
-      ],
-      defaultValue: 'random',
-    },
     { key: 'baseSize', label: 'Base Size', type: 'number', min: 0.1, max: 5.0, step: 0.1, defaultValue: 1.0 },
     { key: 'variation', label: 'Variation', type: 'number', min: 0, max: 2.0, step: 0.1, defaultValue: 0.5 },
     { key: 'minSize', label: 'Min Size', type: 'number', min: 0.1, max: 1.0, step: 0.1, defaultValue: 0.3 },
@@ -647,12 +820,27 @@ export const SizeVariation: BlockDefinition = {
   laneKind: 'Fields',
   laneFlavor: 'Style',
   priority: 4,
+  primitiveGraph: {
+    nodes: {
+      base: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'baseSize' } } },
+      jitter: { type: 'randomJitterField', params: { amplitude: { __fromParam: 'variation' }, jitter: 1 } },
+      add: { type: 'addFieldNumber' },
+    },
+    edges: [
+      { from: 'base.out', to: 'add.a' },
+      { from: 'jitter.out', to: 'add.b' },
+    ],
+    inputMap: {},
+    outputMap: {
+      sizes: 'add.out',
+    },
+  },
 };
 
 export const NoiseField: BlockDefinition = {
   type: 'noiseField',
   label: 'Noise Field',
-  form: 'primitive',
+  form: 'composite',
   category: 'Fields',
   description: 'Generate noise-based values for procedural effects',
   inputs: [],
@@ -668,6 +856,21 @@ export const NoiseField: BlockDefinition = {
   color: '#a855f7',
   laneKind: 'Fields',
   priority: 5,
+  primitiveGraph: {
+    nodes: {
+      seed: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'offset' } } },
+      rand: { type: 'randomJitterField', params: { amplitude: { __fromParam: 'amplitude' }, jitter: 1 } },
+      add: { type: 'addFieldNumber' },
+    },
+    edges: [
+      { from: 'seed.out', to: 'add.a' },
+      { from: 'rand.out', to: 'add.b' },
+    ],
+    inputMap: {},
+    outputMap: {
+      out: 'add.out',
+    },
+  },
 };
 
 export const ColorField: BlockDefinition = {
@@ -829,7 +1032,7 @@ export const ExplosionOrigin: BlockDefinition = {
 export const TopDropOrigin: BlockDefinition = {
   type: 'TopDropOrigin',
   label: 'Top Drop Origin',
-  form: 'primitive',
+  form: 'composite',
   category: 'Fields',
   description: 'Positions above scene for drop/fall effects (liquid)',
   inputs: [],
@@ -845,12 +1048,40 @@ export const TopDropOrigin: BlockDefinition = {
   laneKind: 'Fields',
   laneFlavor: 'Motion',
   priority: 12,
+  primitiveGraph: {
+    nodes: {
+      centerX: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'sceneWidth' } } },
+      halfWidth: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'sceneWidth' } } },
+      dropY: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'dropHeight' } } },
+      spread: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'xSpread' } } },
+      jitterX: { type: 'randomJitterField', params: { amplitude: { __fromParam: 'sceneWidth' }, jitter: { __fromParam: 'xSpread' } } },
+      jitterY: { type: 'randomJitterField', params: { amplitude: { __fromParam: 'heightVariation' }, jitter: 1 } },
+      baseX: { type: 'mulFieldNumber' },
+      posX: { type: 'addFieldNumber' },
+      posY: { type: 'addFieldNumber' },
+      point: { type: 'makePointField' },
+    },
+    edges: [
+      { from: 'centerX.out', to: 'baseX.a' },
+      { from: 'spread.out', to: 'baseX.b' },
+      { from: 'baseX.out', to: 'posX.a' },
+      { from: 'jitterX.out', to: 'posX.b' },
+      { from: 'dropY.out', to: 'posY.a' },
+      { from: 'jitterY.out', to: 'posY.b' },
+      { from: 'posX.out', to: 'point.x' },
+      { from: 'posY.out', to: 'point.y' },
+    ],
+    inputMap: {},
+    outputMap: {
+      positions: 'point.out',
+    },
+  },
 };
 
 export const GridPositions: BlockDefinition = {
   type: 'GridPositions',
   label: 'Grid Positions',
-  form: 'primitive',
+  form: 'composite',
   category: 'Fields',
   description: 'Positions arranged in a grid pattern',
   inputs: [],
@@ -868,12 +1099,63 @@ export const GridPositions: BlockDefinition = {
   laneKind: 'Fields',
   laneFlavor: 'Motion',
   priority: 13,
+  primitiveGraph: {
+    nodes: {
+      idx: { type: 'elementIndexField' },
+      colCount: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'columns' } } },
+      cellW: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'cellWidth' } } },
+      cellH: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'cellHeight' } } },
+      startX: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'startX' } } },
+      startY: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'startY' } } },
+      jitterAmt: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'jitter' } } },
+      jitterX: { type: 'randomJitterField', params: { amplitude: { __fromParam: 'cellWidth' }, jitter: { __fromParam: 'jitter' } } },
+      jitterY: { type: 'randomJitterField', params: { amplitude: { __fromParam: 'cellHeight' }, jitter: { __fromParam: 'jitter' } } },
+      div: { type: 'divFieldNumber' },
+      rowField: { type: 'floorFieldNumber' },
+      mulCols: { type: 'mulFieldNumber' },
+      colField: { type: 'subFieldNumber' },
+      colOffset: { type: 'mulFieldNumber' },
+      rowOffset: { type: 'mulFieldNumber' },
+      addX1: { type: 'addFieldNumber' },
+      addX2: { type: 'addFieldNumber' },
+      addY1: { type: 'addFieldNumber' },
+      addY2: { type: 'addFieldNumber' },
+      point: { type: 'makePointField' },
+    },
+    edges: [
+      { from: 'idx.out', to: 'div.a' },
+      { from: 'colCount.out', to: 'div.b' },
+      { from: 'div.out', to: 'rowField.in' },
+      { from: 'rowField.out', to: 'mulCols.a' },
+      { from: 'colCount.out', to: 'mulCols.b' },
+      { from: 'idx.out', to: 'colField.a' },
+      { from: 'mulCols.out', to: 'colField.b' },
+      { from: 'colField.out', to: 'colOffset.a' },
+      { from: 'cellW.out', to: 'colOffset.b' },
+      { from: 'rowField.out', to: 'rowOffset.a' },
+      { from: 'cellH.out', to: 'rowOffset.b' },
+      { from: 'startX.out', to: 'addX1.a' },
+      { from: 'colOffset.out', to: 'addX1.b' },
+      { from: 'addX1.out', to: 'addX2.a' },
+      { from: 'jitterX.out', to: 'addX2.b' },
+      { from: 'startY.out', to: 'addY1.a' },
+      { from: 'rowOffset.out', to: 'addY1.b' },
+      { from: 'addY1.out', to: 'addY2.a' },
+      { from: 'jitterY.out', to: 'addY2.b' },
+      { from: 'addX2.out', to: 'point.x' },
+      { from: 'addY2.out', to: 'point.y' },
+    ],
+    inputMap: {},
+    outputMap: {
+      positions: 'point.out',
+    },
+  },
 };
 
 export const CenterPoint: BlockDefinition = {
   type: 'CenterPoint',
   label: 'Center Point',
-  form: 'primitive',
+  form: 'composite',
   category: 'Fields',
   description: 'Same center position for all elements',
   inputs: [],
@@ -887,6 +1169,21 @@ export const CenterPoint: BlockDefinition = {
   laneKind: 'Fields',
   laneFlavor: 'Motion',
   priority: 14,
+  primitiveGraph: {
+    nodes: {
+      xField: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'x' } } },
+      yField: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'y' } } },
+      point: { type: 'makePointField' },
+    },
+    edges: [
+      { from: 'xField.out', to: 'point.x' },
+      { from: 'yField.out', to: 'point.y' },
+    ],
+    inputMap: {},
+    outputMap: {
+      position: 'point.out',
+    },
+  },
 };
 
 // --- Transform Fields ---
@@ -894,7 +1191,7 @@ export const CenterPoint: BlockDefinition = {
 export const RotationField: BlockDefinition = {
   type: 'RotationField',
   label: 'Rotation Field',
-  form: 'primitive',
+  form: 'composite',
   category: 'Fields',
   description: 'Per-element rotation angles',
   inputs: [],
@@ -913,12 +1210,27 @@ export const RotationField: BlockDefinition = {
   color: '#a855f7',
   laneKind: 'Fields',
   priority: 15,
+  primitiveGraph: {
+    nodes: {
+      base: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'baseRotation' } } },
+      jitter: { type: 'randomJitterField', params: { amplitude: { __fromParam: 'range' }, jitter: 1 } },
+      sum: { type: 'addFieldNumber' },
+    },
+    edges: [
+      { from: 'base.out', to: 'sum.a' },
+      { from: 'jitter.out', to: 'sum.b' },
+    ],
+    inputMap: {},
+    outputMap: {
+      rotations: 'sum.out',
+    },
+  },
 };
 
 export const ScaleField: BlockDefinition = {
   type: 'ScaleField',
   label: 'Scale Field',
-  form: 'primitive',
+  form: 'composite',
   category: 'Fields',
   description: 'Per-element scale values',
   inputs: [],
@@ -937,12 +1249,27 @@ export const ScaleField: BlockDefinition = {
   color: '#a855f7',
   laneKind: 'Fields',
   priority: 16,
+  primitiveGraph: {
+    nodes: {
+      base: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'baseScale' } } },
+      jitter: { type: 'randomJitterField', params: { amplitude: { __fromParam: 'variation' }, jitter: 1 } },
+      sum: { type: 'addFieldNumber' },
+    },
+    edges: [
+      { from: 'base.out', to: 'sum.a' },
+      { from: 'jitter.out', to: 'sum.b' },
+    ],
+    inputMap: {},
+    outputMap: {
+      scales: 'sum.out',
+    },
+  },
 };
 
 export const OpacityField: BlockDefinition = {
   type: 'OpacityField',
   label: 'Opacity Field',
-  form: 'primitive',
+  form: 'composite',
   category: 'Fields',
   description: 'Per-element opacity values',
   inputs: [],
@@ -961,6 +1288,21 @@ export const OpacityField: BlockDefinition = {
   color: '#a855f7',
   laneKind: 'Fields',
   priority: 17,
+  primitiveGraph: {
+    nodes: {
+      base: { type: 'lift.scalarToFieldNumber', params: { value: { __fromParam: 'baseOpacity' } } },
+      jitter: { type: 'randomJitterField', params: { amplitude: { __fromParam: 'variation' }, jitter: 1 } },
+      sum: { type: 'addFieldNumber' },
+    },
+    edges: [
+      { from: 'base.out', to: 'sum.a' },
+      { from: 'jitter.out', to: 'sum.b' },
+    ],
+    inputMap: {},
+    outputMap: {
+      opacities: 'sum.out',
+    },
+  },
 };
 
 // --- Behavior/Motion Parameter Fields ---
@@ -1496,7 +1838,7 @@ export const MaskReveal: BlockDefinition = {
 export const TextSource: BlockDefinition = {
   type: 'TextSource',
   label: 'Text Source',
-  form: 'legacy-composite',
+  form: 'primitive',
   subcategory: 'Sources',
   category: 'Scene',
   description: 'Create scene from text (per-character elements)',
@@ -1726,6 +2068,87 @@ export const FieldToSignal: BlockDefinition = {
   priority: 10,
 };
 
+export const ScalarToSignalNumber: BlockDefinition = {
+  type: 'scalarToSignalNumber',
+  label: 'Scalar → Signal',
+  form: 'primitive',
+  category: 'Adapters',
+  description: 'Lift Scalar:number to a constant Signal<number>',
+  inputs: [input('x', 'X', 'Scalar:number')],
+  outputs: [output('signal', 'Signal', 'Signal<number>')],
+  defaultParams: { value: 0 },
+  paramSchema: [],
+  color: '#71717a',
+  laneKind: 'Scalars',
+  priority: 10,
+};
+
+export const SignalToScalarNumber: BlockDefinition = {
+  type: 'signalToScalarNumber',
+  label: 'Signal → Scalar',
+  form: 'primitive',
+  category: 'Adapters',
+  description: 'Sample Signal<number> at t=0 to produce Scalar:number',
+  inputs: [input('signal', 'Signal', 'Signal<number>')],
+  outputs: [output('scalar', 'Scalar', 'Scalar:number')],
+  defaultParams: {},
+  paramSchema: [],
+  color: '#71717a',
+  laneKind: 'Scalars',
+  priority: 10,
+};
+
+export const TimeToPhase: BlockDefinition = {
+  type: 'timeToPhase',
+  label: 'Time → Phase',
+  form: 'primitive',
+  category: 'Adapters',
+  description: 'Convert Signal:Time to cyclic Signal:Unit using a period',
+  inputs: [
+    input('time', 'Time', 'Signal<Time>'),
+    input('period', 'Period (s)', 'Scalar:number'),
+  ],
+  outputs: [output('phase', 'Phase', 'Signal<Unit>')],
+  defaultParams: { period: 1 },
+  paramSchema: [],
+  color: '#71717a',
+  laneKind: 'Phase',
+  priority: 10,
+};
+
+export const PhaseToTime: BlockDefinition = {
+  type: 'phaseToTime',
+  label: 'Phase → Time',
+  form: 'primitive',
+  category: 'Adapters',
+  description: 'Convert Signal:Unit to Signal:Time using a period',
+  inputs: [
+    input('phase', 'Phase', 'Signal<Unit>'),
+    input('period', 'Period (s)', 'Scalar:number'),
+  ],
+  outputs: [output('time', 'Time', 'Signal<Time>')],
+  defaultParams: { period: 1 },
+  paramSchema: [],
+  color: '#71717a',
+  laneKind: 'Phase',
+  priority: 10,
+};
+
+export const WrapPhase: BlockDefinition = {
+  type: 'wrapPhase',
+  label: 'Wrap Phase',
+  form: 'primitive',
+  category: 'Adapters',
+  description: 'Wrap Signal:Unit to [0,1)',
+  inputs: [input('phase', 'Phase', 'Signal<Unit>')],
+  outputs: [output('wrapped', 'Wrapped', 'Signal<Unit>')],
+  defaultParams: {},
+  paramSchema: [],
+  color: '#71717a',
+  laneKind: 'Phase',
+  priority: 10,
+};
+
 export const ElementCount: BlockDefinition = {
   type: 'elementCount',
   label: 'Element Count',
@@ -1752,9 +2175,8 @@ export function getBlockTags(definition: BlockDefinition): BlockTags {
   const tags: BlockTags = { ...(definition.tags ?? {}) };
 
   // Normalize canonical tags
-  tags.legacyCategory = definition.category;
   tags.form = definition.form;
-  tags.subcategory = definition.subcategory;
+  tags.subcategory = definition.subcategory ?? 'Other';
   tags.laneKind = definition.laneKind;
 
   if (definition.laneFlavor) {
@@ -1764,7 +2186,7 @@ export function getBlockTags(definition: BlockDefinition): BlockTags {
   return tags;
 }
 
-const RAW_BLOCK_DEFINITIONS: BlockDefinition[] = [
+const BASE_BLOCK_DEFINITIONS: BlockDefinition[] = [
   // Macros (Recipe Starters) - at the top
   MacroLineDrawing,
   MacroParticles,
@@ -1788,6 +2210,11 @@ const RAW_BLOCK_DEFINITIONS: BlockDefinition[] = [
   // Fields - Basic
   RadialOrigin,
   LinearStagger,
+  ElementIndexField,
+  RandomJitterField,
+  AddFieldNumber,
+  MulFieldNumber,
+  SinFieldNumber,
   RegionField,
   ConstantFieldDuration,
   WaveStagger,
@@ -1846,38 +2273,81 @@ const RAW_BLOCK_DEFINITIONS: BlockDefinition[] = [
   // Adapters
   SceneToTargets,
   FieldToSignal,
+  ScalarToSignalNumber,
+  SignalToScalarNumber,
+  TimeToPhase,
+  PhaseToTime,
+  WrapPhase,
   LiftScalarToField,
   ElementCount,
 ];
 
 // Normalize tags on all definitions up-front and ensure missing forms are treated as primitives
-export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = RAW_BLOCK_DEFINITIONS.map(
-  (definition) => {
-    const normalizedDef: BlockDefinition = { ...definition };
-    normalizedDef.tags = getBlockTags(normalizedDef);
-    return normalizedDef;
-  }
-);
+function normalizeDefinition(definition: BlockDefinition): BlockDefinition {
+  const normalizedDef: BlockDefinition = { ...definition };
+  normalizedDef.tags = getBlockTags(normalizedDef);
+  return normalizedDef;
+}
+
+export function getBlockDefinitions(): readonly BlockDefinition[] {
+  const compositeDefs = listCompositeDefinitions().map((def) => {
+    const blockDef: BlockDefinition = {
+      type: `composite:${def.id}`,
+      label: def.label,
+      form: 'composite',
+      subcategory: def.subcategory,
+      category: 'Compose',
+      description: def.description ?? 'Composite block',
+      inputs: def.exposedInputs.map((p) => ({
+        id: p.id,
+        label: p.label,
+        type: p.slotType,
+        direction: 'input',
+      })),
+      outputs: def.exposedOutputs.map((p) => ({
+        id: p.id,
+        label: p.label,
+        type: p.slotType,
+        direction: 'output',
+      })),
+      defaultParams: {},
+      paramSchema: [],
+      color: def.color ?? '#0ea5e9',
+      laneKind: def.laneKind,
+      laneFlavor: def.laneFlavor,
+      priority: 10,
+      primitiveGraph: def.graph,
+      tags: def.tags,
+    };
+    return blockDef;
+  });
+  return [
+    ...BASE_BLOCK_DEFINITIONS.map(normalizeDefinition),
+    ...compositeDefs.map(normalizeDefinition),
+  ];
+}
+
+export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = getBlockDefinitions();
 
 /**
  * Get all blocks for a category.
  */
 export function getBlocksByCategory(category: BlockCategory): readonly BlockDefinition[] {
-  return BLOCK_DEFINITIONS.filter((b) => b.category === category);
+  return getBlockDefinitions().filter((b) => b.category === category);
 }
 
 /**
  * Get a block definition by type.
  */
 export function getBlockDefinition(type: string): BlockDefinition | undefined {
-  return BLOCK_DEFINITIONS.find((b) => b.type === type);
+  return getBlockDefinitions().find((b) => b.type === type);
 }
 
 /**
  * Get all categories that have blocks.
  */
 export function getCategoriesWithBlocks(): readonly BlockCategory[] {
-  const categories = new Set(BLOCK_DEFINITIONS.map((b) => b.category));
+  const categories = new Set(getBlockDefinitions().map((b) => b.category));
   return Array.from(categories);
 }
 
@@ -1892,7 +2362,7 @@ export function getBlocksForLaneKind(
   laneKind: LaneKind,
   laneFlavor?: LaneFlavor
 ): readonly BlockDefinition[] {
-  let blocks = BLOCK_DEFINITIONS.filter((b) => b.laneKind === laneKind);
+  let blocks = getBlockDefinitions().filter((b) => b.laneKind === laneKind);
 
   // If flavor specified, prefer blocks with matching flavor
   if (laneFlavor) {
@@ -1920,9 +2390,10 @@ export function getBlocksForPalette(
   laneKind?: LaneKind,
   laneFlavor?: LaneFlavor
 ): { matched: readonly BlockDefinition[]; other: readonly BlockDefinition[] } {
+  const defs = getBlockDefinitions();
   if (!filterByLane || !laneKind) {
     // No filtering - return all blocks sorted by priority
-    const all = [...BLOCK_DEFINITIONS].sort(
+    const all = [...defs].sort(
       (a, b) => (a.priority ?? 99) - (b.priority ?? 99)
     );
     return { matched: all, other: [] };
@@ -1930,7 +2401,7 @@ export function getBlocksForPalette(
 
   const matched = getBlocksForLaneKind(laneKind, laneFlavor);
   const matchedTypes = new Set(matched.map((b) => b.type));
-  const other = BLOCK_DEFINITIONS.filter((b) => !matchedTypes.has(b.type)).sort(
+  const other = defs.filter((b) => !matchedTypes.has(b.type)).sort(
     (a, b) => (a.priority ?? 99) - (b.priority ?? 99)
   );
 

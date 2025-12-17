@@ -22,6 +22,7 @@ import type {
   Seed,
 } from './types';
 import { buildDecorations, emptyDecorations, type DecorationSet } from './error-decorations';
+import { getBlockDefinition } from '../blocks';
 
 // =============================================================================
 // Patch Conversion
@@ -64,6 +65,113 @@ export function editorToPatch(store: EditorStore): CompilerPatch {
     connections: convertConnections(store.connections),
     // output is auto-inferred
   };
+}
+
+// =============================================================================
+// Composite Expansion
+// =============================================================================
+
+function resolveParamValue(value: unknown, parentParams: Record<string, unknown>): unknown {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const marker = (value as any).__fromParam;
+    if (typeof marker === 'string') {
+      return parentParams[marker];
+    }
+  }
+  return value;
+}
+
+/**
+ * Expand blocks that declare primitiveGraph into their internal nodes/edges.
+ * External connections are rewired to exposed input/output maps.
+ */
+function expandComposites(patch: CompilerPatch): CompilerPatch {
+  const queue: Array<[string, BlockInstance]> = Array.from(patch.blocks.entries());
+  let connections = [...patch.connections];
+  const newBlocks = new Map<string, BlockInstance>();
+  const newConnections: CompilerConnection[] = [];
+
+  while (queue.length > 0) {
+    const [blockId, block] = queue.shift()!;
+    const definition = getBlockDefinition(block.type);
+    const graph = definition?.primitiveGraph;
+
+    if (graph) {
+      const idMap = new Map<string, string>();
+
+      // Create internal blocks
+      for (const [nodeId, nodeDef] of Object.entries(graph.nodes)) {
+        const newId = `${blockId}::${nodeId}`;
+        idMap.set(nodeId, newId);
+        const resolvedParams: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(nodeDef.params ?? {})) {
+          resolvedParams[k] = resolveParamValue(v, block.params);
+        }
+        const internalBlock: BlockInstance = {
+          id: newId,
+          type: nodeDef.type,
+          params: resolvedParams,
+        };
+        queue.push([newId, internalBlock]);
+      }
+
+      // Internal edges
+      for (const edge of graph.edges) {
+        const [fromNode, fromPort] = edge.from.split('.');
+        const [toNode, toPort] = edge.to.split('.');
+        const fromId = idMap.get(fromNode);
+        const toId = idMap.get(toNode);
+        if (fromId && toId) {
+          newConnections.push({
+            from: { blockId: fromId, port: fromPort },
+            to: { blockId: toId, port: toPort },
+          });
+        }
+      }
+
+      // Rewire incoming connections
+      const incoming = connections.filter((c) => c.to.blockId === blockId);
+      const outgoing = connections.filter((c) => c.from.blockId === blockId);
+      connections = connections.filter(
+        (c) => c.to.blockId !== blockId && c.from.blockId !== blockId
+      );
+
+      for (const conn of incoming) {
+        const internalRef = graph.inputMap[conn.to.port];
+        if (!internalRef) continue;
+        const [node, port] = internalRef.split('.');
+        const toId = idMap.get(node);
+        if (toId) {
+          newConnections.push({
+            from: conn.from,
+            to: { blockId: toId, port },
+          });
+        }
+      }
+
+      for (const conn of outgoing) {
+        const internalRef = graph.outputMap[conn.from.port];
+        if (!internalRef) continue;
+        const [node, port] = internalRef.split('.');
+        const fromId = idMap.get(node);
+        if (fromId) {
+          newConnections.push({
+            from: { blockId: fromId, port },
+            to: conn.to,
+          });
+        }
+      }
+    } else {
+      newBlocks.set(blockId, block);
+    }
+  }
+
+  // Add any untouched connections
+  for (const conn of connections) {
+    newConnections.push(conn);
+  }
+
+  return { blocks: newBlocks, connections: newConnections };
 }
 
 // =============================================================================
@@ -110,7 +218,8 @@ export function createCompilerService(store: EditorStore): CompilerService {
       logStore.debug('compiler', 'Starting compilation...');
 
       try {
-        const patch = editorToPatch(store);
+        let patch = editorToPatch(store);
+        patch = expandComposites(patch);
         const seed: Seed = store.settings.seed;
 
         logStore.debug(
@@ -148,7 +257,6 @@ export function createCompilerService(store: EditorStore): CompilerService {
         lastResult = result;
         return result;
       } catch (e) {
-        const elapsed = (performance.now() - startTime).toFixed(1);
         const message = e instanceof Error ? e.message : String(e);
         const stack = e instanceof Error ? e.stack : undefined;
 

@@ -9,7 +9,7 @@
  * - Procedural vs Varied: widens variance envelopes
  */
 
-import type { Seed, PRNG } from '../../core/types';
+import type { Seed } from '../../core/types';
 import { createPRNG } from '../../core/rand';
 import type { GlitchFields, Field, Env } from './types';
 

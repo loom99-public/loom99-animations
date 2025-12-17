@@ -14,13 +14,13 @@ import { BaseElement } from '../core/Element';
 import { Track } from '../core/Track';
 
 // Mock requestAnimationFrame and cancelAnimationFrame for node environment
-global.requestAnimationFrame = vi.fn((cb) => {
-  return setTimeout(() => cb(Date.now()), 0) as any;
-});
+globalThis.requestAnimationFrame = vi.fn((cb) => {
+  return setTimeout(() => cb(Date.now()), 0) as unknown as number;
+}) as typeof globalThis.requestAnimationFrame;
 
-global.cancelAnimationFrame = vi.fn((id) => {
-  clearTimeout(id as any);
-});
+globalThis.cancelAnimationFrame = vi.fn((id) => {
+  clearTimeout(id as unknown as ReturnType<typeof setTimeout>);
+}) as typeof globalThis.cancelAnimationFrame;
 
 /**
  * Mock element for testing
@@ -43,7 +43,7 @@ class MockElement extends BaseElement {
     this.lastElapsed = elapsed;
   }
 
-  render(container: SVGElement | HTMLCanvasElement): void {
+  render(_container: SVGElement | HTMLCanvasElement): void {
     // Mock render
   }
 
@@ -68,8 +68,11 @@ afterEach(() => {
   // Clear all timers
   vi.clearAllTimers();
 
-  // Force garbage collection if available
-  if (global.gc) global.gc();
+  // Force garbage collection if available (Node.js specific)
+  const gc = (globalThis as Record<string, unknown>).gc;
+  if (typeof gc === 'function') {
+    gc();
+  }
 });
 
 function createAnimation(config: { elements: BaseElement[] }): Animation {

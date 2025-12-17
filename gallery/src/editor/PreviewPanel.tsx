@@ -33,6 +33,7 @@ interface PreviewPanelProps {
   compilerService?: CompilerService;
   isPlaying?: boolean;
   store?: EditorStore;
+  onShowHelp?: () => void;
 }
 
 /**
@@ -45,7 +46,7 @@ const DEFAULT_SCENE: Scene = {
 
 const DEFAULT_VIEWPORT: Viewport = { width: 800, height: 600 };
 
-export const PreviewPanel = observer(({ compilerService, isPlaying, store }: PreviewPanelProps) => {
+export const PreviewPanel = observer(({ compilerService, isPlaying, store, onShowHelp }: PreviewPanelProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const playerRef = useRef<Player | null>(null);
   const rendererRef = useRef<SvgRenderer | null>(null);
@@ -117,8 +118,10 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, store }: Pre
     if (compilerService) {
       const compiled = compilerService.getProgram();
       if (compiled) {
-        player.setFactory(() => compiled);
-        lastGoodProgramRef.current = compiled;
+        // Cast to runtime RenderTree type (structurally compatible)
+        const program = compiled as unknown as Program<RenderTree>;
+        player.setFactory(() => program);
+        lastGoodProgramRef.current = program;
         setHasCompiledProgram(true);
         logStore.info('renderer', 'Loaded compiled program');
       } else {
@@ -163,11 +166,13 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, store }: Pre
     const interval = setInterval(() => {
       // Check for program changes
       const compiled = compilerService.getProgram();
-      if (compiled && compiled !== lastGoodProgramRef.current) {
+      if (compiled && compiled !== (lastGoodProgramRef.current as unknown)) {
         const player = playerRef.current;
         if (player) {
-          player.setFactory(() => compiled);
-          lastGoodProgramRef.current = compiled;
+          // Cast to runtime RenderTree type (structurally compatible)
+          const program = compiled as unknown as Program<RenderTree>;
+          player.setFactory(() => program);
+          lastGoodProgramRef.current = program;
           setHasCompiledProgram(true);
           logStore.debug('renderer', 'Hot swapped to new compiled program');
         }
@@ -227,9 +232,18 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, store }: Pre
     <div className="preview-panel">
       <div className="preview-header">
         <span className="preview-title">Preview</span>
-        <span className="preview-status">
-          {hasCompiledProgram ? '● Live' : '○ No program'}
-        </span>
+        <div className="preview-header-actions">
+          <button
+            className="preview-help-btn"
+            onClick={() => onShowHelp?.()}
+            title="What is the Preview?"
+          >
+            ?
+          </button>
+          <span className="preview-status">
+            {hasCompiledProgram ? '● Live' : '○ No program'}
+          </span>
+        </div>
       </div>
 
       <div className="preview-canvas" style={{ width: '100%', height: '100%' }}>

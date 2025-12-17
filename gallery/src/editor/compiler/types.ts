@@ -6,6 +6,7 @@
  * - Patch graph is made of blocks with typed ports
  * - Compilation is a topo-ordered reduction producing typed Artifacts per output port
  * - Final Artifact must be a RenderTreeProgram
+ * - Phase 2: Buses as first-class graph nodes
  */
 
 // =============================================================================
@@ -122,11 +123,30 @@ export type ValueKind =
   | 'Field:boolean'
   | 'Field:color'
   | 'Field:vec2'
+  | 'Field:Point'
+  | 'Field<Point>'
+  | 'Field:Jitter'
+  | 'Field:Spiral'
+  | 'Field:Wave'
+  | 'Field:Wobble'
+  | 'Field:Path'
+
+  // Signals
+  | 'Signal:Time'
+  | 'Signal:number'
+  | 'Signal:Unit'
+  | 'Signal:vec2'
 
   // Special types
   | 'PhaseMachine'
   | 'TargetScene'
+  | 'Scene'
   | 'RenderTreeProgram'
+  | 'RenderTree'
+  | 'RenderNode'
+  | 'RenderNodeArray'
+  | 'FilterDef'
+  | 'StrokeStyle'
 
   // Specs (structured config that compiles to Programs)
   | 'Spec:LineMorph'
@@ -197,10 +217,28 @@ export interface BlockInstance {
   position?: number;
 }
 
+/**
+ * Forward declaration of bus types (imported from main types)
+ * These will be available when buses are present in a patch.
+ */
+// Import types from main editor types for use in CompilerPatch
+import type { Bus, Publisher, Listener } from '../types';
+// Re-export for consumers
+export type { Bus, Publisher, Listener };
+
+/**
+ * Extended CompilerPatch with optional bus support.
+ * Maintains backward compatibility with existing wire-only patches.
+ */
 export interface CompilerPatch {
   blocks: Map<BlockId, BlockInstance>;
   connections: readonly CompilerConnection[];
   output?: PortRef;
+
+  // Bus-related additions (Phase 2)
+  buses?: Bus[];
+  publishers?: Publisher[];
+  listeners?: Listener[];
 }
 
 // =============================================================================
@@ -220,18 +258,29 @@ export type Artifact =
   | { kind: 'Field:boolean'; value: Field<boolean> }
   | { kind: 'Field:color'; value: Field<unknown> }
   | { kind: 'Field:vec2'; value: Field<Vec2> }
+  | { kind: 'Field:Point'; value: Field<Vec2> }
+  | { kind: 'Field<Point>'; value: Field<Vec2> }
+  | { kind: 'Field:Jitter'; value: Field<unknown> }
+  | { kind: 'Field:Spiral'; value: Field<unknown> }
+  | { kind: 'Field:Wave'; value: Field<unknown> }
+  | { kind: 'Field:Wobble'; value: Field<unknown> }
+  | { kind: 'Field:Path'; value: Field<unknown> }
 
   | { kind: 'PhaseMachine'; value: PhaseMachine }
   | { kind: 'TargetScene'; value: TargetScene }
+  | { kind: 'Scene'; value: unknown }
   | { kind: 'RenderTreeProgram'; value: Program<RenderTree> }
+  | { kind: 'StrokeStyle'; value: unknown }
 
   // Primitive block artifacts (Phase 2)
   | { kind: 'ElementCount'; value: number }
   | { kind: 'Signal:Time'; value: (t: number, ctx: RuntimeCtx) => number }
+  | { kind: 'Signal:number'; value: (t: number, ctx: RuntimeCtx) => number }
   | { kind: 'Signal:Unit'; value: (t: number, ctx: RuntimeCtx) => number }
   | { kind: 'Signal:vec2'; value: (t: number, ctx: RuntimeCtx) => Vec2 }
   | { kind: 'RenderNode'; value: DrawNode }
   | { kind: 'RenderNodeArray'; value: readonly DrawNode[] }
+  | { kind: 'RenderTree'; value: (tMs: number, ctx: RuntimeCtx) => DrawNode }
   | { kind: 'FilterDef'; value: unknown }
 
   | { kind: 'Spec:LineMorph'; value: unknown }
@@ -240,6 +289,9 @@ export type Artifact =
   | { kind: 'Spec:Transform3DCompositor'; value: unknown }
   | { kind: 'Spec:DeformCompositor'; value: unknown }
   | { kind: 'Spec:ProgramStack'; value: unknown }
+
+  // Phase 2: Field expression artifacts for lazy evaluation
+  | { kind: 'FieldExpr'; value: unknown }
 
   | { kind: 'Error'; message: string; where?: { blockId?: string; port?: string } };
 
@@ -280,6 +332,8 @@ export type BlockRegistry = Record<string, BlockCompiler>;
 // =============================================================================
 
 export type CompileErrorCode =
+  | 'EmptyPatch'
+  | 'NotImplemented'
   | 'BlockMissing'
   | 'CompilerMissing'
   | 'PortMissing'
@@ -288,12 +342,21 @@ export type CompileErrorCode =
   | 'CycleDetected'
   | 'OutputMissing'
   | 'OutputWrongType'
-  | 'UpstreamError';
+  | 'UpstreamError'
+  // Phase 2 additions
+  | 'BusMissing'
+  | 'BusTypeError'
+  | 'InvalidBusRouting'
+  | 'FeedbackLoopError'
+  | 'AdapterError'
+  | 'BusEvaluationError'
+  | 'FieldBusNotSupported'
+  | 'UnsupportedCombineMode';
 
 export interface CompileError {
   code: CompileErrorCode;
   message: string;
-  where?: { blockId?: string; port?: string; connection?: CompilerConnection };
+  where?: { blockId?: string; port?: string; connection?: CompilerConnection; busId?: string };
 }
 
 export interface CompileResult {

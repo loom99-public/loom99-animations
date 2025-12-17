@@ -8,19 +8,17 @@
  */
 
 import type { Signal, Context, Time, Seed } from '../../core/types';
-import { PhaseMachines, type PhaseMachine, type PhaseSample } from '../../core/types';
-import type { RenderTree, FilterDef } from '../../render/tree';
+import { PhaseMachines, type PhaseMachine } from '../../core/types';
+import type { RenderTree } from '../../render/tree';
 import { group, renderTree } from '../../render/tree';
 import type {
   LineScene,
-  StrokeDef,
   StrokeParams,
-  LineMorphModeFields,
   Color,
   Env,
   Field,
 } from './types';
-import type { ModeSystem, ComposedMode } from './modes';
+import type { ModeSystem } from './modes';
 import { renderMorphStroke, generateGlowFilters, easeOutCubic, smoothstep } from './render';
 import { lerpPoint } from './geometry';
 
@@ -107,8 +105,6 @@ export function compileLineMorph(
     params.map(p => p.glowRadius)
   );
 
-  // Calculate total animation duration
-  const totalDuration = PhaseMachines.total(phaseMachine);
 
   // Get viewport dimensions for render tree
   const viewportWidth = env.viewport.w;

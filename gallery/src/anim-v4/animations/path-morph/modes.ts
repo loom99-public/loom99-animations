@@ -7,10 +7,8 @@
  * - procedural: aggressive variance, diverse shapes
  */
 
-import type { Field, Color, StartShapeSpec, StartShapeKind, Env } from './types';
-import type { Seed } from '../../core/types';
+import type { Field, Color, StartShapeSpec, StartShapeKind } from './types';
 import { createPRNG } from '../../core/rand';
-import { getPathBounds, defaultStartSizeFromBounds } from './geometry';
 
 // =============================================================================
 // Mode Fields Interface
@@ -149,7 +147,7 @@ function createProceduralFields(): PathMorphModeFields {
       };
     },
 
-    color: (seed, index, count, _env) => {
+    color: (seed, index, _count, _env) => {
       const rng = createPRNG(seed + index * 4000);
 
       // Pick a palette based on seed

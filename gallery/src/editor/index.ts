@@ -48,8 +48,33 @@ export {
 // Compiler
 export * from './compiler';
 
-// Runtime
-export * from './runtime';
+// Runtime (excluding DrawNode and RenderTree which are re-exported from compiler)
+export {
+  // Re-export everything except DrawNode and RenderTree to avoid ambiguity
+  createPlayer,
+  type Player,
+  createSvgRenderer,
+  type SvgRenderer,
+  PROOF_PROGRAMS,
+} from './runtime';
+export type {
+  SvgPathGeom,
+  CircleGeom,
+  RectGeom,
+  Geometry,
+  Style,
+  Transform2D,
+  Transform3D,
+  OpacityMulEffect,
+  Transform2DEffect,
+  Transform3DEffect,
+  FilterEffect,
+  ClipEffect,
+  Effect,
+  ShapeNode,
+  GroupNode,
+  EffectNode,
+} from './runtime';
 
 // Components
 export { PreviewPanel } from './PreviewPanel';

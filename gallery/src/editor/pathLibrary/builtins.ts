@@ -4,21 +4,9 @@
  * Converts existing hardcoded paths to PathEntry format.
  */
 
-import { LOGO_PATHS, TEXT_PATHS, HEART_PATHS, pathPointsToSVGPath } from '../../data/pathData';
+import { LOGO_PATHS, TEXT_PATHS, HEART_PATHS, type LineData } from '../../data/pathData';
 import type { PathEntry } from './types';
-import type { LineData } from '../../data/pathData';
-
-/**
- * Generate a simple SVG thumbnail from LineData[]
- */
-function generateThumbnail(data: LineData[], viewBox: string = '0 0 600 200'): string {
-  const paths = data.map((line, i) => {
-    const d = pathPointsToSVGPath(line.points);
-    return `<path d="M${line.startX} ${line.startY} ${d}" stroke="${line.color}" fill="none" stroke-width="3" stroke-linecap="round"/>`;
-  }).join('\n');
-
-  return `<svg viewBox="${viewBox}" xmlns="http://www.w3.org/2000/svg">${paths}</svg>`;
-}
+import { generateThumbnail } from './thumbnail';
 
 /**
  * Create a PathEntry from LineData[]

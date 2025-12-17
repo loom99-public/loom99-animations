@@ -33,7 +33,7 @@ class MockElement extends BaseElement {
     this.lastElapsed = elapsed;
   }
 
-  render(container: SVGElement | HTMLCanvasElement): void {
+  render(_container: SVGElement | HTMLCanvasElement): void {
     // Mock render
   }
 
@@ -45,8 +45,11 @@ class MockElement extends BaseElement {
 }
 
 afterEach(() => {
-  // Clean up any animations created
-  if (global.gc) global.gc();
+  // Clean up any animations created (Node.js specific)
+  const gc = (globalThis as Record<string, unknown>).gc;
+  if (typeof gc === 'function') {
+    gc();
+  }
 });
 
 describe('Animation - SVG Export', () => {

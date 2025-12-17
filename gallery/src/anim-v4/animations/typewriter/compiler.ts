@@ -32,7 +32,6 @@ export type Program<Out> = {
 // =============================================================================
 
 const DEFAULT_START_DELAY: number = 0;
-const DEFAULT_CHAR_INTERVAL: number = 80;
 const DEFAULT_INTERVAL_JITTER: number = 0;
 const DEFAULT_BURST_CHANCE: number = 0;
 const DEFAULT_BURST_SIZE: number = 0;

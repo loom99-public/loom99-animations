@@ -9,7 +9,7 @@
  * phase-dependent behavior.
  */
 
-import type { Vec2, HSL, Seed, Id } from '../../core/types';
+import type { Vec2, Seed, Id } from '../../core/types';
 
 // =============================================================================
 // Scene (hard constraints, no behavior)

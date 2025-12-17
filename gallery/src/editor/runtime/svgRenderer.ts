@@ -16,7 +16,6 @@ import type {
   Style,
   Transform2D,
   Transform3D,
-  Effect,
   Geometry,
 } from './renderTree';
 
@@ -181,15 +180,18 @@ export class SvgRenderer {
       if (effect.kind === 'transform3d') {
         // For transform3d, we use CSS transform on the element
         const cssTransform = transform3dToCss(effect.transform);
-        (el as HTMLElement).style.transform = cssTransform;
-        (el as HTMLElement).style.transformStyle = 'preserve-3d';
+        // SVGElement has style property but TypeScript's lib.dom types are incomplete
+        const elStyle = (el as unknown as ElementCSSInlineStyle).style;
+        elStyle.transform = cssTransform;
+        elStyle.transformStyle = 'preserve-3d';
         if (effect.transform.perspective) {
-          (el as HTMLElement).style.perspective = `${effect.transform.perspective}px`;
+          elStyle.perspective = `${effect.transform.perspective}px`;
         }
       }
 
       if (effect.kind === 'filter') {
-        (el as HTMLElement).style.filter = effect.filter;
+        // SVGElement has style property but TypeScript's lib.dom types are incomplete
+        (el as unknown as ElementCSSInlineStyle).style.filter = effect.filter;
       }
 
       // Apply accumulated transform and opacity to group wrapper

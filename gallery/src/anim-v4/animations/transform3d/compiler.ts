@@ -15,7 +15,6 @@ import type { Time, Context, Seed, CompileCtx } from '../../core/types';
 import { PhaseMachines, Vec2 } from '../../core/types';
 import type { RenderTree, RenderNode } from '../../render/tree';
 import type {
-  Transform3DScene,
   Transform3DSpec,
   Transform3D,
   CompiledPartParams,
@@ -99,17 +98,6 @@ function getPartCenter(node: RenderNode): Vec2 {
 /**
  * Compute scene center from parts.
  */
-function computeSceneCenter(parts: readonly CompiledPartParams[]): Vec2 {
-  if (parts.length === 0) return { x: 0, y: 0 };
-
-  let sumX = 0;
-  let sumY = 0;
-  for (const p of parts) {
-    sumX += p.origin.x;
-    sumY += p.origin.y;
-  }
-  return { x: sumX / parts.length, y: sumY / parts.length };
-}
 
 // =============================================================================
 // Compiler
@@ -179,10 +167,8 @@ export function compileTransform3D(
     };
   });
 
-  const sceneCenter = scene.origin ?? computeSceneCenter(params);
-
   return {
-    signal: (t: Time, signalCtx: Context) => {
+    signal: (t: Time, _signalCtx: Context) => {
       const ps = PhaseMachines.sample(phases.machine, t);
 
       const nodes = params.map((p) => {

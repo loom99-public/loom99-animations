@@ -12,16 +12,13 @@
  */
 
 import type { Time, Context, Seed, PhaseMachine } from '../../core/types';
-import { PhaseMachines, Vec2 } from '../../core/types';
+import { PhaseMachines } from '../../core/types';
 import type { RenderTree } from '../../render/tree';
 import type {
   KineticScene,
-  KineticFields,
-  KineticPhases,
   KineticPhaseSample,
   KineticPhase,
   CompiledPartParams,
-  KineticRenderer,
   Transform2D,
   Env,
   Program,
@@ -147,36 +144,6 @@ export function getProgramDuration(phaseMachine: PhaseMachine): number {
 // Default Phase Functions
 // =============================================================================
 
-/**
- * Default progress function: maps phase to transform progress gate.
- */
-function defaultProgress(sample: KineticPhaseSample): number {
-  switch (sample.phase) {
-    case 'entrance':
-      return sample.u;  // 0 -> 1 during entrance
-    case 'hold':
-    case 'exit':
-      return 1;         // Transform complete during hold/exit
-    default:
-      return 1;
-  }
-}
-
-/**
- * Default energy function: maps phase to behavior strength.
- */
-function defaultEnergy(sample: KineticPhaseSample): number {
-  switch (sample.phase) {
-    case 'entrance':
-      return 1;
-    case 'hold':
-      return 0;
-    case 'exit':
-      return 0.5;
-    default:
-      return 0;
-  }
-}
 
 // =============================================================================
 // Phase Sampling
@@ -236,13 +203,6 @@ export function compileKinetic(
 
   // Create phase machine
   const phaseMachine = createKineticPhaseMachine(entranceDur, holdDur, exitDur);
-
-  // Create phases with default functions
-  const phases: KineticPhases = {
-    machine: phaseMachine,
-    progress: defaultProgress,
-    energy: defaultEnergy,
-  };
 
   // Create renderer
   const renderer = createSVGKineticRenderer();

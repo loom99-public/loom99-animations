@@ -11,7 +11,6 @@ import type {
   ParticlesFields,
   ParticleBehavior,
   Color,
-  Env,
   VarianceEnvelope,
 } from './types';
 import {
@@ -233,17 +232,21 @@ export function composeModes(modes: readonly Mode[]): ComposedMode {
   }
 
   const lineage = modes.map(m => m.key);
-  const mergedFields: ParticlesFields = {};
 
-  for (const mode of modes) {
-    if (mode.fields.startPosition) mergedFields.startPosition = mode.fields.startPosition;
-    if (mode.fields.delay) mergedFields.delay = mode.fields.delay;
-    if (mode.fields.duration) mergedFields.duration = mode.fields.duration;
-    if (mode.fields.radius) mergedFields.radius = mode.fields.radius;
-    if (mode.fields.color) mergedFields.color = mode.fields.color;
-    if (mode.fields.opacity) mergedFields.opacity = mode.fields.opacity;
-    if (mode.fields.behavior) mergedFields.behavior = mode.fields.behavior;
-  }
+  // Merge all mode fields using spread to avoid readonly assignment issues
+  const mergedFields = modes.reduce<ParticlesFields>(
+    (acc, mode) => ({
+      ...acc,
+      ...(mode.fields.startPosition && { startPosition: mode.fields.startPosition }),
+      ...(mode.fields.delay && { delay: mode.fields.delay }),
+      ...(mode.fields.duration && { duration: mode.fields.duration }),
+      ...(mode.fields.radius && { radius: mode.fields.radius }),
+      ...(mode.fields.color && { color: mode.fields.color }),
+      ...(mode.fields.opacity && { opacity: mode.fields.opacity }),
+      ...(mode.fields.behavior && { behavior: mode.fields.behavior }),
+    }),
+    {}
+  );
 
   return {
     key: lineage.join('+'),

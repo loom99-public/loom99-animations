@@ -7,6 +7,212 @@
  */
 
 // =============================================================================
+// Bus Type System (Core/Internal Split)
+// =============================================================================
+
+/**
+ * World categories for type system.
+ * Only signal and field - scalar is semantics, special is category.
+ */
+export type TypeWorld = 'signal' | 'field';
+
+/**
+ * Core domains - what users see in the bus system.
+ * These are the learnable creative vocabulary.
+ */
+export type CoreDomain =
+  | 'number'   // Numeric values
+  | 'vec2'     // 2D positions/vectors
+  | 'color'    // Color values
+  | 'boolean'  // True/false values
+  | 'time'     // Time values (always in seconds)
+  | 'phase'    // Phase values [0,1]
+  | 'rate'     // Rate/multiplier values
+  | 'trigger'; // Pulse/event signals
+
+/**
+ * Internal domains - engine plumbing, not bus-eligible by default.
+ */
+export type InternalDomain =
+  | 'point'        // Point semantics
+  | 'duration'     // Duration semantics
+  | 'hsl'          // HSL color space
+  | 'path'         // Path data
+  | 'wobble'       // Wobble modulator config
+  | 'spiral'       // Spiral modulator config
+  | 'wave'         // Wave modulator config
+  | 'jitter'       // Jitter modulator config
+  | 'program'      // Compiled program
+  | 'renderTree'   // Render tree output
+  | 'renderNode'   // Single render node
+  | 'filterDef'    // SVG filter definition
+  | 'strokeStyle'  // Stroke configuration
+  | 'elementCount' // Number of elements
+  | 'scene'        // Scene data
+  | 'sceneTargets' // Scene target points
+  | 'sceneStrokes' // Scene stroke paths
+  | 'event';       // Generic events
+
+/**
+ * All domains (core + internal).
+ */
+export type Domain = CoreDomain | InternalDomain;
+
+/**
+ * Category for type filtering.
+ */
+export type TypeCategory = 'core' | 'internal';
+
+/**
+ * Type descriptor for bus typing system.
+ * Separates user-facing core types from internal resource types.
+ */
+export interface TypeDesc {
+  /** World: signal=continuous time, field=per-element */
+  readonly world: TypeWorld;
+
+  /** Domain: what type of value */
+  readonly domain: Domain;
+
+  /** Category: core (user-facing) or internal (engine) */
+  readonly category: TypeCategory;
+
+  /** Whether this type can be used for buses */
+  readonly busEligible: boolean;
+
+  /** Optional semantic information for precise matching */
+  readonly semantics?: string;
+
+  /** Optional unit information (e.g., "seconds", "beats") */
+  readonly unit?: string;
+}
+
+/**
+ * Bus combination modes for multiple publishers.
+ */
+export type BusCombineMode = 'sum' | 'average' | 'max' | 'min' | 'last' | 'layer';
+
+/**
+ * Legacy alias for TypeDesc.
+ * @deprecated Use TypeDesc instead
+ */
+export type TypeDescriptor = TypeDesc;
+
+/**
+ * Format a TypeDesc for display.
+ */
+export function formatTypeDesc(typeDesc: TypeDesc): string {
+  return `${typeDesc.world}:${typeDesc.domain}`;
+}
+
+/**
+ * Get available combine modes for a given domain.
+ */
+export function getCombineModesForDomain(domain: Domain): BusCombineMode[] {
+  // Numeric domains support all combine modes
+  if (domain === 'number' || domain === 'duration' || domain === 'time' || domain === 'rate') {
+    return ['sum', 'average', 'max', 'min', 'last'];
+  }
+  // Point/vec2 domains support vector operations
+  if (domain === 'point' || domain === 'vec2') {
+    return ['sum', 'average', 'last'];
+  }
+  // Other domains only support 'last' and 'layer'
+  return ['last', 'layer'];
+}
+
+/**
+ * Bus interface - central typed signal distributors.
+ */
+export interface Bus {
+  /** Unique identifier for this bus */
+  readonly id: string;
+
+  /** Human-readable name */
+  name: string;
+
+  /** Type descriptor for this bus */
+  readonly type: TypeDesc;
+
+  /** How to combine multiple publishers */
+  combineMode: BusCombineMode;
+
+  /** Default value when no publishers (typed by domain) */
+  defaultValue: unknown;
+
+  /** Sort key for deterministic publisher ordering */
+  sortKey: number;
+}
+
+/**
+ * Adapter step for type conversions.
+ */
+export interface AdapterStep {
+  /** Identifier for the adapter function */
+  readonly adapterId: string;
+
+  /** Parameters for the adapter */
+  readonly params: Record<string, unknown>;
+}
+
+/**
+ * Endpoint reference for routing.
+ */
+export interface BindingEndpoint {
+  /** Block ID */
+  readonly blockId: BlockId;
+
+  /** Port name */
+  readonly port: string;
+}
+
+/**
+ * Publisher - connects an output to a bus.
+ */
+export interface Publisher {
+  /** Unique identifier */
+  readonly id: string;
+
+  /** Bus ID being published to */
+  readonly busId: string;
+
+  /** Source output endpoint */
+  readonly from: BindingEndpoint;
+
+  /** Optional adapter chain */
+  readonly adapterChain?: AdapterStep[];
+
+  /** Whether this publisher is active */
+  enabled: boolean;
+
+  /** Optional weight for weighted combine modes */
+  readonly weight?: number;
+
+  /** Sort key for deterministic ordering within bus */
+  sortKey: number;
+}
+
+/**
+ * Listener - connects a bus to an input.
+ */
+export interface Listener {
+  /** Unique identifier */
+  readonly id: string;
+
+  /** Bus ID being subscribed to */
+  readonly busId: string;
+
+  /** Target input endpoint */
+  readonly to: BindingEndpoint;
+
+  /** Optional adapter chain */
+  readonly adapterChain?: AdapterStep[];
+
+  /** Whether this listener is active */
+  enabled: boolean;
+}
+
+// =============================================================================
 // Slot Types (what can connect to what)
 // =============================================================================
 
@@ -104,6 +310,7 @@ export const ALL_SUBCATEGORIES = [
   'FX',             // Filters and effects
   'Adapters',       // Type conversions
   'Output',         // Final sinks
+  'Other',          // Fallback for legacy blocks without subcategory
 ] as const;
 
 export type BlockSubcategory = (typeof ALL_SUBCATEGORIES)[number];
@@ -207,6 +414,44 @@ export interface Connection {
   readonly to: {
     readonly blockId: BlockId;
     readonly slotId: string;
+  };
+}
+
+/**
+ * Composite - a saved group of blocks and connections that can be instantiated.
+ * Similar to a "macro" or "subgraph" in other node editors.
+ */
+export interface Composite {
+  /** Unique identifier */
+  readonly id: string;
+
+  /** Human-readable name */
+  name: string;
+
+  /** Blocks within this composite */
+  blocks: Block[];
+
+  /** Internal connections between blocks */
+  connections: CompositeConnection[];
+}
+
+/**
+ * Connection within a composite (has port instead of slotId).
+ */
+export interface CompositeConnection {
+  /** Connection identifier */
+  readonly id: string;
+
+  /** Source endpoint */
+  readonly from: {
+    readonly blockId: BlockId;
+    readonly port: string;
+  };
+
+  /** Destination endpoint */
+  readonly to: {
+    readonly blockId: BlockId;
+    readonly port: string;
   };
 }
 
@@ -346,6 +591,11 @@ export interface Patch {
   /** Format version for migration */
   readonly version: number;
 
+  /** Feature flags for compatibility detection */
+  readonly features?: {
+    buses?: boolean;
+  };
+
   /** All blocks in the patch */
   blocks: Block[];
 
@@ -355,11 +605,30 @@ export interface Patch {
   /** Lane assignments (which blocks are in which lanes) */
   lanes: Lane[];
 
+  /** Bus definitions (v2+) */
+  buses?: Bus[];
+
+  /** Bus routing - publishers from blocks to buses (v2+) */
+  publishers?: Publisher[];
+
+  /** Bus routing - listeners from buses to blocks (v2+) */
+  listeners?: Listener[];
+
   /** Global settings (seed, speed, etc.) */
   settings: {
     seed: number;
     speed: number;
+    advancedLaneMode?: boolean;
+    autoConnect?: boolean;
+    showTypeHints?: boolean;
+    highlightCompatible?: boolean;
+    warnBeforeDisconnect?: boolean;
+    filterByLane?: boolean;
+    filterByConnection?: boolean;
   };
+
+  /** Composite definitions for this patch */
+  composites?: import('./composites').CompositeDefinition[];
 }
 
 // =============================================================================
@@ -458,4 +727,158 @@ export interface Template {
 
   /** Generate a patch for this template */
   createPatch: () => Patch;
+}
+
+// =============================================================================
+// Bus Type Utilities
+// =============================================================================
+
+/**
+ * Adapter path information for type conversions.
+ */
+export interface AdapterPath {
+  /** Source type */
+  readonly from: TypeDesc;
+  /** Target type */
+  readonly to: TypeDesc;
+  /** Required adapter steps */
+  readonly adapters: AdapterStep[];
+  /** Whether this is a "heavy" conversion (e.g., reduce) */
+  readonly isHeavy?: boolean;
+}
+
+/**
+ * Mapping from SlotType to TypeDesc with proper categorization.
+ */
+export const SLOT_TYPE_TO_TYPE_DESC: Record<SlotType, TypeDesc> = {
+  // Core types (bus-eligible)
+  'Scalar:number': { world: 'signal', domain: 'number', category: 'core', busEligible: true, semantics: 'scalar' },
+  'Scalar:vec2': { world: 'signal', domain: 'vec2', category: 'core', busEligible: true, semantics: 'scalar' },
+  'Field<number>': { world: 'field', domain: 'number', category: 'core', busEligible: true },
+  'Field<string>': { world: 'field', domain: 'color', category: 'core', busEligible: true, semantics: 'hex-color' },
+  'Signal<number>': { world: 'signal', domain: 'number', category: 'core', busEligible: true },
+  'Signal<Point>': { world: 'signal', domain: 'vec2', category: 'core', busEligible: true, semantics: 'point' },
+  'Signal<Unit>': { world: 'signal', domain: 'number', category: 'core', busEligible: true, semantics: 'unit(0..1)' },
+  'Signal<Time>': { world: 'signal', domain: 'time', category: 'core', busEligible: true, unit: 'seconds' },
+  'Signal<PhaseSample>': { world: 'signal', domain: 'phase', category: 'core', busEligible: true, semantics: 'sample' },
+  'Event<string>': { world: 'signal', domain: 'trigger', category: 'core', busEligible: true, semantics: 'string' },
+  'Event<any>': { world: 'signal', domain: 'trigger', category: 'core', busEligible: true },
+  'ElementCount': { world: 'signal', domain: 'number', category: 'core', busEligible: true, semantics: 'count' },
+
+  // Internal types (not bus-eligible by default)
+  'Field<Point>': { world: 'field', domain: 'point', category: 'internal', busEligible: false, semantics: 'position' },
+  'Field<Duration>': { world: 'field', domain: 'time', category: 'internal', busEligible: false, semantics: 'offset', unit: 'seconds' },
+  'Field<HSL>': { world: 'field', domain: 'color', category: 'internal', busEligible: false, semantics: 'hsl' },
+  'Field<Path>': { world: 'field', domain: 'path', category: 'internal', busEligible: false },
+  'Field<Wobble>': { world: 'field', domain: 'number', category: 'internal', busEligible: false, semantics: 'wobble' },
+  'Field<Spiral>': { world: 'field', domain: 'number', category: 'internal', busEligible: false, semantics: 'spiral' },
+  'Field<Wave>': { world: 'field', domain: 'number', category: 'internal', busEligible: false, semantics: 'wave' },
+  'Field<Jitter>': { world: 'field', domain: 'number', category: 'internal', busEligible: false, semantics: 'jitter' },
+  'Program': { world: 'signal', domain: 'program', category: 'internal', busEligible: false },
+  'RenderTree': { world: 'field', domain: 'renderTree', category: 'internal', busEligible: false },
+  'RenderNode': { world: 'field', domain: 'renderNode', category: 'internal', busEligible: false },
+  'RenderNode[]': { world: 'field', domain: 'renderNode', category: 'internal', busEligible: false, semantics: 'array' },
+  'FilterDef': { world: 'field', domain: 'filterDef', category: 'internal', busEligible: false },
+  'StrokeStyle': { world: 'field', domain: 'strokeStyle', category: 'internal', busEligible: false },
+  'Scene': { world: 'field', domain: 'scene', category: 'internal', busEligible: false },
+  'SceneTargets': { world: 'field', domain: 'sceneTargets', category: 'internal', busEligible: false },
+  'SceneStrokes': { world: 'field', domain: 'sceneStrokes', category: 'internal', busEligible: false },
+};
+
+/**
+ * Default values for core domains (JSON-serializable).
+ */
+export const CORE_DOMAIN_DEFAULTS: Record<CoreDomain, unknown> = {
+  number: 0,
+  vec2: { x: 0, y: 0 },
+  color: '#000000',
+  boolean: false,
+  time: 0.0, // Always seconds!
+  phase: 0.0,
+  rate: 1.0,
+  trigger: false, // Pulse state
+};
+
+/**
+ * Check if two types are directly compatible (no adapters needed).
+ */
+export function isDirectlyCompatible(a: TypeDesc, b: TypeDesc): boolean {
+  return a.world === b.world && a.domain === b.domain;
+}
+
+/**
+ * Check if a type is eligible for bus routing.
+ */
+export function isBusEligible(typeDesc: TypeDesc): boolean {
+  return typeDesc.busEligible && typeDesc.category === 'core';
+}
+
+/**
+ * Get adapter paths for type conversion.
+ * For now, returns empty if directly compatible.
+ * Phase 2 will populate with actual adapter logic.
+ */
+export function getConvertiblePaths(from: TypeDesc, to: TypeDesc): AdapterPath[] {
+  if (isDirectlyCompatible(from, to)) {
+    return [{
+      from,
+      to,
+      adapters: [],
+      isHeavy: false
+    }];
+  }
+
+  // Phase 2: Implement adapter registry lookup
+  // For now, return empty to indicate no conversion path
+  return [];
+}
+
+/**
+ * Validate a default value against a TypeDesc.
+ */
+export function validateDefaultValue(typeDesc: TypeDesc, value: unknown): boolean {
+  if (!isBusEligible(typeDesc)) {
+    return false; // Internal types shouldn't have user-visible defaults
+  }
+
+  const domainDefault = CORE_DOMAIN_DEFAULTS[typeDesc.domain as CoreDomain];
+  if (domainDefault === undefined) {
+    return false;
+  }
+
+  // Basic type checking - could be enhanced
+  switch (typeDesc.domain) {
+    case 'number':
+    case 'time':
+    case 'phase':
+    case 'rate':
+      return typeof value === 'number';
+    case 'boolean':
+    case 'trigger':
+      return typeof value === 'boolean';
+    case 'vec2':
+      return typeof value === 'object' && value !== null && 'x' in value && 'y' in value;
+    case 'color':
+      return typeof value === 'string';
+    default:
+      return false;
+  }
+}
+
+/**
+ * Normalize time units to seconds.
+ * Phase 2: Handle more complex unit conversions.
+ */
+export function normalizeTimeUnit(value: number, fromUnit: 'ms' | 'seconds' | 'beats'): number {
+  switch (fromUnit) {
+    case 'ms':
+      return value / 1000;
+    case 'seconds':
+      return value;
+    case 'beats':
+      // Assuming 120 BPM by default
+      return value * 0.5;
+    default:
+      return value;
+  }
 }

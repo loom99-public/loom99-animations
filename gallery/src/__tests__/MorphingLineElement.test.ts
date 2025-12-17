@@ -8,9 +8,8 @@
  * - Update behavior
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { MorphingLineElement } from '../elements/MorphingLineElement';
-import type { Point } from '../compositors/PathMorphCompositor';
 
 describe('MorphingLineElement - Creation', () => {
   it('creates element with required configuration', () => {

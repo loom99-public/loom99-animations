@@ -12,6 +12,7 @@
 
 import type {
   BlockCompiler,
+  CompiledOutputs,
   Field,
   PhaseMachine,
   RuntimeCtx,
@@ -58,7 +59,8 @@ export const PerElementProgressBlock: BlockCompiler = {
     const easing = getEasing(easingName);
 
     const seed = 42; // Could be parameterized
-    const n = ctx.elementCount ?? 10; // Get from context or default
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const n = (ctx as any).elementCount ?? 10; // Get from context or default
 
     // Evaluate fields at compile time (BULK form)
     const delays = delaysField(seed, n, ctx);
@@ -89,6 +91,6 @@ export const PerElementProgressBlock: BlockCompiler = {
 
     // Note: This returns a function that produces an array, not a single number.
     // The type system doesn't fully capture this yet.
-    return { progress: { kind: 'Signal:Unit', value: progressSignal as unknown } };
+    return { progress: { kind: 'Signal:Unit', value: progressSignal } } as unknown as CompiledOutputs;
   },
 };

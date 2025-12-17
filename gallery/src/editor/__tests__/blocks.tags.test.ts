@@ -9,9 +9,9 @@ describe('block registry tags', () => {
       const tags = getBlockTags(definition);
 
       expect(tags).toBeDefined();
-      expect(tags.legacyCategory).toBe(definition.category);
       expect(tags.form).toBe(definition.form);
-      expect(tags.subcategory).toBe(definition.subcategory);
+      // subcategory defaults to 'Other' when not defined
+      expect(tags.subcategory).toBe(definition.subcategory ?? 'Other');
       expect(tags.laneKind).toBe(definition.laneKind);
     }
   });

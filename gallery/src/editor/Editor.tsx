@@ -723,8 +723,7 @@ export const Editor = observer(() => {
           store={store}
           onShowHelp={() => {
             if (hasCompletedTour) {
-              setHelpCenterOpen(true);
-              setHelpTopic(null);
+              openHelpPanel('overview');
             } else {
               openTour('intro');
             }

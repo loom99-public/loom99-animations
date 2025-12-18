@@ -71,9 +71,36 @@ export {
   zipFieldExpr,
   constFieldExpr,
   sourceFieldExpr,
+  domainFieldExpr,
   getFieldExprDomain,
   functionRegistry,
   FunctionRegistry,
   MemoCache,
   createFieldExprCtx,
 } from './FieldExpr';
+
+// Scene blocks (Field generators)
+export type { Point as RadialOriginPoint } from './blocks/RadialOriginBlock';
+export type { RadialOriginParams } from './blocks/RadialOriginBlock';
+export { RadialOriginBlock, createRadialOriginExpr } from './blocks/RadialOriginBlock';
+
+export type { Point as FlowFieldOriginPoint } from './blocks/FlowFieldOriginBlock';
+export type { FlowFieldOriginParams } from './blocks/FlowFieldOriginBlock';
+export { FlowFieldOriginBlock, createFlowFieldOriginExpr } from './blocks/FlowFieldOriginBlock';
+
+// Phase blocks (Signal generators)
+export type { PhaseType, PhaseSample } from './blocks/PhaseMachineBlock';
+export type { PhaseMachineParams } from './blocks/PhaseMachineBlock';
+export {
+  PhaseMachineBlock,
+  createPhaseMachineSignal,
+  calculatePhaseSample,
+} from './blocks/PhaseMachineBlock';
+
+export type { Phase } from './blocks/LinearPhaseBlock';
+export type { LinearPhaseParams } from './blocks/LinearPhaseBlock';
+export {
+  LinearPhaseBlock,
+  createLinearPhaseSignal,
+  calculatePhase,
+} from './blocks/LinearPhaseBlock';

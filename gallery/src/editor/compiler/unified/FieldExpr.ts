@@ -20,7 +20,8 @@ import type { TimeCtx } from './TimeCtx';
  */
 export type FieldExprKind =
   | 'const'     // Constant value for all elements
-  | 'source'    // Source from domain (block output)
+  | 'domain'    // Domain source (element indices)
+  | 'source'    // Source from artifact (block output)
   | 'map'       // Transform via function
   | 'zip'       // Combine two fields
   | 'bus'       // Combined bus publishers
@@ -39,6 +40,7 @@ export type FunctionId = string;
  */
 export type FieldExpr<T> =
   | { kind: 'const'; value: T; domain: Domain }
+  | { kind: 'domain'; domain: Domain }
   | { kind: 'source'; sourceId: string; domain: Domain }
   | { kind: 'map'; src: FieldExpr<unknown>; fnId: FunctionId; params?: Record<string, unknown> }
   | { kind: 'zip'; a: FieldExpr<unknown>; b: FieldExpr<unknown>; fnId: FunctionId }
@@ -148,6 +150,8 @@ function getNodeId(expr: FieldExpr<unknown>): string {
   switch (expr.kind) {
     case 'const':
       return `const:${JSON.stringify(expr.value)}`;
+    case 'domain':
+      return `domain:${expr.domain.id}`;
     case 'source':
       return `source:${expr.sourceId}`;
     case 'map':
@@ -191,6 +195,12 @@ export function evaluateFieldExpr<T>(
     case 'const':
       result = expr.value;
       break;
+
+    case 'domain': {
+      // Domain node: return element index as number
+      result = parseInt(elementId, 10) as T;
+      break;
+    }
 
     case 'source': {
       // Get source artifact (pre-computed array or FieldExpr)
@@ -368,6 +378,16 @@ export function constFieldExpr<T>(value: T, domain: Domain): FieldExpr<T> {
 }
 
 /**
+ * Domain: reference domain elements (produces element indices).
+ */
+export function domainFieldExpr(domain: Domain): FieldExpr<number> {
+  return {
+    kind: 'domain',
+    domain,
+  };
+}
+
+/**
  * Source: reference a pre-computed Field from block output.
  */
 export function sourceFieldExpr<T>(sourceId: string, domain: Domain): FieldExpr<T> {
@@ -384,6 +404,7 @@ export function sourceFieldExpr<T>(sourceId: string, domain: Domain): FieldExpr<
 export function getFieldExprDomain(expr: FieldExpr<unknown>): Domain | undefined {
   switch (expr.kind) {
     case 'const':
+    case 'domain':
     case 'source':
     case 'bus':
       return expr.domain;

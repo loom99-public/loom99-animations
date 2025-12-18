@@ -1,0 +1,132 @@
+Agent: iterative-implementer | 2025-12-18-140059
+Mode: tdd
+Completed: Phase 2 Runtime Integration | Files: 9 | Commits: 3
+Tests: 217 passing (72 unified compiler tests, 145 legacy tests)
+Cache invalidated: None (no eval cache present)
+Status: complete
+
+========================================
+PHASE 2 RUNTIME INTEGRATION - COMPLETE
+========================================
+
+DELIVERABLES
+------------
+
+1. RuntimeAdapter (P0)
+   - File: gallery/src/editor/compiler/unified/RuntimeAdapter.ts
+   - Purpose: Bridges UnifiedCompiler → Player runtime
+   - Features:
+     * Pull-based evaluation in dependency order
+     * State memory management (Map<blockId, StateMemory>)
+     * TimeCtx creation from wall-clock time (tMs → seconds)
+     * RenderTree extraction with fallback
+     * Program<RenderTree> generation compatible with Player
+   - Tests: 9 unit tests (RuntimeAdapter.test.ts)
+
+2. IntegrateBlock (P0)
+   - File: gallery/src/editor/compiler/unified/blocks/IntegrateBlock.ts
+   - Purpose: Accumulator state block
+   - Algorithm: out(t) = out(t-1) + input(t) * dt
+   - Features:
+     * Configurable initial value
+     * Scrub policy: 'hold' (freeze during scrub)
+     * State persistence across frames
+   - Tests: 14 unit tests (IntegrateBlock.test.ts)
+
+3. HistoryBlock (P1)
+   - File: gallery/src/editor/compiler/unified/blocks/HistoryBlock.ts
+   - Purpose: Circular buffer for value history
+   - Features:
+     * Fixed-size buffer (depth 1-100)
+     * Circular wrap with chronological output ordering
+     * Scrub policy: 'hold' (freeze during scrub)
+     * No memory leaks (constant buffer size)
+   - Tests: 20 unit tests (HistoryBlock.test.ts)
+
+4. Feature Flag Integration
+   - File: gallery/src/editor/compiler/integration.ts
+   - Added toUnifiedPatchDef() converter
+   - Added compileWithUnified() wrapper
+   - Compiler selection based on featureFlags.useUnifiedCompiler
+   - Type conversion for Bus/Publisher/Listener
+   - Error code mapping (cycle → CycleDetected)
+
+FILES MODIFIED
+--------------
+- gallery/src/editor/compiler/unified/RuntimeAdapter.ts (new)
+- gallery/src/editor/compiler/unified/blocks/IntegrateBlock.ts (new)
+- gallery/src/editor/compiler/unified/blocks/HistoryBlock.ts (new)
+- gallery/src/editor/compiler/unified/__tests__/RuntimeAdapter.test.ts (new)
+- gallery/src/editor/compiler/unified/__tests__/IntegrateBlock.test.ts (new)
+- gallery/src/editor/compiler/unified/__tests__/HistoryBlock.test.ts (new)
+- gallery/src/editor/compiler/unified/index.ts (updated exports)
+- gallery/src/editor/compiler/integration.ts (feature flag integration)
+- FULL_SYSTEM_SPEC.md (updated with Phase 2 completion)
+
+COMMITS
+-------
+f4a4a0a - feat(compiler): implement Phase 2 runtime integration
+6e5ff3e - feat(compiler): integrate unified compiler with feature flag
+8fa1080 - docs: update FULL_SYSTEM_SPEC with Phase 2 completion
+
+TEST RESULTS
+------------
+Total: 217 tests passing
+- Unified Compiler: 72 tests (33% of total)
+  * RuntimeAdapter: 9 tests
+  * IntegrateBlock: 14 tests
+  * HistoryBlock: 20 tests
+  * UnifiedCompiler: 8 tests
+  * DependencyGraph: 13 tests
+  * TimeCtx: 8 tests
+- Legacy Tests: 145 tests (67% of total)
+  * All legacy functionality intact
+  * No regressions
+
+ARCHITECTURE HIGHLIGHTS
+-----------------------
+
+Pull-Based Evaluation Pipeline:
+1. RuntimeAdapter.evaluate(tMs) creates TimeCtx
+2. Clear outputs from previous frame
+3. Evaluate nodes in dependency order (from evaluationOrder)
+4. For each node:
+   - Collect inputs from previous evaluations
+   - Get state memory if state block
+   - Call evaluator(inputs, state, ctx)
+   - Store outputs for downstream nodes
+5. Extract RenderTree from output block
+6. Increment frame counter
+
+State Block Pattern:
+- initState(frame): Create initial StateMemory
+- updateState(state, inputs, ctx): Mutate state in-place
+- computeOutputs(state, inputs, ctx): Read-only, return outputs
+- scrubPolicy: Defines behavior during scrub mode
+
+Feature Flag System:
+- useUnifiedCompiler: false (default) → legacy compiler
+- useUnifiedCompiler: true → UnifiedCompiler + RuntimeAdapter
+- No breaking changes to existing code
+- Transparent fallback on errors
+
+VALIDATION
+----------
+✓ All acceptance criteria from DOD-2025-12-18-130106.md met
+✓ RuntimeAdapter creates valid Program<RenderTree>
+✓ State blocks allocate memory correctly
+✓ State persists across frames
+✓ Scrub policy 'hold' freezes state correctly
+✓ Evaluation order respects dependencies
+✓ Feature flag integration works without crashes
+✓ Type conversions handle Bus/Publisher/Listener correctly
+✓ Error codes map correctly (cycle → CycleDetected)
+
+READY FOR PHASE 3
+-----------------
+Phase 2 deliverables complete and tested. Next phase can begin:
+- Field expression system
+- Bus compilation to Signal evaluators
+- Block migration from legacy system
+
+All tests passing. No regressions. Architecture proven sound.

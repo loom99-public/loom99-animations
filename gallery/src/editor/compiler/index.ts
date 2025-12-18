@@ -79,6 +79,7 @@ export {
   // Registry
   DEFAULT_BLOCK_REGISTRY,
   createBlockRegistry,
+  registerDynamicBlock,
 } from './blocks';
 
 // Context utilities

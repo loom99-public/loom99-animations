@@ -13,7 +13,7 @@
 
 import { observer } from 'mobx-react-lite';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
-import type { EditorStore } from './store';
+import { useStore } from './stores';
 import type { Lane, LaneKind, Block, Slot, PortRef } from './types';
 import { getBlockDefinition } from './blocks';
 import { LayoutSelector } from './LayoutSelector';
@@ -26,10 +26,6 @@ import {
   formatTypeDescriptor,
 } from './portUtils';
 import './PatchBay.css';
-
-interface PatchBayProps {
-  store: EditorStore;
-}
 
 /**
  * Lane colors by kind for visual identification.
@@ -144,14 +140,13 @@ function Port({
  * Can be reordered within lane, moved to another lane, or dragged to trash.
  * Shows input/output ports for wiring.
  */
-function DraggablePatchBlock({
+const DraggablePatchBlock = observer(({
   block,
   laneId,
   index,
   laneColor,
   isSelected,
   onSelect,
-  store,
   portColorMap,
 }: {
   block: Block;
@@ -160,9 +155,9 @@ function DraggablePatchBlock({
   laneColor: string;
   isSelected: boolean;
   onSelect: () => void;
-  store: EditorStore;
   portColorMap: Map<string, string>;
-}) {
+}) => {
+  const store = useStore();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `patch-block-${block.id}`,
     data: {
@@ -192,15 +187,15 @@ function DraggablePatchBlock({
   const blockColor = definition?.color ?? laneColor;
 
   // Get hovered/selected port state
-  const hoveredPort = store.uiState.hoveredPort;
-  const selectedPort = store.uiState.selectedPort;
-  const connections = store.connections;
+  const hoveredPort = store.uiStore.uiState.hoveredPort;
+  const selectedPort = store.uiStore.uiState.selectedPort;
+  const connections = store.patchStore.connections;
 
   // Check if we need to highlight compatible ports
   const sourcePort = hoveredPort ?? selectedPort;
   const sourceSlot = sourcePort
     ? (() => {
-        const sourceBlock = store.blocks.find((b) => b.id === sourcePort.blockId);
+        const sourceBlock = store.patchStore.blocks.find((b) => b.id === sourcePort.blockId);
         if (!sourceBlock) return null;
         const slots =
           sourcePort.direction === 'input' ? sourceBlock.inputs : sourceBlock.outputs;
@@ -267,9 +262,9 @@ function DraggablePatchBlock({
                 isHovered={isThisHovered}
                 isSelected={isThisSelected}
                 isCompatible={compatible}
-                onHover={(p) => store.setHoveredPort(p)}
-                onClick={(p) => store.setSelectedPort(p)}
-                onContextMenu={(e, p) => store.openContextMenu(e.clientX, e.clientY, p)}
+                onHover={(p) => store.uiStore.setHoveredPort(p)}
+                onClick={(p) => store.uiStore.setSelectedPort(p)}
+                onContextMenu={(e, p) => store.uiStore.openContextMenu(e.clientX, e.clientY, p)}
               />
             );
           })}
@@ -326,9 +321,9 @@ function DraggablePatchBlock({
                 isHovered={isThisHovered}
                 isSelected={isThisSelected}
                 isCompatible={compatible}
-                onHover={(p) => store.setHoveredPort(p)}
-                onClick={(p) => store.setSelectedPort(p)}
-                onContextMenu={(e, p) => store.openContextMenu(e.clientX, e.clientY, p)}
+                onHover={(p) => store.uiStore.setHoveredPort(p)}
+                onClick={(p) => store.uiStore.setSelectedPort(p)}
+                onContextMenu={(e, p) => store.uiStore.openContextMenu(e.clientX, e.clientY, p)}
               />
             );
           })}
@@ -336,7 +331,7 @@ function DraggablePatchBlock({
       )}
     </div>
   );
-}
+});
 
 /**
  * Get type hint text for a lane (shows what types flow in/out).
@@ -359,19 +354,18 @@ function getLaneTypeHint(kind: LaneKind): string {
  * Supports collapse/expand and displays flow style indicator.
  * Click sets active lane for palette filtering.
  */
-function DroppableLane({
-  store,
+const DroppableLane = observer(({
   lane,
   isActive,
   isSuggested,
   portColorMap,
 }: {
-  store: EditorStore;
   lane: Lane;
   isActive: boolean;
   isSuggested: boolean;
   portColorMap: Map<string, string>;
-}) {
+}) => {
+  const store = useStore();
   const { isOver, setNodeRef } = useDroppable({
     id: `lane-${lane.id}`,
     data: {
@@ -384,22 +378,22 @@ function DroppableLane({
   const laneColor = LANE_KIND_COLORS[lane.kind];
   const isCollapsed = lane.collapsed;
   const isPinned = lane.pinned;
-  const showTypeHints = store.settings.showTypeHints;
+  const showTypeHints = store.uiStore.settings.showTypeHints;
   const typeHint = getLaneTypeHint(lane.kind);
 
   const handleHeaderClick = (e: React.MouseEvent) => {
     // Set active lane on click (for palette filtering)
-    store.setActiveLane(lane.id);
+    store.uiStore.setActiveLane(lane.id);
 
     // Double-click toggles collapse
     if (e.detail === 2) {
-      store.toggleLaneCollapsed(lane.id);
+      store.patchStore.toggleLaneCollapsed(lane.id);
     }
   };
 
   const handleChevronClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    store.toggleLaneCollapsed(lane.id);
+    store.patchStore.toggleLaneCollapsed(lane.id);
   };
 
   return (
@@ -448,10 +442,10 @@ function DroppableLane({
           )}
 
           {lane.blockIds.map((blockId, index) => {
-            const block = store.blocks.find((b) => b.id === blockId);
+            const block = store.patchStore.blocks.find((b) => b.id === blockId);
             if (!block) return null;
 
-            const isSelected = store.uiState.selectedBlockId === blockId;
+            const isSelected = store.uiStore.uiState.selectedBlockId === blockId;
 
             return (
               <DraggablePatchBlock
@@ -461,8 +455,7 @@ function DroppableLane({
                 index={index}
                 laneColor={laneColor}
                 isSelected={isSelected}
-                onSelect={() => store.selectBlock(blockId)}
-                store={store}
+                onSelect={() => store.uiStore.selectBlock(blockId)}
                 portColorMap={portColorMap}
               />
             );
@@ -471,36 +464,36 @@ function DroppableLane({
       )}
     </div>
   );
-}
+});
 
 /**
  * PatchBay renders lanes with blocks.
  * Per lanes-overview.md: visual hierarchy from Scene → Output
  */
-export const PatchBay = observer(({ store }: PatchBayProps) => {
-  const activeLaneId = store.uiState.activeLaneId;
-  const draggingLaneKind = store.uiState.draggingLaneKind;
+export const PatchBay = observer(() => {
+  const store = useStore();
+  const activeLaneId = store.uiStore.uiState.activeLaneId;
+  const draggingLaneKind = store.uiStore.uiState.draggingLaneKind;
 
   // Build port color map for visual connection indication
-  const portColorMap = buildPortColorMap(store.connections);
+  const portColorMap = buildPortColorMap(store.patchStore.connections);
 
   // Click anywhere in patch-bay (except ports/blocks which stop propagation) clears port selection
   const handleBackgroundClick = () => {
     // Clear port selection - blocks already clear this via selectBlock
     // This handles clicks on lane backgrounds, headers, empty areas, etc.
-    if (store.uiState.selectedPort) {
-      store.setSelectedPort(null);
+    if (store.uiStore.uiState.selectedPort) {
+      store.uiStore.setSelectedPort(null);
     }
   };
 
   return (
     <div className="patch-bay" onClick={handleBackgroundClick}>
-      <LayoutSelector store={store} />
+      <LayoutSelector />
       <div className="patch-bay-lanes" onClick={handleBackgroundClick}>
-        {store.lanes.map((lane) => (
+        {store.patchStore.lanes.map((lane) => (
           <DroppableLane
             key={lane.id}
-            store={store}
             lane={lane}
             isActive={lane.id === activeLaneId}
             isSuggested={draggingLaneKind !== null && lane.kind === draggingLaneKind}

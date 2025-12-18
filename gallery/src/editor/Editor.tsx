@@ -18,7 +18,7 @@ import {
   type DragEndEvent,
   pointerWithin,
 } from '@dnd-kit/core';
-import { EditorStore } from './store';
+import { useStore } from './stores';
 import { BlockLibrary } from './BlockLibrary';
 import { PatchBay } from './PatchBay';
 import { BusBoard } from './BusBoard';
@@ -399,7 +399,7 @@ function DragOverlayContent({
  */
 export const Editor = observer(() => {
   // Create store once (memo to avoid recreating on re-renders)
-  const store = useMemo(() => new EditorStore(), []);
+  const store = useStore();
 
   // Create control surface store
   const controlSurfaceStore = useMemo(() => new ControlSurfaceStore(store), [store]);
@@ -593,12 +593,12 @@ export const Editor = observer(() => {
 
   // Load a default macro on startup and generate its control surface
   useEffect(() => {
-    store.addBlock('macro:radialBurst', 'scene');
+    store.patchStore.addBlock('macro:radialBurst', 'scene');
     // Generate a default surface for the macro
     // Use setTimeout to ensure blocks are fully populated after macro expansion
     setTimeout(() => {
       const blockIds = new Map<string, string>();
-      store.blocks.forEach((block) => {
+      store.patchStore.blocks.forEach((block) => {
         blockIds.set(block.type, block.id);
       });
       const surface = generateSurfaceForMacro('radialBurst', blockIds);
@@ -625,10 +625,10 @@ export const Editor = observer(() => {
     if (data?.type === 'library-block') {
       setActiveDefinition(data.definition);
       // Set dragging lane kind for highlighting suggested lanes
-      store.setDraggingLaneKind(data.definition?.laneKind ?? null);
+      store.uiStore.setDraggingLaneKind(data.definition?.laneKind ?? null);
     } else if (data?.type === 'patch-block') {
       // Dragging a placed block
-      const block = store.blocks.find((b) => b.id === data.blockId);
+      const block = store.patchStore.blocks.find((b) => b.id === data.blockId);
       if (block) {
         setActivePlacedBlock({
           label: block.label,
@@ -649,7 +649,7 @@ export const Editor = observer(() => {
       Compose: '#ec4899',
       Render: '#ef4444',
     };
-    const block = store.blocks.find((b) => b.type === blockType);
+    const block = store.patchStore.blocks.find((b) => b.type === blockType);
     return colors[block?.category ?? 'Compose'] ?? '#666';
   }
 
@@ -657,7 +657,7 @@ export const Editor = observer(() => {
     const { active, over } = event;
     setActiveDefinition(null);
     setActivePlacedBlock(null);
-    store.setDraggingLaneKind(null);
+    store.uiStore.setDraggingLaneKind(null);
 
     if (!over) return;
 
@@ -673,10 +673,10 @@ export const Editor = observer(() => {
 
       if (sourceLaneId === targetLaneId) {
         if (activeData.sourceIndex !== targetIndex) {
-          store.reorderBlockInLane(sourceLaneId as LaneId, blockId, targetIndex);
+          store.patchStore.reorderBlockInLane(sourceLaneId as LaneId, blockId, targetIndex);
         }
       } else {
-        store.moveBlockToLane(blockId, targetLaneId);
+        store.patchStore.moveBlockToLane(blockId, targetLaneId);
       }
       return;
     }
@@ -685,13 +685,13 @@ export const Editor = observer(() => {
     if (activeData?.type === 'library-block' && overData?.type === 'lane') {
       const blockType = activeData.blockType as string;
       const laneId = (overData.laneId ?? overData.laneName) as LaneId;
-      store.addBlock(blockType, laneId);
+      store.patchStore.addBlock(blockType, laneId);
     }
 
     // Dropping placed block onto trash
     if (activeData?.type === 'patch-block' && overData?.type === 'trash') {
       const blockId = activeData.blockId as string;
-      store.removeBlock(blockId);
+      store.patchStore.removeBlock(blockId);
     }
 
     // Dropping placed block onto a lane (move/reorder)
@@ -702,7 +702,7 @@ export const Editor = observer(() => {
 
       if (sourceLaneId !== targetLaneId) {
         // Move to different lane
-        store.moveBlockToLane(blockId, targetLaneId);
+        store.patchStore.moveBlockToLane(blockId, targetLaneId);
       }
       // Note: reordering within same lane would need drop position info
       // For now, moving to same lane just keeps it in place
@@ -720,7 +720,6 @@ export const Editor = observer(() => {
     >
       <div className={`editor ${dragging ? 'dragging' : ''}`}>
         <SettingsToolbar
-          store={store}
           onShowHelp={() => {
             if (hasCompletedTour) {
               openHelpPanel('overview');
@@ -780,7 +779,7 @@ export const Editor = observer(() => {
                     </button>
                   </div>
                 </div>
-                {!libraryCollapsed && <BlockLibrary store={store} />}
+                {!libraryCollapsed && <BlockLibrary />}
               </div>
 
               {!libraryCollapsed && !inspectorCollapsed && (
@@ -822,7 +821,7 @@ export const Editor = observer(() => {
                 </div>
                 {!inspectorCollapsed && (
                   <div className="inspector-wrapper">
-                    <Inspector store={store} />
+                    <Inspector />
                   </div>
                 )}
               </div>
@@ -845,8 +844,7 @@ export const Editor = observer(() => {
             <div className="editor-preview" style={{ flex: centerSplit }}>
               <PreviewPanel
                 compilerService={compilerService}
-                isPlaying={store.uiState.isPlaying}
-                store={store}
+                isPlaying={store.uiStore.uiState.isPlaying}
                 onShowHelp={() => openHelpPanel('preview')}
               />
             </div>
@@ -899,7 +897,7 @@ export const Editor = observer(() => {
                 </div>
                 {!patchBayCollapsed && (
                   <div className="patch-body">
-                    <PatchBay store={store} />
+                    <PatchBay />
                   </div>
                 )}
               </div>
@@ -945,7 +943,7 @@ export const Editor = observer(() => {
                 </div>
                 {!busBoardCollapsed && (
                   <div className="busboard-body">
-                    <BusBoard store={store} />
+                    <BusBoard />
                   </div>
                 )}
               </div>
@@ -1037,7 +1035,7 @@ export const Editor = observer(() => {
         <TrashZone isVisible={isDraggingPlacedBlock} />
 
         {/* Context menu for right-click actions */}
-        <ContextMenu store={store} />
+        <ContextMenu />
       </div>
 
       <PathManagerModal

@@ -1,0 +1,4 @@
+Agent: work-evaluator | 2025-12-17-141500
+Verdict: INCOMPLETE
+Criteria: 1/2 working | Breaks found: 1 | Ambiguities: 1
+Next: Fix getBlockDefinition() in registry.ts to include composites when looking up composite block types

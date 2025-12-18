@@ -9,13 +9,13 @@
 
 import { observer } from 'mobx-react-lite';
 import { useState, useEffect } from 'react';
-import type { EditorStore } from './store';
+import { useStore } from './stores';
 import type { TypeDesc, BusCombineMode, CoreDomain } from './types';
+import type { RootStore } from './stores/RootStore';
 import { isBusEligible } from './types';
 import './BusCreationDialog.css';
 
 interface BusCreationDialogProps {
-  store: EditorStore;
   isOpen: boolean;
   onClose: () => void;
   onCreated?: (busId: string) => void;
@@ -97,9 +97,9 @@ const CORE_SIGNAL_TYPES: Array<{ domain: CoreDomain; label: string }> = [
 /**
  * Check if a bus name already exists (case-insensitive).
  */
-function busNameExists(store: EditorStore, name: string): boolean {
+function busNameExists(store: RootStore, name: string): boolean {
   const lowerName = name.toLowerCase().trim();
-  return store.buses.some((b) => b.name.toLowerCase() === lowerName);
+  return store.busStore.buses.some((b) => b.name.toLowerCase() === lowerName);
 }
 
 /**
@@ -213,13 +213,13 @@ function generateUniqueBusName(baseName: string, existingNames: string[]): strin
  * Then make it unique by handling collisions.
  */
 function generateInitialName(
-  store: EditorStore,
+  store: RootStore,
   domain: CoreDomain,
   suggestedName?: string,
   blockLabel?: string,
   portName?: string
 ): string {
-  const existingNames = store.buses.map(b => b.name);
+  const existingNames = store.busStore.buses.map(b => b.name);
 
   // Try context-aware naming first
   if (blockLabel) {
@@ -246,8 +246,8 @@ function generateInitialName(
  * Bus creation dialog.
  */
 export const BusCreationDialog = observer((props: BusCreationDialogProps) => {
+  const store = useStore();
   const {
-    store,
     isOpen,
     onClose,
     onCreated,
@@ -350,16 +350,16 @@ export const BusCreationDialog = observer((props: BusCreationDialogProps) => {
     };
 
     // Create the bus
-    const busId = store.createBus(typeDesc, trimmedName, combineMode);
+    const busId = store.busStore.createBus(typeDesc, trimmedName, combineMode);
 
     // Auto-publish if requested
     if (autoPublishFromBlock && autoPublishFromPort) {
-      store.addPublisher(busId, autoPublishFromBlock, autoPublishFromPort);
+      store.busStore.addPublisher(busId, autoPublishFromBlock, autoPublishFromPort);
     }
 
     // Auto-subscribe if requested
     if (autoSubscribeToBlock && autoSubscribeToPort) {
-      store.addListener(busId, autoSubscribeToBlock, autoSubscribeToPort);
+      store.busStore.addListener(busId, autoSubscribeToBlock, autoSubscribeToPort);
     }
 
     // Notify caller

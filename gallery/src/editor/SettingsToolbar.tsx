@@ -9,12 +9,11 @@
 
 import { observer } from 'mobx-react-lite';
 import { useState, useRef, useEffect } from 'react';
-import type { EditorStore } from './store';
+import { useStore } from './stores';
 import { PRESET_LAYOUTS } from './laneLayouts';
 import './SettingsToolbar.css';
 
 interface SettingsToolbarProps {
-  store: EditorStore;
   onShowHelp?: () => void;
   onOpenPaths: () => void;
   isPathsModalOpen: boolean;
@@ -193,8 +192,9 @@ function PathsIcon() {
 /**
  * Settings Toolbar component.
  */
-export const SettingsToolbar = observer(({ store, onShowHelp, onOpenPaths, isPathsModalOpen, showHelpNudge, onDesignerView, onPerformanceView }: SettingsToolbarProps) => {
-  const currentLayout = store.currentLayout;
+export const SettingsToolbar = observer(({ onShowHelp, onOpenPaths, isPathsModalOpen, showHelpNudge, onDesignerView, onPerformanceView }: SettingsToolbarProps) => {
+  const store = useStore();
+  const currentLayout = store.patchStore.currentLayout;
 
   return (
     <div className="settings-toolbar">
@@ -212,7 +212,7 @@ export const SettingsToolbar = observer(({ store, onShowHelp, onOpenPaths, isPat
               label={layout.name}
               description={layout.description}
               checked={currentLayout.id === layout.id}
-              onClick={() => store.switchLayout(layout.id)}
+              onClick={() => store.patchStore.switchLayout(layout.id)}
             />
           ))}
           <MenuDivider />
@@ -220,14 +220,14 @@ export const SettingsToolbar = observer(({ store, onShowHelp, onOpenPaths, isPat
           <MenuItem
             label="Simple Mode"
             description="Fixed lane structure, guided workflow"
-            checked={!store.settings.advancedLaneMode}
-            onClick={() => store.setAdvancedLaneMode(false)}
+            checked={!store.uiStore.settings.advancedLaneMode}
+            onClick={() => store.uiStore.setAdvancedLaneMode(false)}
           />
           <MenuItem
             label="Advanced Mode"
             description="Customize lanes freely"
-            checked={store.settings.advancedLaneMode}
-            onClick={() => store.setAdvancedLaneMode(true)}
+            checked={store.uiStore.settings.advancedLaneMode}
+            onClick={() => store.uiStore.setAdvancedLaneMode(true)}
             disabled={true}
           />
         </Dropdown>
@@ -238,8 +238,8 @@ export const SettingsToolbar = observer(({ store, onShowHelp, onOpenPaths, isPat
           <MenuItem
             label="Auto-connect on drop"
             description="Wire obvious connections automatically"
-            checked={store.settings.autoConnect}
-            onClick={() => store.setAutoConnect(!store.settings.autoConnect)}
+            checked={store.uiStore.settings.autoConnect}
+            onClick={() => store.uiStore.setAutoConnect(!store.uiStore.settings.autoConnect)}
             disabled={true}
           />
           <MenuDivider />
@@ -247,20 +247,20 @@ export const SettingsToolbar = observer(({ store, onShowHelp, onOpenPaths, isPat
           <MenuItem
             label="Show type hints"
             description="Display port types on hover"
-            checked={store.settings.showTypeHints}
-            onClick={() => store.setShowTypeHints(!store.settings.showTypeHints)}
+            checked={store.uiStore.settings.showTypeHints}
+            onClick={() => store.uiStore.setShowTypeHints(!store.uiStore.settings.showTypeHints)}
           />
           <MenuItem
             label="Highlight compatible"
             description="Glow compatible ports when dragging"
-            checked={store.settings.highlightCompatible}
-            onClick={() => store.setHighlightCompatible(!store.settings.highlightCompatible)}
+            checked={store.uiStore.settings.highlightCompatible}
+            onClick={() => store.uiStore.setHighlightCompatible(!store.uiStore.settings.highlightCompatible)}
           />
           <MenuItem
             label="Warn before disconnect"
             description="Show confirmation when disconnecting"
-            checked={store.settings.warnBeforeDisconnect}
-            onClick={() => store.setWarnBeforeDisconnect(!store.settings.warnBeforeDisconnect)}
+            checked={store.uiStore.settings.warnBeforeDisconnect}
+            onClick={() => store.uiStore.setWarnBeforeDisconnect(!store.uiStore.settings.warnBeforeDisconnect)}
           />
         </Dropdown>
 
@@ -270,24 +270,24 @@ export const SettingsToolbar = observer(({ store, onShowHelp, onOpenPaths, isPat
           <MenuItem
             label="Filter by lane"
             description="Show blocks matching lane type"
-            checked={store.settings.filterByLane}
-            onClick={() => store.setFilterByLane(!store.settings.filterByLane)}
+            checked={store.uiStore.settings.filterByLane}
+            onClick={() => store.uiStore.setFilterByLane(!store.uiStore.settings.filterByLane)}
           />
           <MenuItem
             label="Filter by connection"
             description="Show blocks that can connect to selection"
-            checked={store.settings.filterByConnection}
-            onClick={() => store.setFilterByConnection(!store.settings.filterByConnection)}
+            checked={store.uiStore.settings.filterByConnection}
+            onClick={() => store.uiStore.setFilterByConnection(!store.uiStore.settings.filterByConnection)}
           />
           <MenuDivider />
           <MenuHeader>Display</MenuHeader>
           <MenuItem
             label="Show all blocks"
             description="Always show full library"
-            checked={!store.settings.filterByLane && !store.settings.filterByConnection}
+            checked={!store.uiStore.settings.filterByLane && !store.uiStore.settings.filterByConnection}
             onClick={() => {
-              store.setFilterByLane(false);
-              store.setFilterByConnection(false);
+              store.uiStore.setFilterByLane(false);
+              store.uiStore.setFilterByConnection(false);
             }}
           />
         </Dropdown>
@@ -367,7 +367,7 @@ export const SettingsToolbar = observer(({ store, onShowHelp, onOpenPaths, isPat
         <div className="toolbar-divider" />
 
         <span className="toolbar-status">
-          {store.blocks.length} blocks · {store.connections.length} connections
+          {store.patchStore.blocks.length} blocks · {store.patchStore.connections.length} connections
         </span>
       </div>
     </div>

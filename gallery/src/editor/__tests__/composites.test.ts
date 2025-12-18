@@ -28,7 +28,8 @@ describe('composite registry', () => {
 
     expect(listCompositeDefinitions().some((c) => c.id === def.id)).toBe(true);
 
-    const allBlocks = getBlockDefinitions();
+    // Include composites in block definitions lookup
+    const allBlocks = getBlockDefinitions(true); // includeComposites: true
     expect(allBlocks.some((b) => b.type === `composite:${def.id}`)).toBe(true);
   });
 });

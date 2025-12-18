@@ -1,23 +1,14 @@
-/**
- * BlockLibrary Component
- *
- * Searchable catalog of available blocks (left panel).
- * Blocks can be dragged from here to the PatchBay.
- */
-
 import { useState, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useDraggable } from '@dnd-kit/core';
-import type { EditorStore } from './store';
-import { ALL_SUBCATEGORIES, type BlockSubcategory, type BlockForm } from './types';
-import {
-  getBlockDefinitions,
-  getBlocksForPalette,
-  getBlockTags,
-  type BlockDefinition,
-} from './blocks';
-import { listCompositeDefinitions } from './composites';
-import './BlockLibrary.css';
+import { useStore } from './stores';
+import { ALL_SUBCATEGORIES } from './types';
+import type { BlockSubcategory, BlockForm } from './types';
+import type { BlockDefinition } from './blocks/types';
+import { getBlockDefinitions, getBlocksForPalette, getBlockTags } from './blocks';
+
+// import { listCompositeDefinitions } from './composites'; // TODO: Refactor composites
+const listCompositeDefinitions = () => [];
 
 const FORM_ORDER: BlockForm[] = ['macro', 'composite', 'legacy-composite', 'primitive'];
 
@@ -29,8 +20,9 @@ const FORM_LABELS: Record<BlockForm, string> = {
 };
 
 const SUBCATEGORY_ORDER = new Map<BlockSubcategory, number>(
-  ALL_SUBCATEGORIES.map((subcategory, index) => [subcategory, index])
+  ALL_SUBCATEGORIES.map((subcategory: BlockSubcategory, index: number) => [subcategory, index])
 );
+
 
 interface FormGroup {
   form: BlockForm;
@@ -90,10 +82,6 @@ function groupBlocksByForm(blocks: readonly BlockDefinition[]): FormGroup[] {
       subcategories,
     };
   }).filter(Boolean) as FormGroup[];
-}
-
-interface BlockLibraryProps {
-  store: EditorStore;
 }
 
 interface DraggableBlockItemProps {
@@ -167,17 +155,18 @@ function DraggableBlockItem({ definition, isSelected, onSelect, onDoubleClickAdd
  * BlockLibrary displays available blocks by category with search.
  * Supports lane-based filtering when an active lane is set.
  */
-export const BlockLibrary = observer(({ store }: BlockLibraryProps) => {
+export const BlockLibrary = observer(() => {
+  const store = useStore();
   const [search, setSearch] = useState('');
   const [collapsedForms, setCollapsedForms] = useState<Set<BlockForm>>(new Set());
   const [collapsedSubcategories, setCollapsedSubcategories] = useState<Set<string>>(new Set());
   const [showAllBlocks, setShowAllBlocks] = useState(false);
 
-  const previewedType = store.previewedDefinition?.type ?? null;
+  const previewedType = store.uiStore.previewedDefinition?.type ?? null;
   const activeLane = store.activeLane;
-  const filterByLane = store.settings.filterByLane;
+  const filterByLane = store.uiStore.settings.filterByLane;
 
-  const blockDefs = useMemo(() => getBlockDefinitions(), [store.composites.length]);
+  const blockDefs = useMemo(() => getBlockDefinitions(), [store.compositeStore.composites.length]);
 
   const formGroups = useMemo(
     () => groupBlocksByForm(blockDefs),
@@ -188,9 +177,9 @@ export const BlockLibrary = observer(({ store }: BlockLibraryProps) => {
    * Add a block to its suggested lane (first lane matching laneKind).
    */
   const addBlockToSuggestedLane = (definition: BlockDefinition) => {
-    const targetLane = store.lanes.find((lane) => lane.kind === definition.laneKind);
+    const targetLane = store.patchStore.lanes.find((lane) => lane.kind === definition.laneKind);
     if (targetLane) {
-      store.addBlock(definition.type, targetLane.id, definition.defaultParams);
+      store.patchStore.addBlock(definition.type, targetLane.id, definition.defaultParams);
     }
   };
 
@@ -306,7 +295,7 @@ export const BlockLibrary = observer(({ store }: BlockLibraryProps) => {
                   key={definition.type}
                   definition={definition}
                   isSelected={previewedType === definition.type}
-                  onSelect={() => store.previewDefinition(definition)}
+                  onSelect={() => store.uiStore.previewDefinition(definition)}
                   onDoubleClickAdd={() => addBlockToSuggestedLane(definition)}
                 />
               ))
@@ -330,7 +319,7 @@ export const BlockLibrary = observer(({ store }: BlockLibraryProps) => {
                       key={definition.type}
                       definition={definition}
                       isSelected={previewedType === definition.type}
-                      onSelect={() => store.previewDefinition(definition)}
+                      onSelect={() => store.uiStore.previewDefinition(definition)}
                       onDoubleClickAdd={() => addBlockToSuggestedLane(definition)}
                     />
                   ))
@@ -358,7 +347,7 @@ export const BlockLibrary = observer(({ store }: BlockLibraryProps) => {
                         key={definition.type}
                         definition={definition}
                         isSelected={previewedType === definition.type}
-                        onSelect={() => store.previewDefinition(definition)}
+                        onSelect={() => store.uiStore.previewDefinition(definition)}
                         onDoubleClickAdd={() => addBlockToSuggestedLane(definition)}
                       />
                     ))}
@@ -407,7 +396,7 @@ export const BlockLibrary = observer(({ store }: BlockLibraryProps) => {
                                   key={definition.type}
                                   definition={definition}
                                   isSelected={previewedType === definition.type}
-                                  onSelect={() => store.previewDefinition(definition)}
+                                  onSelect={() => store.uiStore.previewDefinition(definition)}
                                   onDoubleClickAdd={() => addBlockToSuggestedLane(definition)}
                                 />
                               ))}

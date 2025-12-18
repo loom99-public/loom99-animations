@@ -6,13 +6,12 @@
  */
 
 import { observer } from 'mobx-react-lite';
-import type { EditorStore } from './store';
+import { useStore } from './stores';
 import type { Bus, Publisher, Listener, CoreDomain, BusCombineMode } from './types';
 import { formatTypeDesc, getCombineModesForDomain } from './types';
 import './BusInspector.css';
 
 interface BusInspectorProps {
-  store: EditorStore;
   busId: string;
 }
 
@@ -118,22 +117,21 @@ function DefaultValueEditor({
  */
 function PublisherItem({
   publisher,
-  store,
 }: {
   publisher: Publisher;
-  store: EditorStore;
 }) {
-  const block = store.blocks.find(b => b.id === publisher.from.blockId);
+  const store = useStore();
+  const block = store.patchStore.blocks.find(b => b.id === publisher.from.blockId);
   const blockName = block?.label ?? 'Unknown Block';
   const portName = publisher.from.port;
 
   const handleJumpToBlock = () => {
-    store.selectBlock(publisher.from.blockId);
+    store.uiStore.selectBlock(publisher.from.blockId);
     // TODO: Scroll PatchBay to show block
   };
 
   const handleToggleEnabled = () => {
-    store.updatePublisher(publisher.id, { enabled: !publisher.enabled });
+    store.busStore.updatePublisher(publisher.id, { enabled: !publisher.enabled });
   };
 
   return (
@@ -167,22 +165,21 @@ function PublisherItem({
  */
 function ListenerItem({
   listener,
-  store,
 }: {
   listener: Listener;
-  store: EditorStore;
 }) {
-  const block = store.blocks.find(b => b.id === listener.to.blockId);
+  const store = useStore();
+  const block = store.patchStore.blocks.find(b => b.id === listener.to.blockId);
   const blockName = block?.label ?? 'Unknown Block';
   const portName = listener.to.port;
 
   const handleJumpToBlock = () => {
-    store.selectBlock(listener.to.blockId);
+    store.uiStore.selectBlock(listener.to.blockId);
     // TODO: Scroll PatchBay to show block
   };
 
   const handleToggleEnabled = () => {
-    store.updateListener(listener.id, { enabled: !listener.enabled });
+    store.busStore.updateListener(listener.id, { enabled: !listener.enabled });
   };
 
   return (
@@ -214,8 +211,9 @@ function ListenerItem({
 /**
  * Bus Inspector Panel - displays when a bus is selected.
  */
-export const BusInspector = observer(({ store, busId }: BusInspectorProps) => {
-  const bus = store.getBusById(busId);
+export const BusInspector = observer(({ busId }: BusInspectorProps) => {
+  const store = useStore();
+  const bus = store.busStore.getBusById(busId);
 
   if (!bus) {
     return (
@@ -227,22 +225,22 @@ export const BusInspector = observer(({ store, busId }: BusInspectorProps) => {
     );
   }
 
-  const allPublishers = store.publishers.filter(p => p.busId === busId);
-  const allListeners = store.listeners.filter(l => l.busId === busId);
+  const allPublishers = store.busStore.publishers.filter(p => p.busId === busId);
+  const allListeners = store.busStore.listeners.filter(l => l.busId === busId);
   const typeDisplay = formatTypeDesc(bus.type);
   const domain = bus.type.domain as CoreDomain;
   const availableCombineModes = getCombineModesForDomain(domain);
 
   const handleNameChange = (newName: string) => {
-    store.updateBus(busId, { name: newName });
+    store.busStore.updateBus(busId, { name: newName });
   };
 
   const handleCombineModeChange = (newMode: BusCombineMode) => {
-    store.updateBus(busId, { combineMode: newMode });
+    store.busStore.updateBus(busId, { combineMode: newMode });
   };
 
   const handleDefaultValueChange = (newValue: unknown) => {
-    store.updateBus(busId, { defaultValue: newValue });
+    store.busStore.updateBus(busId, { defaultValue: newValue });
   };
 
   return (
@@ -304,9 +302,9 @@ export const BusInspector = observer(({ store, busId }: BusInspectorProps) => {
           ) : (
             <ul className="bus-routing-list">
               {allPublishers
-                .sort((a, b) => a.sortKey - b.sortKey)
-                .map(pub => (
-                  <PublisherItem key={pub.id} publisher={pub} store={store} />
+                .sort((a: Publisher, b: Publisher) => a.sortKey - b.sortKey)
+                .map((pub: Publisher) => (
+                  <PublisherItem key={pub.id} publisher={pub} />
                 ))}
             </ul>
           )}
@@ -323,7 +321,7 @@ export const BusInspector = observer(({ store, busId }: BusInspectorProps) => {
           ) : (
             <ul className="bus-routing-list">
               {allListeners.map(listener => (
-                <ListenerItem key={listener.id} listener={listener} store={store} />
+                <ListenerItem key={listener.id} listener={listener} />
               ))}
             </ul>
           )}

@@ -12,7 +12,7 @@
  */
 
 import { makeObservable, observable, action, computed } from 'mobx';
-import type { EditorStore } from '../store';
+import type { RootStore } from '../stores/RootStore';
 import type {
   ControlSurface,
 //  SurfaceSection,
@@ -110,14 +110,14 @@ export class ControlSurfaceStore {
   /** The current control surface */
   surface: ControlSurface | null = null;
 
-  /** Reference to the editor store (for applying bindings) */
-  private editorStore: EditorStore;
+  /** Reference to the root store (for applying bindings) */
+  private rootStore: RootStore;
 
   /** Tracks which controls are being modulated (for UI display) */
   modulatedControls: Set<ControlId> = new Set();
 
-  constructor(editorStore: EditorStore) {
-    this.editorStore = editorStore;
+  constructor(rootStore: RootStore) {
+    this.rootStore = rootStore;
 
     makeObservable(this, {
       surface: observable.deep,  // Deep observation for nested control values
@@ -308,7 +308,7 @@ export class ControlSurfaceStore {
     }
 
     const { blockId, paramKey } = binding.target;
-    const block = this.editorStore.blocks.find((b) => b.id === blockId);
+    const block = this.rootStore.patchStore.blocks.find((b) => b.id === blockId);
     if (!block) {
       // Block might not exist (was deleted, macro changed, etc.)
       return;
@@ -355,7 +355,7 @@ export class ControlSurfaceStore {
     }
 
     // Update the block param
-    this.editorStore.updateBlockParams(blockId, { [paramKey]: value });
+    this.rootStore.patchStore.updateBlockParams(blockId, { [paramKey]: value });
   }
 
   // ===========================================================================

@@ -5,7 +5,7 @@
  * Per lane-mode.md and lane-mode-2.md specs.
  */
 
-import type { LaneLayout, LaneTemplate, LaneKind } from './types';
+import type { LaneTemplate, LaneKind, LaneLayout } from './types';
 
 // =============================================================================
 // Simple Layout (5 lanes) - from lane-mode.md
@@ -204,3 +204,5 @@ export function mapLaneToLayout(
   // Fall back to first lane
   return targetLayout.lanes[0]?.id ?? 'unknown';
 }
+
+export type { LaneLayout };

@@ -7,15 +7,11 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
-import type { EditorStore } from './store';
+import { useStore } from './stores';
 import type { PortRef, Block, Slot, BlockForm } from './types';
 import { getBlockDefinition, getBlockTags, getBlockDefinitions, type BlockDefinition, type BlockTags, type CompoundGraph } from './blocks';
 import { findCompatiblePorts, getConnectionsForPort, areTypesCompatible, describeSlotType, formatSlotType, slotCompatibilityHint } from './portUtils';
 import './Inspector.css';
-
-interface InspectorProps {
-  store: EditorStore;
-}
 
 function formatFormLabel(form: BlockForm): string {
   if (form === 'legacy-composite') return 'Legacy Composite';
@@ -118,25 +114,24 @@ function CompositeGraphView({ graph }: { graph: CompoundGraph }) {
  * Port wiring panel - shows when a port is selected.
  * Lists compatible ports and allows creating connections.
  */
-function PortWiringPanel({
-  store,
+const PortWiringPanel = observer(({
   portRef,
   block,
   slot,
 }: {
-  store: EditorStore;
   portRef: PortRef;
   block: Block;
   slot: Slot;
-}) {
+}) => {
+  const store = useStore();
   const [hoveredTarget, setHoveredTarget] = useState<PortRef | null>(null);
 
   // Find compatible ports on placed blocks
   const compatible = findCompatiblePorts(
     portRef,
     slot,
-    store.blocks,
-    store.connections
+    store.patchStore.blocks,
+    store.patchStore.connections
   );
 
   // Find compatible library blocks (not yet placed)
@@ -178,7 +173,7 @@ function PortWiringPanel({
     if (!sourceDesc.domain) return { suggestions, nearMisses };
     const lookingForDirection = portRef.direction === 'output' ? 'input' : 'output';
 
-    for (const b of store.blocks) {
+    for (const b of store.patchStore.blocks) {
       if (b.id === block.id) continue;
       const slotsToCheck = lookingForDirection === 'input' ? b.inputs : b.outputs;
       for (const s of slotsToCheck) {
@@ -240,26 +235,26 @@ function PortWiringPanel({
       }
     }
     return { suggestions, nearMisses };
-  }, [block.id, portRef.direction, slot.type, store.blocks.length, adapterDefinitions]);
+  }, [block.id, portRef.direction, slot.type, store.patchStore.blocks.length, adapterDefinitions]);
 
   // Get existing connections for this port
   const existingConnections = getConnectionsForPort(
     portRef.blockId,
     portRef.slotId,
     portRef.direction,
-    store.connections
+    store.patchStore.connections
   );
 
   const handleConnect = (target: { block: Block; slot: Slot; portRef: PortRef }) => {
     if (portRef.direction === 'output') {
       // This port is output, target is input
-      store.connect(portRef.blockId, portRef.slotId, target.portRef.blockId, target.portRef.slotId);
+      store.patchStore.connect(portRef.blockId, portRef.slotId, target.portRef.blockId, target.portRef.slotId);
     } else {
       // This port is input, target is output
-      store.connect(target.portRef.blockId, target.portRef.slotId, portRef.blockId, portRef.slotId);
+      store.patchStore.connect(target.portRef.blockId, target.portRef.slotId, portRef.blockId, portRef.slotId);
     }
     // Clear selection after connecting
-    store.setSelectedPort(null);
+    store.uiStore.setSelectedPort(null);
   };
 
   /**
@@ -267,36 +262,36 @@ function PortWiringPanel({
    */
   const handleAddAndConnect = (def: BlockDefinition, targetSlot: Slot) => {
     // Find the suggested lane
-    const targetLane = store.lanes.find((lane) => lane.kind === def.laneKind);
+    const targetLane = store.patchStore.lanes.find((lane) => lane.kind === def.laneKind);
     if (!targetLane) return;
 
     // Add the block
-    const newBlockId = store.addBlock(def.type, targetLane.id, def.defaultParams);
+    const newBlockId = store.patchStore.addBlock(def.type, targetLane.id, def.defaultParams);
 
     // Connect the ports
     if (portRef.direction === 'output') {
       // Selected port is output, new block's slot is input
-      store.connect(portRef.blockId, portRef.slotId, newBlockId, targetSlot.id);
+      store.patchStore.connect(portRef.blockId, portRef.slotId, newBlockId, targetSlot.id);
     } else {
       // Selected port is input, new block's slot is output
-      store.connect(newBlockId, targetSlot.id, portRef.blockId, portRef.slotId);
+      store.patchStore.connect(newBlockId, targetSlot.id, portRef.blockId, portRef.slotId);
     }
 
     // Clear selection
-    store.setSelectedPort(null);
+    store.uiStore.setSelectedPort(null);
   };
 
   const handleDisconnect = (connectionId: string) => {
-    store.disconnect(connectionId);
+    store.patchStore.disconnect(connectionId);
   };
 
   const findLaneIdForBlock = (blockId: string): string | null => {
-    const lane = store.lanes.find((l) => l.blockIds.includes(blockId));
+    const lane = store.patchStore.lanes.find((l) => l.blockIds.includes(blockId));
     return lane?.id ?? null;
   };
 
   const isInputOccupied = (blockId: string, slotId: string): boolean => {
-    return store.connections.some(
+    return store.patchStore.connections.some(
       (c) => c.to.blockId === blockId && c.to.slotId === slotId
     );
   };
@@ -309,9 +304,9 @@ function PortWiringPanel({
     adapterOutput: Slot;
   }) => {
     // Determine lane to place adapter
-    const laneByKind = store.lanes.find((l) => l.kind === suggestion.adapter.laneKind);
+    const laneByKind = store.patchStore.lanes.find((l) => l.kind === suggestion.adapter.laneKind);
     const laneOfTarget = findLaneIdForBlock(suggestion.block.id);
-    const laneFallback = store.lanes[0]?.id ?? null;
+    const laneFallback = store.patchStore.lanes[0]?.id ?? null;
     const laneId = laneByKind?.id ?? laneOfTarget ?? laneFallback;
     if (!laneId) return;
 
@@ -323,7 +318,7 @@ function PortWiringPanel({
       return;
     }
 
-    const adapterId = store.addBlock(
+    const adapterId = store.patchStore.addBlock(
       suggestion.adapter.type,
       laneId,
       suggestion.adapter.defaultParams
@@ -331,21 +326,21 @@ function PortWiringPanel({
 
     if (portRef.direction === 'output') {
       // source -> adapter -> target
-      store.connect(portRef.blockId, portRef.slotId, adapterId, suggestion.adapterInput.id);
-      store.connect(adapterId, suggestion.adapterOutput.id, suggestion.block.id, suggestion.slot.id);
+      store.patchStore.connect(portRef.blockId, portRef.slotId, adapterId, suggestion.adapterInput.id);
+      store.patchStore.connect(adapterId, suggestion.adapterOutput.id, suggestion.block.id, suggestion.slot.id);
     } else {
       // target -> adapter -> source
-      store.connect(suggestion.block.id, suggestion.slot.id, adapterId, suggestion.adapterInput.id);
-      store.connect(adapterId, suggestion.adapterOutput.id, portRef.blockId, portRef.slotId);
+      store.patchStore.connect(suggestion.block.id, suggestion.slot.id, adapterId, suggestion.adapterInput.id);
+      store.patchStore.connect(adapterId, suggestion.adapterOutput.id, portRef.blockId, portRef.slotId);
     }
 
-    store.setSelectedPort(null);
+    store.uiStore.setSelectedPort(null);
   };
 
   // Hover highlighting - set hovered port in store
   const handleTargetHover = (target: PortRef | null) => {
     setHoveredTarget(target);
-    store.setHoveredPort(target);
+    store.uiStore.setHoveredPort(target);
   };
 
   const definition = getBlockDefinition(block.type);
@@ -409,7 +404,7 @@ function PortWiringPanel({
               {existingConnections.map((conn) => {
                 const otherBlockId = portRef.direction === 'output' ? conn.to.blockId : conn.from.blockId;
                 const otherSlotId = portRef.direction === 'output' ? conn.to.slotId : conn.from.slotId;
-                const otherBlock = store.blocks.find((b) => b.id === otherBlockId);
+                const otherBlock = store.patchStore.blocks.find((b) => b.id === otherBlockId);
                 const otherSlots = portRef.direction === 'output' ? otherBlock?.inputs : otherBlock?.outputs;
                 const otherSlot = otherSlots?.find((s) => s.id === otherSlotId);
 
@@ -505,7 +500,6 @@ function PortWiringPanel({
           </div>
         )}
 
-        {/* Adapter suggestions */}
         {adapterSuggestions.length > 0 && (
           <div className="wiring-section">
             <h4>Adapter suggestions</h4>
@@ -559,7 +553,7 @@ function PortWiringPanel({
       </div>
     </div>
   );
-}
+});
 
 /**
  * Preview display for a block definition (not yet placed).
@@ -674,9 +668,10 @@ function DefinitionPreview({ definition }: { definition: BlockDefinition }) {
  * Inspector displays and edits parameters of selected block.
  * Also shows port wiring panel when a port is selected.
  */
-export const Inspector = observer(({ store }: InspectorProps) => {
+export const Inspector = observer(() => {
+  const store = useStore();
   const block = store.selectedBlock;
-  const previewedDefinition = store.previewedDefinition;
+  const previewedDefinition = store.uiStore.previewedDefinition;
   const selectedPortInfo = store.selectedPortInfo;
   const [showCompositeGraph, setShowCompositeGraph] = useState(false);
 
@@ -688,8 +683,7 @@ export const Inspector = observer(({ store }: InspectorProps) => {
   if (selectedPortInfo) {
     return (
       <PortWiringPanel
-        store={store}
-        portRef={store.uiState.selectedPort!}
+        portRef={store.uiStore.uiState.selectedPort!}
         block={selectedPortInfo.block}
         slot={selectedPortInfo.slot}
       />
@@ -794,7 +788,7 @@ export const Inspector = observer(({ store }: InspectorProps) => {
                         <select
                           value={String(value)}
                           onChange={(e) =>
-                            store.updateBlockParams(block.id, {
+                            store.patchStore.updateBlockParams(block.id, {
                               [key]: e.target.value,
                             })
                           }
@@ -810,7 +804,7 @@ export const Inspector = observer(({ store }: InspectorProps) => {
                           type="checkbox"
                           checked={value}
                           onChange={(e) =>
-                            store.updateBlockParams(block.id, {
+                            store.patchStore.updateBlockParams(block.id, {
                               [key]: e.target.checked,
                             })
                           }
@@ -823,7 +817,7 @@ export const Inspector = observer(({ store }: InspectorProps) => {
                           min={schema?.min}
                           max={schema?.max}
                           onChange={(e) =>
-                            store.updateBlockParams(block.id, {
+                            store.patchStore.updateBlockParams(block.id, {
                               [key]: parseFloat(e.target.value) || 0,
                             })
                           }
@@ -833,7 +827,7 @@ export const Inspector = observer(({ store }: InspectorProps) => {
                           type="text"
                           value={String(value)}
                           onChange={(e) =>
-                            store.updateBlockParams(block.id, {
+                            store.patchStore.updateBlockParams(block.id, {
                               [key]: e.target.value,
                             })
                           }
@@ -880,7 +874,7 @@ export const Inspector = observer(({ store }: InspectorProps) => {
         <div className="inspector-section inspector-actions">
           <button
             className="delete-button"
-            onClick={() => store.removeBlock(block.id)}
+            onClick={() => store.patchStore.removeBlock(block.id)}
           >
             Delete Block
           </button>

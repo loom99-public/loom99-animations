@@ -6,20 +6,17 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import type { EditorStore } from './store';
+import { useStore } from './stores';
 import { getConnectionsForPort } from './portUtils';
 import './ContextMenu.css';
-
-interface ContextMenuProps {
-  store: EditorStore;
-}
 
 /**
  * ContextMenu renders a right-click menu for port operations.
  * Shows disconnect options with optional confirmation.
  */
-export const ContextMenu = observer(({ store }: ContextMenuProps) => {
-  const { contextMenu } = store.uiState;
+export const ContextMenu = observer(() => {
+  const store = useStore();
+  const { contextMenu } = store.uiStore.uiState;
   const [showConfirm, setShowConfirm] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -29,14 +26,14 @@ export const ContextMenu = observer(({ store }: ContextMenuProps) => {
 
     const handleClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        store.closeContextMenu();
+        store.uiStore.closeContextMenu();
         setShowConfirm(null);
       }
     };
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        store.closeContextMenu();
+        store.uiStore.closeContextMenu();
         setShowConfirm(null);
       }
     };
@@ -63,38 +60,38 @@ export const ContextMenu = observer(({ store }: ContextMenuProps) => {
     portRef.blockId,
     portRef.slotId,
     portRef.direction,
-    store.connections
+    store.patchStore.connections
   );
 
   // Get block/slot info for display
-  const block = store.blocks.find((b) => b.id === portRef.blockId);
+  const block = store.patchStore.blocks.find((b) => b.id === portRef.blockId);
   const slots = portRef.direction === 'input' ? block?.inputs : block?.outputs;
   const slot = slots?.find((s) => s.id === portRef.slotId);
 
   const handleDisconnect = (connectionId: string) => {
-    if (store.settings.warnBeforeDisconnect && showConfirm !== connectionId) {
+    if (store.uiStore.settings.warnBeforeDisconnect && showConfirm !== connectionId) {
       setShowConfirm(connectionId);
       return;
     }
 
-    store.disconnect(connectionId);
+    store.patchStore.disconnect(connectionId);
     setShowConfirm(null);
 
     // Close menu if no more connections
     const remainingConnections = connections.filter((c) => c.id !== connectionId);
     if (remainingConnections.length === 0) {
-      store.closeContextMenu();
+      store.uiStore.closeContextMenu();
     }
   };
 
   const handleDisconnectAll = () => {
-    if (store.settings.warnBeforeDisconnect && showConfirm !== 'all') {
+    if (store.uiStore.settings.warnBeforeDisconnect && showConfirm !== 'all') {
       setShowConfirm('all');
       return;
     }
 
-    connections.forEach((conn) => store.disconnect(conn.id));
-    store.closeContextMenu();
+    connections.forEach((conn) => store.patchStore.disconnect(conn.id));
+    store.uiStore.closeContextMenu();
     setShowConfirm(null);
   };
 
@@ -129,7 +126,7 @@ export const ContextMenu = observer(({ store }: ContextMenuProps) => {
                   portRef.direction === 'output' ? conn.to.blockId : conn.from.blockId;
                 const otherSlotId =
                   portRef.direction === 'output' ? conn.to.slotId : conn.from.slotId;
-                const otherBlock = store.blocks.find((b) => b.id === otherBlockId);
+                const otherBlock = store.patchStore.blocks.find((b) => b.id === otherBlockId);
                 const otherSlots =
                   portRef.direction === 'output' ? otherBlock?.inputs : otherBlock?.outputs;
                 const otherSlot = otherSlots?.find((s) => s.id === otherSlotId);

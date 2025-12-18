@@ -7,13 +7,12 @@
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import type { Bus, BusCombineMode, CoreDomain } from './types';
-import type { EditorStore } from './store';
+import { useStore } from './stores';
 import { BusViz } from './BusViz';
 import './BusBoard.css';
 
 interface BusChannelProps {
   bus: Bus;
-  store: EditorStore;
   isSelected: boolean;
   onSelect: () => void;
 }
@@ -62,9 +61,10 @@ function isCoreDomain(domain: string): domain is CoreDomain {
 /**
  * Individual bus channel strip.
  */
-export const BusChannel = observer(({ bus, store, isSelected, onSelect }: BusChannelProps) => {
-  const publishers = store.getPublishersByBus(bus.id);
-  const listeners = store.getListenersByBus(bus.id);
+export const BusChannel = observer(({ bus, isSelected, onSelect }: BusChannelProps) => {
+  const store = useStore();
+  const publishers = store.busStore.getPublishersByBus(bus.id);
+  const listeners = store.busStore.getListenersByBus(bus.id);
   const subscriberCount = listeners.length;
 
   const domainIcon = getDomainIcon(bus.type.domain);
@@ -77,12 +77,12 @@ export const BusChannel = observer(({ bus, store, isSelected, onSelect }: BusCha
   const handleNameChange = (e: React.FocusEvent<HTMLInputElement>) => {
     const newName = e.target.value.trim();
     if (newName && newName !== bus.name) {
-      store.updateBus(bus.id, { name: newName });
+      store.busStore.updateBus(bus.id, { name: newName });
     }
   };
 
   const handleCombineModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    store.updateBus(bus.id, { combineMode: e.target.value as BusCombineMode });
+    store.busStore.updateBus(bus.id, { combineMode: e.target.value as BusCombineMode });
   };
 
   const handleDragStart = (e: React.DragEvent, publisherId: string) => {
@@ -128,7 +128,7 @@ export const BusChannel = observer(({ bus, store, isSelected, onSelect }: BusCha
     reordered.forEach((pub, index) => {
       const newSortKey = (index + 1) * 10;
       if (pub.sortKey !== newSortKey) {
-        store.updatePublisher(pub.id, { sortKey: newSortKey });
+        store.busStore.updatePublisher(pub.id, { sortKey: newSortKey });
       }
     });
 
@@ -200,7 +200,7 @@ export const BusChannel = observer(({ bus, store, isSelected, onSelect }: BusCha
         ) : (
           <div className="bus-channel-publisher-list">
             {publishers.map((pub, index) => {
-              const block = store.blocks.find((b) => b.id === pub.from.blockId);
+              const block = store.patchStore.blocks.find((b) => b.id === pub.from.blockId);
               const blockLabel = block?.label ?? pub.from.blockId;
               const isDragging = pub.id === draggedPublisherId;
               const isDropTarget = index === dropTargetIndex;
@@ -227,7 +227,7 @@ export const BusChannel = observer(({ bus, store, isSelected, onSelect }: BusCha
                     className="bus-publisher-mute-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      store.updatePublisher(pub.id, { enabled: !pub.enabled });
+                      store.busStore.updatePublisher(pub.id, { enabled: !pub.enabled });
                     }}
                     title={pub.enabled ? 'Disable publisher' : 'Enable publisher'}
                   >

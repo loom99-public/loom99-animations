@@ -9,14 +9,14 @@
 import { observer } from 'mobx-react-lite';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import type { EditorStore } from './store';
-import type { Bus, TypeDesc, PortRef } from './types';
+import { useStore } from './stores';
+import type { RootStore } from './stores';
+import type { Bus, TypeDesc, PortRef, Publisher, Block, Slot } from './types';
 import { SLOT_TYPE_TO_TYPE_DESC, isDirectlyCompatible } from './types';
 import { BusCreationDialog } from './BusCreationDialog';
 import './PublishMenu.css';
 
 interface PublishMenuProps {
-  store: EditorStore;
   isOpen: boolean;
   onClose: () => void;
   /** Port being published */
@@ -28,16 +28,16 @@ interface PublishMenuProps {
 /**
  * Get compatible buses for a port's type.
  */
-function getCompatibleBuses(store: EditorStore, portType: TypeDesc): Bus[] {
-  return store.buses.filter((bus) => isDirectlyCompatible(bus.type, portType));
+function getCompatibleBuses(store: RootStore, portType: TypeDesc): Bus[] {
+  return store.busStore.buses.filter((bus: Bus) => isDirectlyCompatible(bus.type, portType));
 }
 
 /**
  * Get publishers from this port to any buses.
  */
-function getPortPublishers(store: EditorStore, portRef: PortRef) {
-  return store.publishers.filter(
-    (p) =>
+function getPortPublishers(store: RootStore, portRef: PortRef): Publisher[] {
+  return store.busStore.publishers.filter(
+    (p: Publisher) =>
       p.from.blockId === portRef.blockId &&
       p.from.port === portRef.slotId
   );
@@ -46,9 +46,9 @@ function getPortPublishers(store: EditorStore, portRef: PortRef) {
 /**
  * Check if a port is already publishing to a bus.
  */
-function isPortPublishingToBus(store: EditorStore, portRef: PortRef, busId: string): boolean {
-  return store.publishers.some(
-    (p) =>
+function isPortPublishingToBus(store: RootStore, portRef: PortRef, busId: string): boolean {
+  return store.busStore.publishers.some(
+    (p: Publisher) =>
       p.busId === busId &&
       p.from.blockId === portRef.blockId &&
       p.from.port === portRef.slotId
@@ -59,14 +59,15 @@ function isPortPublishingToBus(store: EditorStore, portRef: PortRef, busId: stri
  * Publish menu component.
  */
 export const PublishMenu = observer((props: PublishMenuProps) => {
-  const { store, isOpen, onClose, portRef, position } = props;
+  const store = useStore();
+  const { isOpen, onClose, portRef, position } = props;
   const [showBusSubmenu, setShowBusSubmenu] = useState(false);
   const [isCreationDialogOpen, setIsCreationDialogOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Get the port's TypeDesc
-  const block = store.blocks.find((b) => b.id === portRef.blockId);
-  const slot = block?.outputs.find((s) => s.id === portRef.slotId);
+  const block = store.patchStore.blocks.find((b: Block) => b.id === portRef.blockId);
+  const slot = block?.outputs.find((s: Slot) => s.id === portRef.slotId);
 
   if (!slot) {
     return null; // Port not found
@@ -108,7 +109,7 @@ export const PublishMenu = observer((props: PublishMenuProps) => {
 
   const handlePublishToBus = (busId: string) => {
     // Add publisher
-    store.addPublisher(busId, portRef.blockId, portRef.slotId);
+    store.busStore.addPublisher(busId, portRef.blockId, portRef.slotId);
     onClose();
   };
 
@@ -117,7 +118,7 @@ export const PublishMenu = observer((props: PublishMenuProps) => {
   };
 
   const handleStopPublishing = (publisherId: string) => {
-    store.removePublisher(publisherId);
+    store.busStore.removePublisher(publisherId);
     onClose();
   };
 
@@ -162,7 +163,7 @@ export const PublishMenu = observer((props: PublishMenuProps) => {
               {compatibleBuses.length === 0 ? (
                 <div className="publish-menu-submenu-empty">No compatible buses</div>
               ) : (
-                compatibleBuses.map((bus) => {
+                compatibleBuses.map((bus: Bus) => {
                   const isPublishing = isPortPublishingToBus(store, portRef, bus.id);
                   return (
                     <div
@@ -194,8 +195,8 @@ export const PublishMenu = observer((props: PublishMenuProps) => {
         {currentPublishers.length > 0 && (
           <>
             <div className="publish-menu-separator" />
-            {currentPublishers.map((publisher) => {
-              const bus = store.buses.find((b) => b.id === publisher.busId);
+            {currentPublishers.map((publisher: Publisher) => {
+              const bus = store.busStore.buses.find((b: Bus) => b.id === publisher.busId);
               const busName = bus?.name || 'Unknown';
               return (
                 <div
@@ -214,7 +215,6 @@ export const PublishMenu = observer((props: PublishMenuProps) => {
 
       {/* Bus creation dialog */}
       <BusCreationDialog
-        store={store}
         isOpen={isCreationDialogOpen}
         onClose={() => setIsCreationDialogOpen(false)}
         onCreated={handleBusCreated}

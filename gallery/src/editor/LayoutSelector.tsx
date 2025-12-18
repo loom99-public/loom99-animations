@@ -5,16 +5,14 @@
  */
 
 import { observer } from 'mobx-react-lite';
-import type { EditorStore } from './store';
+import { useStore } from './stores';
+import type { LaneLayout } from './types'; // Assuming LaneLayout is in types
 import './LayoutSelector.css';
 
-interface LayoutSelectorProps {
-  store: EditorStore;
-}
-
-export const LayoutSelector = observer(({ store }: LayoutSelectorProps) => {
-  const currentLayout = store.currentLayout;
-  const layouts = store.availableLayouts;
+export const LayoutSelector = observer(() => {
+  const store = useStore();
+  const currentLayout = store.patchStore.currentLayout;
+  const layouts = store.patchStore.availableLayouts;
 
   return (
     <div className="layout-selector">
@@ -22,9 +20,9 @@ export const LayoutSelector = observer(({ store }: LayoutSelectorProps) => {
       <select
         className="layout-select"
         value={currentLayout.id}
-        onChange={(e) => store.switchLayout(e.target.value)}
+        onChange={(e) => store.patchStore.switchLayout(e.target.value)}
       >
-        {layouts.map((layout) => (
+        {layouts.map((layout: LaneLayout) => (
           <option key={layout.id} value={layout.id}>
             {layout.name}
           </option>

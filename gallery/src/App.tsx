@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Gallery } from './components/Gallery';
 import { Editor } from './editor';
+import { StoreProvider } from './editor/stores';
 import './App.css';
 
 function App() {
@@ -14,7 +15,11 @@ function App() {
 
   // Simple hash-based routing
   if (route === '#/editor') {
-    return <Editor />;
+    return (
+      <StoreProvider>
+        <Editor />
+      </StoreProvider>
+    );
   }
 
   return <Gallery />;

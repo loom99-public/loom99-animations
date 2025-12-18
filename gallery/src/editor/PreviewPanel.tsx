@@ -25,14 +25,13 @@ import {
 } from './runtime';
 import type { CompilerService, Viewport } from './compiler';
 import type { Program } from './compiler/types';
-import type { EditorStore } from './store';
+import { useStore } from './stores';
 import { logStore } from './logStore';
 import './PreviewPanel.css';
 
 interface PreviewPanelProps {
   compilerService?: CompilerService;
   isPlaying?: boolean;
-  store?: EditorStore;
   onShowHelp?: () => void;
 }
 
@@ -46,7 +45,8 @@ const DEFAULT_SCENE: Scene = {
 
 const DEFAULT_VIEWPORT: Viewport = { width: 800, height: 600 };
 
-export const PreviewPanel = observer(({ compilerService, isPlaying, store, onShowHelp }: PreviewPanelProps) => {
+export const PreviewPanel = observer(({ compilerService, isPlaying, onShowHelp }: PreviewPanelProps) => {
+  const store = useStore();
   const svgRef = useRef<SVGSVGElement>(null);
   const playerRef = useRef<Player | null>(null);
   const rendererRef = useRef<SvgRenderer | null>(null);
@@ -64,8 +64,8 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, store, onSho
   const [timeline, setTimeline] = useState<TimelineHint | null>(null);
 
   // Speed and seed from store (with fallbacks)
-  const speed = store?.settings.speed ?? 1.0;
-  const seed = store?.settings.seed ?? 42;
+  const speed = store.uiStore.settings.speed;
+  const seed = store.uiStore.settings.seed;
 
   // Derive dimensions from viewport
   const { width, height } = viewport;
@@ -81,7 +81,7 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, store, onSho
 
     const handleStateChange = (state: PlayState) => {
       setPlayState(state);
-      store?.setPlaying(state === 'playing');
+      store.uiStore.setPlaying(state === 'playing');
     };
 
     const player = createPlayer(
@@ -213,13 +213,13 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, store, onSho
   const handleSpeedChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newSpeed = parseFloat(e.target.value) || 1;
     const clampedSpeed = Math.max(0.1, Math.min(4, newSpeed));
-    store?.setSpeed(clampedSpeed);
+    store.uiStore.setSpeed(clampedSpeed);
     playerRef.current?.setSpeed(clampedSpeed);
   }, [store]);
 
   const handleSeedChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newSeed = parseInt(e.target.value) || 0;
-    store?.setSeed(newSeed);
+    store.uiStore.setSeed(newSeed);
     // Seed change triggers recompilation via autoCompile
   }, [store]);
 

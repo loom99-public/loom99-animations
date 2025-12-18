@@ -1,16 +1,9 @@
-/**
- * Compiler Integration
- *
- * Bridges the EditorStore with the patch compiler.
- * Converts editor data structures to compiler format and handles compilation.
- */
-
-import type { EditorStore } from '../store';
+import type { RootStore } from '../stores/RootStore';
 import type { Block, Connection } from '../types';
 import { logStore } from '../logStore';
 import { compilePatch } from './compile';
 import { createCompileCtx } from './context';
-import { createBlockRegistry } from './blocks';
+import { createBlockRegistry, registerDynamicBlock } from './blocks';
 import type {
   BlockInstance,
   BlockRegistry,
@@ -23,6 +16,7 @@ import type {
 } from './types';
 import { buildDecorations, emptyDecorations, type DecorationSet } from './error-decorations';
 import { getBlockDefinition } from '../blocks';
+import { getCompositeCompilers } from '../composite-bridge';
 
 // =============================================================================
 // Patch Conversion
@@ -47,10 +41,7 @@ function convertBlocks(blocks: Block[]): Map<string, BlockInstance> {
  * Convert EditorStore connections to compiler format.
  */
 function convertConnections(connections: Connection[]): CompilerConnection[] {
-  return connections.map((c) => ({
-    from: { blockId: c.from.blockId, slotId: c.from.slotId },
-    to: { blockId: c.to.blockId, slotId: c.to.slotId },
-  })).map((c) => ({
+  return connections.map((c: Connection) => ({
     from: { blockId: c.from.blockId, port: c.from.slotId },
     to: { blockId: c.to.blockId, port: c.to.slotId },
   }));
@@ -59,10 +50,10 @@ function convertConnections(connections: Connection[]): CompilerConnection[] {
 /**
  * Convert EditorStore to CompilerPatch.
  */
-export function editorToPatch(store: EditorStore): CompilerPatch {
+export function editorToPatch(store: RootStore): CompilerPatch {
   return {
-    blocks: convertBlocks(store.blocks),
-    connections: convertConnections(store.connections),
+    blocks: convertBlocks(store.patchStore.blocks),
+    connections: convertConnections(store.patchStore.connections),
     // output is auto-inferred
   };
 }
@@ -94,7 +85,13 @@ function expandComposites(patch: CompilerPatch): CompilerPatch {
   while (queue.length > 0) {
     const [blockId, block] = queue.shift()!;
     const definition = getBlockDefinition(block.type);
-    const graph = definition?.primitiveGraph;
+    let graph = definition?.primitiveGraph;
+
+    // Handle composite blocks (composite: prefix)
+    if (block.type.startsWith('composite:') && definition?.compositeDefinition) {
+      // Convert composite definition to primitive graph - use the stored primitiveGraph
+      graph = definition.primitiveGraph;
+    }
 
     if (graph) {
       const idMap = new Map<string, string>();
@@ -204,7 +201,13 @@ export interface CompilerService {
 /**
  * Create a compiler service for an EditorStore.
  */
-export function createCompilerService(store: EditorStore): CompilerService {
+export function createCompilerService(store: RootStore): CompilerService {
+  // Register all composite compilers
+  const compositeCompilers = getCompositeCompilers();
+  for (const [blockType, compiler] of Object.entries(compositeCompilers)) {
+    registerDynamicBlock(blockType, compiler);
+  }
+
   const registry = createBlockRegistry();
   const ctx = createCompileCtx();
 
@@ -220,7 +223,7 @@ export function createCompilerService(store: EditorStore): CompilerService {
       try {
         let patch = editorToPatch(store);
         patch = expandComposites(patch);
-        const seed: Seed = store.settings.seed;
+        const seed: Seed = store.uiStore.settings.seed;
 
         logStore.debug(
           'compiler',
@@ -285,7 +288,7 @@ export function createCompilerService(store: EditorStore): CompilerService {
 
     getViewport(): Viewport {
       // Find Canvas block in the store and extract its viewport params
-      const canvasBlock = store.blocks.find((b) => b.type === 'canvas');
+      const canvasBlock = store.patchStore.blocks.find((b) => b.type === 'canvas');
       if (canvasBlock) {
         return {
           width: (canvasBlock.params.width as number) ?? 800,
@@ -317,7 +320,7 @@ export interface AutoCompileOptions {
  * Returns a dispose function to stop watching.
  */
 export function setupAutoCompile(
-  store: EditorStore,
+  store: RootStore,
   service: CompilerService,
   options: AutoCompileOptions = {}
 ): () => void {
@@ -328,11 +331,11 @@ export function setupAutoCompile(
   const dispose = reaction(
     // Track these observables
     () => ({
-      blockCount: store.blocks.length,
-      blocks: store.blocks.map((b) => ({ id: b.id, type: b.type, params: JSON.stringify(b.params) })),
-      connectionCount: store.connections.length,
-      connections: store.connections.map((c) => `${c.from.blockId}:${c.from.slotId}->${c.to.blockId}:${c.to.slotId}`),
-      seed: store.settings.seed,
+      blockCount: store.patchStore.blocks.length,
+      blocks: store.patchStore.blocks.map((b: Block) => ({ id: b.id, type: b.type, params: JSON.stringify(b.params) })),
+      connectionCount: store.patchStore.connections.length,
+      connections: store.patchStore.connections.map((c: Connection) => `${c.from.blockId}:${c.from.slotId}->${c.to.blockId}:${c.to.slotId}`),
+      seed: store.uiStore.settings.seed,
     }),
     // React to changes
     () => {

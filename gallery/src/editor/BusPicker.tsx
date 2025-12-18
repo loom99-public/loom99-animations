@@ -9,14 +9,14 @@
 import { observer } from 'mobx-react-lite';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import type { EditorStore } from './store';
-import type { Bus, TypeDesc, PortRef } from './types';
+import { useStore } from './stores';
+import type { RootStore } from './stores';
+import type { Bus, TypeDesc, PortRef, Listener } from './types';
 import { SLOT_TYPE_TO_TYPE_DESC, isDirectlyCompatible } from './types';
 import { BusCreationDialog } from './BusCreationDialog';
 import './BusPicker.css';
 
 interface BusPickerProps {
-  store: EditorStore;
   isOpen: boolean;
   onClose: () => void;
   /** Port being bound */
@@ -28,16 +28,16 @@ interface BusPickerProps {
 /**
  * Get compatible buses for a port's type.
  */
-function getCompatibleBuses(store: EditorStore, portType: TypeDesc): Bus[] {
-  return store.buses.filter((bus) => isDirectlyCompatible(bus.type, portType));
+function getCompatibleBuses(store: RootStore, portType: TypeDesc): Bus[] {
+  return store.busStore.buses.filter((bus: Bus) => isDirectlyCompatible(bus.type, portType));
 }
 
 /**
  * Check if a port is already subscribed to a bus.
  */
-function isPortSubscribedToBus(store: EditorStore, portRef: PortRef, busId: string): boolean {
-  return store.listeners.some(
-    (l) =>
+function isPortSubscribedToBus(store: RootStore, portRef: PortRef, busId: string): boolean {
+  return store.busStore.listeners.some(
+    (l: Listener) =>
       l.busId === busId &&
       l.to.blockId === portRef.blockId &&
       l.to.port === portRef.slotId
@@ -48,13 +48,14 @@ function isPortSubscribedToBus(store: EditorStore, portRef: PortRef, busId: stri
  * Bus picker dropdown component.
  */
 export const BusPicker = observer((props: BusPickerProps) => {
-  const { store, isOpen, onClose, portRef, position } = props;
+  const store = useStore();
+  const { isOpen, onClose, portRef, position } = props;
   const [showConvertible, setShowConvertible] = useState(false);
   const [isCreationDialogOpen, setIsCreationDialogOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   // Get the port's TypeDesc
-  const block = store.blocks.find((b) => b.id === portRef.blockId);
+  const block = store.patchStore.blocks.find((b) => b.id === portRef.blockId);
   const slot = block?.inputs.find((s) => s.id === portRef.slotId);
 
   if (!slot) {
@@ -96,7 +97,7 @@ export const BusPicker = observer((props: BusPickerProps) => {
 
   const handleSelectBus = (busId: string) => {
     // Add listener
-    store.addListener(busId, portRef.blockId, portRef.slotId);
+    store.busStore.addListener(busId, portRef.blockId, portRef.slotId);
     onClose();
   };
 
@@ -179,7 +180,6 @@ export const BusPicker = observer((props: BusPickerProps) => {
 
       {/* Bus creation dialog */}
       <BusCreationDialog
-        store={store}
         isOpen={isCreationDialogOpen}
         onClose={() => setIsCreationDialogOpen(false)}
         onCreated={handleBusCreated}

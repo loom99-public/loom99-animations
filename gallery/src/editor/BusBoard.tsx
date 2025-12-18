@@ -7,15 +7,11 @@
 
 import { observer } from 'mobx-react-lite';
 import { useState, useEffect, useMemo } from 'react';
-import type { EditorStore } from './store';
+import { useStore } from './stores';
 import type { Bus } from './types';
 import { BusChannel } from './BusChannel';
 import { BusCreationDialog } from './BusCreationDialog';
 import './BusBoard.css';
-
-interface BusBoardProps {
-  store: EditorStore;
-}
 
 /**
  * Group buses by category.
@@ -92,7 +88,8 @@ function saveGroupCollapseState(state: Record<string, boolean>): void {
 /**
  * Bus Board - vertical mixer panel for all buses.
  */
-export const BusBoard = observer(({ store }: BusBoardProps) => {
+export const BusBoard = observer(() => {
+  const store = useStore();
   const [collapsed, setCollapsed] = useState(false);
   const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
   const [isCreationDialogOpen, setIsCreationDialogOpen] = useState(false);
@@ -112,8 +109,8 @@ export const BusBoard = observer(({ store }: BusBoardProps) => {
 
   // Filter and group buses
   const filteredBuses = useMemo(() =>
-    filterBuses(store.buses, filterText),
-    [store.buses, filterText]
+    filterBuses(store.busStore.buses, filterText),
+    [store.busStore.buses, filterText]
   );
 
   const busGroups = useMemo(() =>
@@ -203,7 +200,7 @@ export const BusBoard = observer(({ store }: BusBoardProps) => {
 
           {/* Bus Channels (Grouped) */}
           <div className="bus-board-channels">
-            {store.buses.length === 0 ? (
+            {store.busStore.buses.length === 0 ? (
               <div className="bus-board-empty">
                 <p>No buses yet</p>
                 <p className="bus-board-empty-hint">
@@ -246,7 +243,6 @@ export const BusBoard = observer(({ store }: BusBoardProps) => {
                           <BusChannel
                             key={bus.id}
                             bus={bus}
-                            store={store}
                             isSelected={selectedBusId === bus.id}
                             onSelect={() => handleSelectBus(bus.id)}
                           />
@@ -263,7 +259,6 @@ export const BusBoard = observer(({ store }: BusBoardProps) => {
 
       {/* Bus Creation Dialog */}
       <BusCreationDialog
-        store={store}
         isOpen={isCreationDialogOpen}
         onClose={() => setIsCreationDialogOpen(false)}
         onCreated={handleBusCreated}

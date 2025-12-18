@@ -45,5 +45,10 @@ export type {
 } from './UnifiedCompiler';
 export { UnifiedCompiler } from './UnifiedCompiler';
 
+// Runtime adapter
+export { RuntimeAdapter } from './RuntimeAdapter';
+
 // State blocks
 export { DelayBlock, createDelayBlock } from './blocks/DelayBlock';
+export { IntegrateBlock, createIntegrateBlock } from './blocks/IntegrateBlock';
+export { HistoryBlock, createHistoryBlock } from './blocks/HistoryBlock';

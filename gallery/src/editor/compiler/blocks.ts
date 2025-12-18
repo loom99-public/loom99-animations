@@ -10,6 +10,7 @@
 export {
   DEFAULT_BLOCK_REGISTRY,
   createBlockRegistry,
+  registerDynamicBlock,
 } from './blocks/index';
 
 // Re-export all individual blocks for direct access

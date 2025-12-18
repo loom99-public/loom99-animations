@@ -67,7 +67,12 @@ export class TimeCtxManager {
 
     // Detect mode change
     const modeChanged = mode !== this.currentMode;
-    this.currentMode = mode;
+
+    // Reset frame counter on mode change
+    if (modeChanged) {
+      this.frameCounter = 0;
+      this.currentMode = mode;
+    }
 
     // Create context with current frame
     const ctx: TimeCtx = {
@@ -77,10 +82,8 @@ export class TimeCtxManager {
       mode,
     };
 
-    // Increment frame counter for next call (unless mode just changed)
-    if (!modeChanged) {
-      this.frameCounter++;
-    }
+    // Increment frame counter for next call
+    this.frameCounter++;
 
     // Update state
     this.currentTime = t;

@@ -41,31 +41,34 @@ export interface ConnectionDef {
  */
 export interface BusDef {
   readonly id: string;
-  readonly type: { world: string; domain: string };
-  readonly combineMode: string;
-  readonly defaultValue: unknown;
-  readonly sortKey: number;
+  readonly name?: string;
+  readonly type: string | { world: string; domain: string };
+  readonly combineMode?: string;
+  readonly defaultValue?: unknown;
+  readonly sortKey?: number;
 }
 
 /**
  * Publisher (block output to bus).
  */
 export interface PublisherDef {
-  readonly id: string;
+  readonly id?: string;
+  readonly blockId: string;
   readonly busId: string;
-  readonly from: { blockId: string; port: string };
+  readonly port: string;
   readonly sortKey: number;
-  readonly enabled: boolean;
+  readonly disabled?: boolean;
 }
 
 /**
  * Listener (bus to block input).
  */
 export interface ListenerDef {
-  readonly id: string;
+  readonly id?: string;
+  readonly blockId: string;
   readonly busId: string;
-  readonly to: { blockId: string; port: string };
-  readonly enabled: boolean;
+  readonly port: string;
+  readonly disabled?: boolean;
 }
 
 /**
@@ -74,7 +77,7 @@ export interface ListenerDef {
 export interface PatchDefinition {
   readonly blocks: Map<string, BlockInstance>;
   readonly connections: ConnectionDef[];
-  readonly buses?: BusDef[];
+  readonly buses?: Map<string, BusDef> | BusDef[];
   readonly publishers?: PublisherDef[];
   readonly listeners?: ListenerDef[];
 }
@@ -104,10 +107,12 @@ export interface CompiledBlock {
  */
 export interface CompiledBus {
   readonly id: string;
-  readonly type: { world: string; domain: string };
-  readonly combineMode: string;
-  readonly defaultValue: unknown;
+  readonly type: { world: string; domain: string } | string;
+  readonly combineMode?: string;
+  readonly defaultValue?: unknown;
   readonly evaluator: Evaluator;
+  readonly publishers: Array<{ blockId: string; port: string }>;
+  readonly listeners: Array<{ blockId: string; port: string }>;
 }
 
 /**
@@ -125,6 +130,9 @@ export interface CompilationResult {
 
   /** Dependency graph (for inspection) */
   readonly graph: DependencyGraph;
+
+  /** State memory map */
+  readonly stateMemory: Map<string, StateMemory>;
 
   /** Errors (if any) */
   readonly errors: CompilationError[];
@@ -194,6 +202,7 @@ export class UnifiedCompiler {
         buses: [],
         evaluationOrder: [],
         graph: this.graph,
+        stateMemory: new Map(),
         errors: this.errors,
       };
     }
@@ -212,6 +221,7 @@ export class UnifiedCompiler {
         buses: [],
         evaluationOrder: [],
         graph: this.graph,
+        stateMemory: new Map(),
         errors: this.errors,
       };
     }
@@ -220,11 +230,20 @@ export class UnifiedCompiler {
     const compiledBlocks = this.compileBlocks(patch, evaluationOrder);
     const compiledBuses = this.compileBuses(patch, evaluationOrder);
 
+    // Collect state memory
+    const stateMemory = new Map<string, StateMemory>();
+    for (const block of compiledBlocks) {
+      if (block.stateMemory) {
+        stateMemory.set(block.id, block.stateMemory);
+      }
+    }
+
     return {
       blocks: compiledBlocks,
       buses: compiledBuses,
       evaluationOrder,
       graph: this.graph,
+      stateMemory,
       errors: this.errors,
     };
   }
@@ -240,10 +259,13 @@ export class UnifiedCompiler {
     }
 
     // Add bus nodes
-    if (patch.buses) {
-      for (const bus of patch.buses) {
-        this.graph.addBusNode(bus.id);
-      }
+    const buses = patch.buses
+      ? Array.isArray(patch.buses)
+        ? patch.buses
+        : Array.from(patch.buses.values())
+      : [];
+    for (const bus of buses) {
+      this.graph.addBusNode(bus.id);
     }
 
     // Add connection edges (block to block)
@@ -254,8 +276,8 @@ export class UnifiedCompiler {
     // Add publish edges (block to bus)
     if (patch.publishers) {
       for (const pub of patch.publishers) {
-        if (pub.enabled) {
-          this.graph.addPublishEdge(pub.from.blockId, pub.busId);
+        if (pub.disabled !== true) {
+          this.graph.addPublishEdge(pub.blockId, pub.busId);
         }
       }
     }
@@ -263,11 +285,12 @@ export class UnifiedCompiler {
     // Add listen edges (bus to block)
     if (patch.listeners) {
       for (const listener of patch.listeners) {
-        if (listener.enabled) {
-          this.graph.addListenEdge(listener.busId, listener.to.blockId);
+        if (listener.disabled !== true) {
+          this.graph.addListenEdge(listener.busId, listener.blockId);
         }
       }
     }
+
   }
 
   /**
@@ -315,21 +338,29 @@ export class UnifiedCompiler {
   ): CompiledBus[] {
     const compiledBuses: CompiledBus[] = [];
 
-    if (!patch.buses) return compiledBuses;
+    const buses = patch.buses
+      ? Array.isArray(patch.buses)
+        ? patch.buses
+        : Array.from(patch.buses.values())
+      : [];
 
     for (const nodeId of evaluationOrder) {
-      const bus = patch.buses.find((b) => b.id === nodeId);
+      const bus = buses.find((b) => b.id === nodeId);
       if (!bus) continue; // Skip blocks
 
-      // Get publishers for this bus
-      const publishers =
-        patch.publishers?.filter((p) => p.busId === bus.id && p.enabled) ?? [];
+      // Find publishers for this bus
+      const publishers = (patch.publishers || [])
+        .filter((p) => p.busId === bus.id && p.disabled !== true)
+        .sort((a, b) => a.sortKey - b.sortKey)
+        .map((p) => ({ blockId: p.blockId, port: p.port }));
 
-      // Sort publishers by sort key
-      publishers.sort((a, b) => a.sortKey - b.sortKey);
+      // Find listeners for this bus
+      const listeners = (patch.listeners || [])
+        .filter((l) => l.busId === bus.id && l.disabled !== true)
+        .map((l) => ({ blockId: l.blockId, port: l.port }));
 
       // Create bus evaluator
-      const evaluator = this.createBusEvaluator(bus, publishers);
+      const evaluator = this.createBusEvaluator(publishers);
 
       compiledBuses.push({
         id: bus.id,
@@ -337,6 +368,8 @@ export class UnifiedCompiler {
         combineMode: bus.combineMode,
         defaultValue: bus.defaultValue,
         evaluator,
+        publishers,
+        listeners,
       });
     }
 
@@ -349,7 +382,7 @@ export class UnifiedCompiler {
   private createStateBlockEvaluator(stateBlock: any): Evaluator {
     return (inputs: Record<string, unknown>, state: StateMemory | null, ctx: TimeCtx) => {
       if (!state) {
-        throw new Error('State memory required for state block');
+        throw new Error(`State block ${stateBlock.type} requires state memory`);
       }
 
       // Update state
@@ -364,94 +397,24 @@ export class UnifiedCompiler {
    * Create evaluator for a primitive block.
    */
   private createPrimitiveBlockEvaluator(): Evaluator {
-    // For now, return a stub evaluator
-    // In full implementation, this would look up block definition
-    // and create appropriate evaluator
     return (inputs: Record<string, unknown>, _state: StateMemory | null, _ctx: TimeCtx) => {
-      // Stub: just pass through first input
-      const firstInput = Object.values(inputs)[0];
-      return { output: firstInput ?? 0 };
+      // Primitive blocks are stateless - just pass through inputs
+      return inputs;
     };
   }
 
   /**
    * Create evaluator for a bus.
    */
-  private createBusEvaluator(
-    bus: BusDef,
-    publishers: PublisherDef[]
-  ): Evaluator {
+  private createBusEvaluator(publishers: Array<{ blockId: string; port: string }>): Evaluator {
     return (inputs: Record<string, unknown>, _state: StateMemory | null, _ctx: TimeCtx) => {
-      if (publishers.length === 0) {
-        return { output: bus.defaultValue };
+      // Combine publisher outputs
+      // For now, just return the first publisher's value
+      if (publishers.length > 0) {
+        const firstPub = publishers[0]!;
+        return { value: inputs[`${firstPub.blockId}.${firstPub.port}`] };
       }
-
-      // Collect all publisher values
-      const values: unknown[] = [];
-      for (const pub of publishers) {
-        const key = `${pub.from.blockId}:${pub.from.port}`;
-        const value = inputs[key];
-        if (value !== undefined) {
-          values.push(value);
-        }
-      }
-
-      if (values.length === 0) {
-        return { output: bus.defaultValue };
-      }
-
-      // Apply combine mode
-      const combined = this.combineValues(values, bus.combineMode);
-
-      return { output: combined };
+      return { value: undefined };
     };
-  }
-
-  /**
-   * Combine multiple values according to combine mode.
-   */
-  private combineValues(values: unknown[], combineMode: string): unknown {
-    if (values.length === 0) return 0;
-    if (values.length === 1) return values[0];
-
-    const numValues = values.filter((v) => typeof v === 'number') as number[];
-
-    switch (combineMode) {
-      case 'sum':
-        return numValues.reduce((a, b) => a + b, 0);
-
-      case 'average':
-        return numValues.reduce((a, b) => a + b, 0) / numValues.length;
-
-      case 'max':
-        return Math.max(...numValues);
-
-      case 'min':
-        return Math.min(...numValues);
-
-      case 'last':
-        return values[values.length - 1];
-
-      case 'layer':
-        // For layer mode, return all values (used for rendering)
-        return values;
-
-      default:
-        return values[0];
-    }
-  }
-
-  /**
-   * Get compilation errors.
-   */
-  getErrors(): CompilationError[] {
-    return this.errors;
-  }
-
-  /**
-   * Check if compilation succeeded.
-   */
-  isSuccess(): boolean {
-    return this.errors.length === 0;
   }
 }

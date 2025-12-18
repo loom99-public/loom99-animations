@@ -99,13 +99,16 @@ export class DependencyGraph {
 
   /**
    * Add a direct connection edge (block to block).
+   *
+   * An edge is "throughState" if it comes FROM a state block,
+   * meaning the source block produces delayed/stateful output.
    */
   addConnectionEdge(fromBlockId: string, toBlockId: string): void {
     const edge: GraphEdge = {
       from: fromBlockId,
       to: toBlockId,
       type: 'connection',
-      throughState: this.stateBlockIds.has(toBlockId),
+      throughState: this.stateBlockIds.has(fromBlockId),
     };
 
     this.edges.push(edge);
@@ -139,6 +142,9 @@ export class DependencyGraph {
 
   /**
    * Add a listen edge (bus to block).
+   *
+   * An edge is "throughState" if it goes INTO a state block,
+   * meaning the target block will delay the signal.
    */
   addListenEdge(busId: string, blockId: string): void {
     const edge: GraphEdge = {
@@ -223,8 +229,9 @@ export class DependencyGraph {
    * Compute topological sort for evaluation order.
    *
    * Uses Kahn's algorithm with stable ordering (secondary sort by ID).
+   * Edges through state blocks are ignored for ordering (they represent delayed feedback).
    *
-   * @throws Error if graph has cycles
+   * @throws Error if graph has instantaneous cycles
    * @returns Ordered list of node IDs
    */
   topologicalSort(): string[] {
@@ -236,7 +243,7 @@ export class DependencyGraph {
       throw new Error(`Illegal instantaneous cycle detected: ${cycleDesc}`);
     }
 
-    // Kahn's algorithm
+    // Kahn's algorithm - only consider instantaneous edges
     const inDegree = new Map<string, number>();
     const result: string[] = [];
 
@@ -245,12 +252,14 @@ export class DependencyGraph {
       inDegree.set(nodeId, 0);
     }
 
-    for (const edge of this.edges) {
+    // Only count edges that are NOT through state blocks
+    const instantaneousEdges = this.edges.filter((e) => !e.throughState);
+    for (const edge of instantaneousEdges) {
       const current = inDegree.get(edge.to) ?? 0;
       inDegree.set(edge.to, current + 1);
     }
 
-    // Find all nodes with no incoming edges
+    // Find all nodes with no incoming instantaneous edges
     const queue: string[] = [];
     for (const [nodeId, degree] of inDegree.entries()) {
       if (degree === 0) {
@@ -266,8 +275,8 @@ export class DependencyGraph {
       const nodeId = queue.shift()!;
       result.push(nodeId);
 
-      // Find all edges from this node
-      const outgoingEdges = this.edges.filter((e) => e.from === nodeId);
+      // Find all instantaneous outgoing edges from this node
+      const outgoingEdges = instantaneousEdges.filter((e) => e.from === nodeId);
       for (const edge of outgoingEdges) {
         const degree = inDegree.get(edge.to)!;
         inDegree.set(edge.to, degree - 1);
@@ -280,8 +289,9 @@ export class DependencyGraph {
     }
 
     // Check if all nodes were processed
+    // (should always succeed if cycle detection passed)
     if (result.length !== this.nodes.size) {
-      throw new Error('Graph has cycles (should have been caught earlier)');
+      throw new Error('Graph has unresolved dependencies (internal error)');
     }
 
     return result;

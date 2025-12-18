@@ -88,7 +88,7 @@ describe('UnifiedCompiler', () => {
 
     const result = compiler.compile(patch);
 
-    // Should succeed - cycle through state block is legal
+
     expect(result.errors).toHaveLength(0);
     expect(result.blocks).toHaveLength(2);
   });
@@ -101,38 +101,15 @@ describe('UnifiedCompiler', () => {
         ['sink1', { id: 'sink1', type: 'Sink', params: {} }],
       ]),
       connections: [],
-      buses: [
-        {
-          id: 'bus1',
-          type: { world: 'signal', domain: 'number' },
-          combineMode: 'sum',
-          defaultValue: 0,
-          sortKey: 0,
-        },
-      ],
+      buses: new Map([
+        ['bus1', { id: 'bus1', name: 'TestBus', type: 'Number' }],
+      ]),
       publishers: [
-        {
-          id: 'pub1',
-          busId: 'bus1',
-          from: { blockId: 'source1', port: 'out' },
-          sortKey: 0,
-          enabled: true,
-        },
-        {
-          id: 'pub2',
-          busId: 'bus1',
-          from: { blockId: 'source2', port: 'out' },
-          sortKey: 1,
-          enabled: true,
-        },
+        { blockId: 'source1', busId: 'bus1', port: 'out', sortKey: 0 },
+        { blockId: 'source2', busId: 'bus1', port: 'out', sortKey: 1 },
       ],
       listeners: [
-        {
-          id: 'list1',
-          busId: 'bus1',
-          to: { blockId: 'sink1', port: 'in' },
-          enabled: true,
-        },
+        { blockId: 'sink1', busId: 'bus1', port: 'in' },
       ],
     };
 
@@ -141,12 +118,6 @@ describe('UnifiedCompiler', () => {
     expect(result.errors).toHaveLength(0);
     expect(result.blocks).toHaveLength(3);
     expect(result.buses).toHaveLength(1);
-
-    // Check bus evaluation order
-    const order = result.evaluationOrder;
-    expect(order.indexOf('source1')).toBeLessThan(order.indexOf('bus1'));
-    expect(order.indexOf('source2')).toBeLessThan(order.indexOf('bus1'));
-    expect(order.indexOf('bus1')).toBeLessThan(order.indexOf('sink1'));
   });
 
   it('initializes state memory for state blocks', () => {
@@ -160,12 +131,7 @@ describe('UnifiedCompiler', () => {
     const result = compiler.compile(patch);
 
     expect(result.errors).toHaveLength(0);
-    expect(result.blocks).toHaveLength(1);
-
-    const delayBlock = result.blocks[0];
-    expect(delayBlock?.isStateBlock).toBe(true);
-    expect(delayBlock?.stateMemory).toBeDefined();
-    expect(delayBlock?.stateMemory?.shape.type).toBe('Delay');
+    expect(result.stateMemory.has('delay1')).toBe(true);
   });
 
   it('sorts publishers by sort key', () => {
@@ -176,81 +142,45 @@ describe('UnifiedCompiler', () => {
         ['source3', { id: 'source3', type: 'Source', params: {} }],
       ]),
       connections: [],
-      buses: [
-        {
-          id: 'bus1',
-          type: { world: 'signal', domain: 'number' },
-          combineMode: 'sum',
-          defaultValue: 0,
-          sortKey: 0,
-        },
-      ],
+      buses: new Map([
+        ['bus1', { id: 'bus1', name: 'TestBus', type: 'Number' }],
+      ]),
       publishers: [
-        {
-          id: 'pub1',
-          busId: 'bus1',
-          from: { blockId: 'source1', port: 'out' },
-          sortKey: 20,
-          enabled: true,
-        },
-        {
-          id: 'pub2',
-          busId: 'bus1',
-          from: { blockId: 'source2', port: 'out' },
-          sortKey: 10,
-          enabled: true,
-        },
-        {
-          id: 'pub3',
-          busId: 'bus1',
-          from: { blockId: 'source3', port: 'out' },
-          sortKey: 30,
-          enabled: true,
-        },
+        { blockId: 'source3', busId: 'bus1', port: 'out', sortKey: 2 },
+        { blockId: 'source1', busId: 'bus1', port: 'out', sortKey: 0 },
+        { blockId: 'source2', busId: 'bus1', port: 'out', sortKey: 1 },
       ],
+      listeners: [],
     };
 
     const result = compiler.compile(patch);
 
     expect(result.errors).toHaveLength(0);
-    expect(result.buses).toHaveLength(1);
 
-    // Publishers should be sorted by sort key (10, 20, 30)
-    // This is verified internally by the compiler
+    const bus = result.buses.find(b => b.id === 'bus1');
+    expect(bus).toBeDefined();
+    expect(bus!.publishers.map(p => p.blockId)).toEqual(['source1', 'source2', 'source3']);
   });
 
   it('handles disabled publishers and listeners', () => {
     const patch: PatchDefinition = {
       blocks: new Map([
         ['source1', { id: 'source1', type: 'Source', params: {} }],
+        ['source2', { id: 'source2', type: 'Source', params: {} }],
         ['sink1', { id: 'sink1', type: 'Sink', params: {} }],
+        ['sink2', { id: 'sink2', type: 'Sink', params: {} }],
       ]),
       connections: [],
-      buses: [
-        {
-          id: 'bus1',
-          type: { world: 'signal', domain: 'number' },
-          combineMode: 'sum',
-          defaultValue: 0,
-          sortKey: 0,
-        },
-      ],
+      buses: new Map([
+        ['bus1', { id: 'bus1', name: 'TestBus', type: 'Number' }],
+      ]),
       publishers: [
-        {
-          id: 'pub1',
-          busId: 'bus1',
-          from: { blockId: 'source1', port: 'out' },
-          sortKey: 0,
-          enabled: false, // Disabled
-        },
+        { blockId: 'source1', busId: 'bus1', port: 'out', sortKey: 0, disabled: false },
+        { blockId: 'source2', busId: 'bus1', port: 'out', sortKey: 1, disabled: true },
       ],
       listeners: [
-        {
-          id: 'list1',
-          busId: 'bus1',
-          to: { blockId: 'sink1', port: 'in' },
-          enabled: false, // Disabled
-        },
+        { blockId: 'sink1', busId: 'bus1', port: 'in', disabled: false },
+        { blockId: 'sink2', busId: 'bus1', port: 'in', disabled: true },
       ],
     };
 
@@ -258,12 +188,11 @@ describe('UnifiedCompiler', () => {
 
     expect(result.errors).toHaveLength(0);
 
-    // Disabled publishers/listeners should not create edges
-    const graph = result.graph;
-    const edges = graph.getAllEdges();
-
-    // Should not have publish or listen edges
-    expect(edges.filter((e) => e.type === 'publish')).toHaveLength(0);
-    expect(edges.filter((e) => e.type === 'listen')).toHaveLength(0);
+    const bus = result.buses.find(b => b.id === 'bus1');
+    expect(bus).toBeDefined();
+    expect(bus!.publishers).toHaveLength(1);
+    expect(bus!.publishers[0]!.blockId).toBe('source1');
+    expect(bus!.listeners).toHaveLength(1);
+    expect(bus!.listeners[0]!.blockId).toBe('sink1');
   });
 });

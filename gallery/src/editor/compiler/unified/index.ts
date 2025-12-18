@@ -52,3 +52,28 @@ export { RuntimeAdapter } from './RuntimeAdapter';
 export { DelayBlock, createDelayBlock } from './blocks/DelayBlock';
 export { IntegrateBlock, createIntegrateBlock } from './blocks/IntegrateBlock';
 export { HistoryBlock, createHistoryBlock } from './blocks/HistoryBlock';
+
+// Domain and FieldExpr system
+export type { Domain, ElementId, Topology } from './Domain';
+export {
+  createSimpleDomain,
+  createDomain,
+  domainsAreCompatible,
+  validateDomainCompatibility,
+  DomainMismatchError,
+} from './Domain';
+
+export type { FieldExpr, FieldExprKind, FunctionId, FieldExprCtx } from './FieldExpr';
+export {
+  evaluateFieldExpr,
+  batchEvaluateFieldExpr,
+  mapFieldExpr,
+  zipFieldExpr,
+  constFieldExpr,
+  sourceFieldExpr,
+  getFieldExprDomain,
+  functionRegistry,
+  FunctionRegistry,
+  MemoCache,
+  createFieldExprCtx,
+} from './FieldExpr';

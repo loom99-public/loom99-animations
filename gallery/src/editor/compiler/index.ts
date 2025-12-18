@@ -114,3 +114,37 @@ export {
   type WireDecoration,
   type DecorationSet,
 } from './error-decorations';
+
+// Feature flags for unified architecture
+export {
+  getFeatureFlags,
+  setFeatureFlags,
+  resetFeatureFlags,
+  enableUnifiedArchitecture,
+  initializeFeatureFlags,
+  saveFeatureFlagsToLocalStorage,
+  type CompilerFeatureFlags,
+} from './featureFlags';
+
+// Unified compiler (behind feature flag)
+export { UnifiedCompiler } from './unified/UnifiedCompiler';
+export type {
+  BlockInstance as UnifiedBlockInstance,
+  ConnectionDef,
+  BusDef,
+  PublisherDef,
+  ListenerDef,
+  PatchDefinition,
+  CompilationResult,
+  CompilationError,
+  CompiledBlock,
+  CompiledBus,
+} from './unified/UnifiedCompiler';
+
+// TimeCtx for unified architecture
+export { TimeCtxManager, TimeCtxFactory } from './unified/TimeCtx';
+export type { TimeCtx, TimeMode } from './unified/TimeCtx';
+
+// State blocks
+export { stateBlockRegistry } from './unified/StateBlock';
+export type { StateBlock, StateMemory, StateShape, ScrubPolicy } from './unified/StateBlock';

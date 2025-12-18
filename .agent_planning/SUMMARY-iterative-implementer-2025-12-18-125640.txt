@@ -1,0 +1,34 @@
+Agent: iterative-implementer | 2025-12-18-125640
+Mode: tdd
+Completed: Fixed 2 failing tests | Files: 4 | Commits: 1
+Tests: 174 passing, 0 failing
+Cache invalidated: None (compiler internals, no API changes)
+Status: complete
+
+## Work Completed
+
+### Test Fixes
+1. **TimeCtx mode transition test** - Fixed frame counter reset logic
+   - Frame counter now properly resets to 0 when evaluation mode changes
+   - Updated TimeCtxManager.createContext() to detect mode change BEFORE using frame counter
+
+2. **State block cycle detection test** - Fixed throughState edge marking
+   - Changed DependencyGraph.addConnectionEdge() to check if SOURCE block is a state block
+   - Updated topological sort to filter out edges with throughState=true
+   - State-delayed feedback cycles are now properly allowed
+
+### Additional Fixes
+3. **Missing exports** - Added registerDynamicBlock to compiler/blocks.ts re-exports
+4. **Type flexibility** - Updated UnifiedCompiler interfaces to handle Map vs Array for buses
+
+## Files Modified
+- /Users/bmf/code/loom99-animations/gallery/src/editor/compiler/blocks.ts
+- /Users/bmf/code/loom99-animations/gallery/src/editor/compiler/unified/TimeCtx.ts
+- /Users/bmf/code/loom99-animations/gallery/src/editor/compiler/unified/DependencyGraph.ts
+- /Users/bmf/code/loom99-animations/gallery/src/editor/compiler/unified/UnifiedCompiler.ts
+
+## Test Results
+All 174 tests passing (14 test files)
+
+## Next Steps
+Feature flag mechanism still needed to switch between legacy and unified compilers.

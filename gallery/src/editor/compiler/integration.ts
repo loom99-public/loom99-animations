@@ -1,5 +1,5 @@
 import type { RootStore } from '../stores/RootStore';
-import type { Block, Connection } from '../types';
+import type { Block, Connection, Bus, Publisher, Listener } from '../types';
 import { logStore } from '../logStore';
 import { compilePatch } from './compile';
 import { createCompileCtx } from './context';
@@ -17,6 +17,11 @@ import type {
 import { buildDecorations, emptyDecorations, type DecorationSet } from './error-decorations';
 import { getBlockDefinition } from '../blocks';
 import { getCompositeCompilers } from '../composite-bridge';
+import { getFeatureFlags } from './featureFlags';
+
+// Unified compiler imports
+import { UnifiedCompiler, RuntimeAdapter } from './unified';
+import type { PatchDefinition as UnifiedPatchDef } from './unified';
 
 // =============================================================================
 // Patch Conversion
@@ -172,6 +177,95 @@ function expandComposites(patch: CompilerPatch): CompilerPatch {
 }
 
 // =============================================================================
+// Unified Compiler Integration
+// =============================================================================
+
+/**
+ * Convert CompilerPatch to UnifiedCompiler PatchDefinition.
+ */
+function toUnifiedPatchDef(patch: CompilerPatch): UnifiedPatchDef {
+  // Convert connections
+  const connections = patch.connections.map((c) => ({
+    from: { blockId: c.from.blockId, port: c.from.port },
+    to: { blockId: c.to.blockId, port: c.to.port },
+  }));
+
+  // Convert buses if present
+  const buses = patch.buses
+    ? patch.buses.map((bus: Bus) => ({
+        id: bus.id,
+        name: bus.name,
+        type: bus.type,
+        combineMode: bus.combineMode,
+        defaultValue: bus.defaultValue,
+        sortKey: bus.sortKey ?? 0,
+      }))
+    : [];
+
+  // Convert publishers if present
+  const publishers = patch.publishers
+    ? patch.publishers.map((pub: Publisher) => ({
+        id: pub.id,
+        blockId: pub.from.blockId,
+        busId: pub.busId,
+        port: pub.from.port,
+        sortKey: pub.sortKey,
+        disabled: !pub.enabled,
+      }))
+    : [];
+
+  // Convert listeners if present
+  const listeners = patch.listeners
+    ? patch.listeners.map((listener: Listener) => ({
+        id: listener.id,
+        blockId: listener.to.blockId,
+        busId: listener.busId,
+        port: listener.to.port,
+        disabled: !listener.enabled,
+      }))
+    : [];
+
+  return {
+    blocks: new Map(patch.blocks),
+    connections,
+    buses,
+    publishers,
+    listeners,
+  };
+}
+
+/**
+ * Compile using UnifiedCompiler and adapt result to CompileResult.
+ */
+function compileWithUnified(patch: CompilerPatch): CompileResult {
+  const unifiedPatch = toUnifiedPatchDef(patch);
+  const compiler = new UnifiedCompiler();
+  const result = compiler.compile(unifiedPatch);
+
+  // If compilation failed, convert errors
+  if (result.errors.length > 0) {
+    return {
+      ok: false,
+      errors: result.errors.map((err) => ({
+        code: err.type === 'cycle' ? 'CycleDetected' : 'UpstreamError',
+        message: err.message,
+        where: err.nodes ? { blockId: err.nodes[0] } : undefined,
+      })),
+    };
+  }
+
+  // Create runtime adapter and program
+  const adapter = new RuntimeAdapter(result);
+  const program = adapter.createProgram();
+
+  return {
+    ok: true,
+    program,
+    errors: [],
+  };
+}
+
+// =============================================================================
 // Compiler Service
 // =============================================================================
 
@@ -217,20 +311,30 @@ export function createCompilerService(store: RootStore): CompilerService {
   return {
     compile(): CompileResult {
       const startTime = performance.now();
+      const flags = getFeatureFlags();
 
       logStore.debug('compiler', 'Starting compilation...');
+      if (flags.useUnifiedCompiler) {
+        logStore.info('compiler', 'Using UnifiedCompiler (feature flag enabled)');
+      }
 
       try {
         let patch = editorToPatch(store);
         patch = expandComposites(patch);
-        const seed: Seed = store.uiStore.settings.seed;
 
         logStore.debug(
           'compiler',
           `Patch has ${patch.blocks.size} blocks and ${patch.connections.length} connections`
         );
 
-        const result = compilePatch(patch, registry, seed, ctx);
+        // Choose compiler based on feature flag
+        const result = flags.useUnifiedCompiler
+          ? compileWithUnified(patch)
+          : (() => {
+              const seed: Seed = store.uiStore.settings.seed;
+              return compilePatch(patch, registry, seed, ctx);
+            })();
+
         const elapsed = (performance.now() - startTime).toFixed(1);
 
         if (result.ok) {

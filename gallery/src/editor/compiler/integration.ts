@@ -131,14 +131,22 @@ function expandComposites(patch: CompilerPatch): CompilerPatch {
         }
       }
 
-      // Rewire incoming connections
+      // Rewire incoming connections - check both original connections and already-rewired ones
       const incoming = connections.filter((c) => c.to.blockId === blockId);
+      const incomingFromNew = newConnections.filter((c) => c.to.blockId === blockId);
       const outgoing = connections.filter((c) => c.from.blockId === blockId);
+      const outgoingFromNew = newConnections.filter((c) => c.from.blockId === blockId);
+
       connections = connections.filter(
         (c) => c.to.blockId !== blockId && c.from.blockId !== blockId
       );
 
-      for (const conn of incoming) {
+      // Remove connections targeting this composite from newConnections (will be rewired)
+      const connectionsToRemove = new Set<CompilerConnection>();
+      incomingFromNew.forEach((c) => connectionsToRemove.add(c));
+      outgoingFromNew.forEach((c) => connectionsToRemove.add(c));
+
+      for (const conn of [...incoming, ...incomingFromNew]) {
         const internalRef = graph.inputMap[conn.to.port];
         if (!internalRef) continue;
         const [node, port] = internalRef.split('.');
@@ -151,7 +159,7 @@ function expandComposites(patch: CompilerPatch): CompilerPatch {
         }
       }
 
-      for (const conn of outgoing) {
+      for (const conn of [...outgoing, ...outgoingFromNew]) {
         const internalRef = graph.outputMap[conn.from.port];
         if (!internalRef) continue;
         const [node, port] = internalRef.split('.');
@@ -161,6 +169,13 @@ function expandComposites(patch: CompilerPatch): CompilerPatch {
             from: { blockId: fromId, port },
             to: conn.to,
           });
+        }
+      }
+
+      // Remove the connections that were rewired from newConnections
+      for (let i = newConnections.length - 1; i >= 0; i--) {
+        if (connectionsToRemove.has(newConnections[i])) {
+          newConnections.splice(i, 1);
         }
       }
     } else {

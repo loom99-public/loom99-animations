@@ -6,7 +6,7 @@
   "blocks": [
     {
       "id": "block-1",
-      "type": "GridPoints",
+      "type": "composite:GridPoints",
       "label": "Grid Points",
       "inputs": [],
       "outputs": [
@@ -57,7 +57,7 @@
     },
     {
       "id": "block-3",
-      "type": "DotsRenderer",
+      "type": "composite:DotsRenderer",
       "label": "Dots Renderer",
       "inputs": [
         {
@@ -82,8 +82,8 @@
       "outputs": [
         {
           "id": "render",
-          "label": "Render Tree",
-          "type": "RenderTree",
+          "label": "Render",
+          "type": "Render",
           "direction": "output"
         }
       ],

@@ -24,5 +24,9 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "src/editor/blocks/legacy",
+    "src/editor/compiler/blocks/legacy"
+  ]
 }

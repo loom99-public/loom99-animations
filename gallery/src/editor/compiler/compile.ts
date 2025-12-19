@@ -21,8 +21,12 @@ import type {
   CompileResult,
   CompilerConnection,
   CompilerPatch,
+  DrawNode,
   PortRef,
   PortType,
+  Program,
+  RenderTree,
+  RuntimeCtx,
   Seed,
   ValueKind,
 } from './types';
@@ -276,16 +280,27 @@ function compilePatchWireOnly(
     return { ok: false, errors };
   }
 
-  if (outArt.kind !== 'RenderTreeProgram') {
-    errors.push({
-      code: 'OutputWrongType',
-      message: `Patch output must be RenderTreeProgram, got ${outArt.kind}`,
-      where: { blockId: outputRef.blockId, port: outputRef.port },
-    });
-    return { ok: false, errors };
+  // Accept both RenderTreeProgram and RenderTree (wrap RenderTree into a Program)
+  if (outArt.kind === 'RenderTreeProgram') {
+    return { ok: true, program: outArt.value, errors: [], compiledPortMap };
   }
 
-  return { ok: true, program: outArt.value, errors: [], compiledPortMap };
+  if (outArt.kind === 'RenderTree') {
+    // Wrap RenderTree function into a Program structure
+    const renderFn = outArt.value as (tMs: number, ctx: RuntimeCtx) => DrawNode;
+    const program: Program<RenderTree> = {
+      signal: renderFn,
+      event: () => [],
+    };
+    return { ok: true, program, errors: [], compiledPortMap };
+  }
+
+  errors.push({
+    code: 'OutputWrongType',
+    message: `Patch output must be RenderTreeProgram or RenderTree, got ${outArt.kind}`,
+    where: { blockId: outputRef.blockId, port: outputRef.port },
+  });
+  return { ok: false, errors };
 }
 
 // =============================================================================
@@ -300,7 +315,7 @@ export function isPortTypeAssignable(from: PortType, to: PortType): boolean {
   const compatibleSets: string[][] = [
     ['Field:Point', 'Field:vec2'],
     ['ElementCount', 'Scalar:number'],
-    ['RenderTree', 'RenderTreeProgram'],
+    ['Render', 'RenderTree', 'RenderTreeProgram'], // All render types are compatible
     ['Signal:number', 'Signal:Unit'],
   ];
 
@@ -324,7 +339,7 @@ function isKindAssignable(fromKind: Artifact['kind'], toKind: ValueKind): boolea
   const compatibleSets: string[][] = [
     ['Field:Point', 'Field:vec2'],
     ['ElementCount', 'Scalar:number'],
-    ['RenderTree', 'RenderTreeProgram'],
+    ['Render', 'RenderTree', 'RenderTreeProgram'], // All render types are compatible
     ['Signal:number', 'Signal:Unit'],
   ];
 
@@ -430,7 +445,7 @@ function inferOutputPort(
   compiled: Map<string, Artifact>,
   _errors: CompileError[]
 ): PortRef | null {
-  // Heuristic: find all produced RenderTreeProgram ports that are NOT used as a source.
+  // Heuristic: find all produced RenderTreeProgram or RenderTree ports that are NOT used as a source.
   // If exactly one, pick it.
   const produced: PortRef[] = [];
 
@@ -442,7 +457,9 @@ function inferOutputPort(
     const comp = registry[block.type];
     if (!comp) continue;
     for (const out of comp.outputs) {
-      if (out.type.kind !== 'RenderTreeProgram') continue;
+      // Accept all render output types: Render, RenderTree, RenderTreeProgram
+      const renderTypes = ['Render', 'RenderTree', 'RenderTreeProgram'];
+      if (!renderTypes.includes(out.type.kind)) continue;
       const k = keyOf(blockId, out.name);
       if (!compiled.has(k)) continue;
       if (fed.has(k)) continue;

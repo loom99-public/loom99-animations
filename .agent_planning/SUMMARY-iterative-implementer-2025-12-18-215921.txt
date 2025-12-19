@@ -1,0 +1,36 @@
+Agent: iterative-implementer | 2025-12-18-215800
+Mode: manual
+Completed: Fix composite compiler registration | Files: 1 | Commits: 1
+Tests: 385 passing
+Cache invalidated: None (no cache files for compiler-architecture exist)
+Status: complete
+
+Implementation Summary:
+- Fixed missing compiler registration for composite blocks
+- Added registerAllComposites() call in createCompilerService()
+- This registers compilers for GridPoints, DotsRenderer, and all other composites
+
+Root Cause:
+1. domain-composites.ts registered composites in the composite registry
+2. But registerAllComposites() was never called in production code
+3. This meant composite compilers were never created or registered
+4. Result: "No compiler registered for block type DotsRenderer/GridPoints" errors
+
+The Fix:
+- Import registerAllComposites from composite-bridge
+- Call it at the start of createCompilerService()
+- This populates the composite compiler registry before getCompositeCompilers() is called
+
+Validation:
+- All 385 tests pass
+- Production build succeeds (765KB JS, 82KB CSS)
+- Demo patch now loads and compiles successfully
+- No console errors or warnings
+
+Files Modified:
+- /Users/bmf/code/loom99-animations/gallery/src/editor/compiler/integration.ts
+
+Next Steps:
+- Demo is ready to use
+- Preview should show animated breathing dots
+- All composite blocks (9 total) now compile correctly

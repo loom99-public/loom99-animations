@@ -142,8 +142,9 @@ export type ValueKind =
   | 'PhaseMachine'
   | 'TargetScene'
   | 'Scene'
-  | 'RenderTreeProgram'
-  | 'RenderTree'
+  | 'Render'          // User-facing unified render output type
+  | 'RenderTreeProgram' // Internal: Program<RenderTree>
+  | 'RenderTree'      // Internal: render function
   | 'RenderNode'
   | 'RenderNodeArray'
   | 'FilterDef'

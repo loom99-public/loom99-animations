@@ -556,32 +556,8 @@ export const DotsRenderer = registerComposite({
   },
   graph: {
     nodes: {
-      sizeHash: {
-        type: 'FieldHash01ById',
-        params: {
-          seed: { __fromParam: 'sizeSeed' },
-        },
-      },
-      sizeScale: {
-        type: 'FieldMapNumber',
-        params: {
-          fn: 'scale',
-          k: { __fromParam: 'sizeRange' },
-        },
-      },
-      sizeOffset: {
-        type: 'FieldMapNumber',
-        params: {
-          fn: 'offset',
-          k: { __fromParam: 'minSize' },
-        },
-      },
-      color: {
-        type: 'FieldConstColor',
-        params: {
-          color: { __fromParam: 'color' },
-        },
-      },
+      // RenderInstances2D handles everything - domain, positions, radius
+      // Color defaults to white since it's an input slot, not a param
       render: {
         type: 'RenderInstances2D',
         params: {
@@ -591,17 +567,11 @@ export const DotsRenderer = registerComposite({
         },
       },
     },
-    edges: [
-      { from: 'sizeHash.u', to: 'sizeScale.x' },
-      { from: 'sizeScale.y', to: 'sizeOffset.x' },
-      // NOTE: Removed automatic wiring to render.radius to allow bus override
-      // { from: 'sizeOffset.y', to: 'render.radius' },
-      { from: 'color.out', to: 'render.color' },
-    ],
+    edges: [],
     inputMap: {
-      domain: 'sizeHash.domain',
+      domain: 'render.domain',
       positions: 'render.positions',
-      radius: 'render.radius', // New: exposed radius input for bus-driven animation
+      radius: 'render.radius',
     },
     outputMap: {
       render: 'render.render',
@@ -613,7 +583,7 @@ export const DotsRenderer = registerComposite({
       label: 'Domain',
       direction: 'input',
       slotType: 'Domain',
-      nodeId: 'sizeHash',
+      nodeId: 'render',
       nodePort: 'domain',
     },
     {
@@ -636,9 +606,9 @@ export const DotsRenderer = registerComposite({
   exposedOutputs: [
     {
       id: 'render',
-      label: 'Render Tree',
+      label: 'Render',
       direction: 'output',
-      slotType: 'RenderTree',
+      slotType: 'Render',
       nodeId: 'render',
       nodePort: 'render',
     },

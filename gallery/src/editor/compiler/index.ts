@@ -126,11 +126,9 @@ export type { TimeCtx, TimeMode } from './unified/TimeCtx';
 
 // State blocks
 export { stateBlockRegistry } from './unified/StateBlock';
-export type { StateBlock, StateBlockDef } from './unified/StateBlock';
+export type { StateBlock } from './unified/StateBlock';
 
 // Export bus-aware compilation and runtime
 export {
-  compilePatchBusAware,
-  type BusAwarePatch,
-  type BusAwareCompileResult,
+  compileBusAwarePatch,
 } from './compileBusAware';

@@ -1,20 +1,6 @@
-# Animation Editor
+# Loom Editor - Visual Animation System
 
-A visual programming environment for building SVG animations using a node-based patch bay interface.
-
-## Table of Contents
-
-- [Quick Start](#quick-start)
-- [Interface Overview](#interface-overview)
-- [Basic Workflow](#basic-workflow)
-- [Lanes](#lanes)
-- [Block Categories](#block-categories)
-- [Port Types](#port-types)
-- [Example: Simple Particle Animation](#example-simple-particle-animation)
-- [Keyboard Shortcuts](#keyboard-shortcuts)
-- [Settings](#settings)
-- [Concepts](#concepts)
-- [Troubleshooting](#troubleshooting)
+The Loom Editor is a node-based visual programming environment for creating procedural SVG animations. Instead of keyframes and timelines, you build animations by connecting functional blocks that describe data sources, transformations, and rendering.
 
 ## Quick Start
 
@@ -26,9 +12,12 @@ cd gallery && pnpm dev
 open http://localhost:5173/#/editor
 ```
 
-## Interface Overview
+1. **Load the Demo**: Click "Load Demo" in the toolbar to see a working "Breathing Dots" example
+2. **Explore the Blocks**: The left panel shows available blocks organized by category
+3. **Edit Parameters**: Click any block to see its parameters in the Inspector
+4. **Watch it Animate**: The Preview panel shows your animation in real-time
 
-The editor has five main areas:
+## Interface Overview
 
 ```
 +------------------+------------------------+----------+----------+
@@ -44,8 +33,146 @@ The editor has five main areas:
 - **Block Library** (left): Drag blocks from here into lanes
 - **Patch Bay** (center): Where you build the animation graph
 - **Preview** (right): Live animation preview
-- **Inspector** (far right): Edit parameters of selected blocks
+- **Inspector** (far right): Edit parameters and configure bus routing
 - **Transport** (bottom): Playback controls, seed, speed
+
+## Architecture Overview
+
+The editor is built around three core concepts:
+
+### 1. Blocks
+
+Blocks are functional units that transform data. There are three types:
+
+- **Primitives**: Atomic operations implemented in TypeScript (e.g., `DomainN`, `FieldMapNumber`, `PhaseClock`)
+- **Composites**: Pre-built combinations of primitives that appear as single blocks (e.g., `GridPoints`, `DotsRenderer`)
+- **Macros**: Recipe starters that expand into multiple visible blocks when dropped
+
+### 2. Buses
+
+Buses are typed signal distributors that enable modular routing. They support:
+
+- **Multiple publishers**: Combine values from many sources using configurable modes (sum, average, max, etc.)
+- **Multiple listeners**: Any block can subscribe to a bus
+- **Lenses**: Transform bus values at the listener side (easing, quantization, scaling, etc.)
+- **Default buses**: Five buses auto-created on each patch (`phaseA`, `phaseB`, `energy`, `pulse`, `palette`)
+
+### 3. Lanes
+
+Lanes organize blocks visually by value domain:
+
+- **Scene**: Data sources (SVG paths, points)
+- **Phase**: Time/rhythm blocks
+- **Fields**: Per-element values
+- **Program**: Compiled animation programs
+- **Output**: Renderers and exports
+
+**Important**: Lanes are UI organization only. Port types determine what can connect to what, not lane placement.
+
+## Available Primitives
+
+### Domain Primitives (13 total)
+
+#### Domain Creation
+- **DomainN**: Create N elements with unique IDs
+
+#### Position Mapping
+- **PositionMapGrid**: Arrange elements in a grid (rows × cols)
+- **PositionMapCircle**: Arrange elements in a circle
+- **PositionMapLine**: Arrange elements along a line segment
+- **PositionMapRandom**: Scatter elements randomly
+
+#### Field Creation
+- **FieldConstNumber**: Uniform numeric value for all elements
+- **FieldConstColor**: Uniform color for all elements
+- **FieldHash01ById**: Per-element random values in [0, 1)
+- **FieldMapNumber**: Apply function to number field (scale, offset, sin, etc.)
+- **FieldMapVec2**: Apply transformation to vec2 field (rotate, scale, translate)
+
+#### Time/Phase
+- **PhaseClock**: Generate looping/once/pingpong phase signals
+- **LinearPhase**: Simple linear progression
+
+#### Rendering
+- **RenderInstances2D**: Materialize domain + fields into visual circles with optional glow
+
+## Available Composites (9 total)
+
+### Arrangement Composites
+- **GridPoints**: DomainN + PositionMapGrid → (domain, positions)
+- **CirclePoints**: DomainN + PositionMapCircle → (domain, positions)
+- **LinePoints**: DomainN + PositionMapLine → (domain, positions)
+
+### Variation Composites
+- **PerElementRandom**: Wrapper around FieldHash01ById for convenience
+- **PerElementPhaseOffset**: Hash + scale → staggered animation offsets
+- **SizeScatter**: Random size variation → Field<number> in [min, max]
+
+### Motion Composites
+- **OrbitMotion**: Rotate positions around a center point
+- **WaveDisplace**: Sine-based wave displacement values
+
+### Rendering Composites
+- **DotsRenderer**: Complete renderer with size variation, color, and glow
+
+## Buses and Lenses
+
+### Bus System
+
+Buses enable modular signal routing without direct connections. A typical pattern:
+
+```
+PhaseClock → publishes to phaseA bus
+DotsRenderer radius input ← listens to phaseA bus (with "breathing" lens)
+```
+
+This allows you to drive multiple parameters from a single phase source without spaghetti wiring.
+
+### Lens Types
+
+Lenses transform bus values before they reach their destination:
+
+1. **ease**: Apply easing curve (easeInOutSine, easeOutBounce, etc.)
+2. **slew**: Rate-limited smoothing for gradual changes
+3. **quantize**: Snap to discrete steps (for rhythmic effects)
+4. **scale**: Linear scale + offset transformation
+5. **warp**: Phase warping (speed up/slow down parts of cycle)
+6. **broadcast**: Lift scalar signal to constant field
+7. **perElementOffset**: Add per-element phase offset
+
+### Lens Presets
+
+12 pre-configured lenses available in the Inspector:
+
+**Easing**: breathing, bounce, elastic, slow-start, slow-end
+**Timing**: smooth
+**Quantize**: snap (4 steps), fine-steps (8), on-off (2)
+**Scaling**: double (2x), half (0.5x), invert (flip 0-1)
+
+## Building a Simple Patch
+
+### Example: "Breathing Dots"
+
+1. **Create Domain + Positions**
+   - Drop `GridPoints` composite into Fields lane
+   - Set params: `count: 25`, `rows: 5`, `cols: 5`, `spacing: 60`
+
+2. **Add Time Source**
+   - Drop `PhaseClock` into Phase lane
+   - Set params: `duration: 2`, `mode: loop`
+
+3. **Render Output**
+   - Drop `DotsRenderer` into Output lane
+   - Wire `GridPoints.domain` → `DotsRenderer.domain`
+   - Wire `GridPoints.positions` → `DotsRenderer.positions`
+
+4. **Add Bus-Driven Breathing**
+   - `PhaseClock` auto-publishes to `phaseA` bus
+   - In Inspector, click `DotsRenderer.radius` port
+   - Click "Listen to Bus" → select `phaseA`
+   - Choose lens preset: "breathing" (easeInOutSine)
+
+5. **Result**: 25 dots in a grid that smoothly grow and shrink
 
 ## Basic Workflow
 
@@ -64,13 +191,20 @@ To connect blocks:
 2. Click a compatible input port on another block
 3. A wire appears connecting them
 
-Right-click a port for more options (disconnect, etc.).
+Right-click a port for more options (disconnect, wire to bus, etc.).
 
 ### 3. Configure Parameters
 
 Click any block to select it. The Inspector panel shows its parameters. Adjust values using sliders, dropdowns, or text inputs.
 
-### 4. Preview
+### 4. Use Buses
+
+Instead of direct wiring, you can route signals through buses:
+- Right-click an output port → "Publish to Bus"
+- Right-click an input port → "Listen to Bus"
+- Select a lens to transform the signal
+
+### 5. Preview
 
 The preview panel shows your animation in real time. Use the transport bar to:
 - Play/pause the animation
@@ -78,65 +212,62 @@ The preview panel shows your animation in real time. Use the transport bar to:
 - Change the random seed
 - Adjust playback speed
 
-## Lanes
-
-Lanes are horizontal tracks that organize blocks by their purpose. The editor offers two layout presets:
-
-**Simple (5 lanes)** - Good for learning:
-- **Scene**: What you're animating (logo, text)
-- **Phases**: Time structure (entrance, hold, exit)
-- **Fields**: Per-element variation (timing, motion, style)
-- **Spec**: Animation type (LineMorph, Particles, etc.)
-- **Program**: Output and rendering
-
-**Detailed (9 lanes)** - More explicit organization:
-- Splits Fields into Motion/Timing/Style
-- Separates compile from compositing stages
-
-Switch layouts using the gear icon in the settings toolbar.
-
-## Block Categories
-
-| Category | Purpose | Examples |
-|----------|---------|----------|
-| Scene | Define what gets animated | SVG Paths, Sample Points |
-| Fields | Per-element data | Radial Origin, Linear Stagger |
-| Math | Scalar computations | Add, Multiply, Sin |
-| Time | Animation timing | Phase Machine, Ease Ramp |
-| Compose | Combine elements | Per-Element Transport, Demo Program |
-| Render | Final output | Particle Renderer, Canvas |
-| Adapters | Type conversion | Scene → Targets, Field → Signal |
-
 ## Port Types
 
 Ports have types that determine what can connect to what. Common types:
 
 | Type | Description |
 |------|-------------|
-| `Scene` | Collection of SVG paths |
-| `SceneTargets` | Points sampled from paths |
-| `Field<Point>` | Per-element positions |
-| `Field<Duration>` | Per-element time values |
-| `Field<number>` | Per-element numbers |
-| `Signal<Unit>` | Time-varying 0-1 value |
+| `Domain` | Per-element identity (for Field operations) |
+| `Field<vec2>` | Per-element 2D positions |
+| `Field<number>` | Per-element numeric values |
+| `Field<color>` | Per-element colors |
+| `Signal<number>` | Time-varying numeric signal |
 | `Signal<PhaseSample>` | Phase machine output |
-| `Program` | Compiled animation |
 | `RenderTree` | Final render output |
 
 Compatible ports highlight when you're making connections.
 
-## Example: Simple Particle Animation
+## How Compilation Works
 
-1. Drag **SVG Paths** into the Scene lane
-2. Drag **Sample Points** to Scene, connect it to SVG Paths
-3. Drag **Radial Origin** into Fields
-4. Drag **Linear Stagger** into Fields
-5. Drag **Phase Machine** into Phases
-6. Drag **Demo Program** into Spec
-   - Set variant to "Particles"
-7. Drag **Program Output** into Program, connect to Demo Program
+When you build a patch, the editor:
 
-The preview should show particles animating.
+1. **Expands Composites**: Internal graphs are compiled into their constituent primitives
+2. **Resolves Buses**: Publishers/listeners are compiled into signal combinators
+3. **Applies Lenses**: Lens transformations wrap bus signals
+4. **Produces RenderTree**: Final output is a time-indexed render function
+
+The result is a purely functional animation: `(time, context) => RenderTree`.
+
+## Type System
+
+The editor has a two-tier type system:
+
+### Core Domains (bus-eligible, user-facing)
+- `number`, `vec2`, `color`, `boolean`
+- `time`, `phase`, `rate`, `trigger`
+
+### Internal Domains (engine plumbing)
+- `point`, `duration`, `path`, `program`, `renderTree`
+- `domain`, `scene`, `event`
+
+**Key Rule**: Only core domain types can be routed through buses. Internal types use direct connections.
+
+## Settings
+
+Click the dropdowns in the toolbar to access settings:
+
+- **Lanes**: Switch between Simple and Detailed lane layouts
+- **Connections**: Show type hints, highlight compatible ports
+- **Palette**: Filter blocks by lane or connection compatibility
+
+## Tips and Best Practices
+
+1. **Start with Composites**: Use `GridPoints` + `DotsRenderer` before diving into primitives
+2. **Use Default Buses**: `phaseA` and `phaseB` are ready for time-driven effects
+3. **Lens Everything**: Applying lenses to bus listeners immediately makes motion more interesting
+4. **Experiment with Seeds**: Most randomization blocks have a `seed` param for controlled variation
+5. **Check the Inspector**: Selected blocks show all parameters and port wiring options
 
 ## Keyboard Shortcuts
 
@@ -144,19 +275,6 @@ The preview should show particles animating.
 |-----|--------|
 | `Delete` / `Backspace` | Delete selected block |
 | `Escape` | Deselect / close menus |
-
-## Settings
-
-Click the gear icon to access settings:
-
-- **Layout**: Switch between Simple and Detailed lane layouts
-- **Filter by Lane**: Show only relevant blocks in library
-- **Show Type Hints**: Display port types on hover
-- **Highlight Compatible**: Highlight valid connection targets
-
-## Concepts
-
-For a deeper understanding of the concepts behind this editor, see [CONCEPTS.md](./CONCEPTS.md).
 
 ## Troubleshooting
 
@@ -171,10 +289,31 @@ For a deeper understanding of the concepts behind this editor, see [CONCEPTS.md]
 - Check the log window at the bottom for error messages
 
 **Animation not updating:**
-- Ensure blocks are connected to a Program Output
+- Ensure blocks are connected to a render output
 - Check that all required inputs are connected
 - Look for error decorations (red highlights) on blocks
 
 **Styles not loading:**
 - Hard refresh the browser (Cmd+Shift+R / Ctrl+Shift+R)
 - Restart the dev server
+
+## What's Next
+
+This system is the foundation for:
+
+- **Starter Composite Library**: Pre-built common patterns (spiral layouts, color palettes, etc.)
+- **More Renderers**: Path instances, glyph rendering, stroke effects
+- **Advanced Buses**: Multi-bus compositions, bus modulation, trigger buses
+- **Export**: Generate standalone SVG animations from patches
+
+## Technical Details
+
+**Stack**: React + MobX + TypeScript + Vite
+**Testing**: Vitest with 385 passing tests
+**Architecture**: Functional core, imperative shell (stores are MobX, compilation is pure functions)
+
+For deeper technical documentation, see:
+- `/feature_planning_docs/Full-System-Design/` - Complete system specifications
+- `.agent_planning/` - Implementation plans and status docs
+- `/gallery/src/editor/compiler/` - Compilation logic
+- `/gallery/src/editor/__tests__/` - Test suite showing expected behavior

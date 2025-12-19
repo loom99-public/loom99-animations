@@ -8,6 +8,7 @@ import { BusStore } from './BusStore';
 import { UIStateStore } from './UIStateStore';
 import { CompositeStore } from './CompositeStore';
 import type { Block, Bus, Lane, Patch, Slot } from '../types';
+import breathingDotsPatch from '../demo-patches/breathing-dots.json';
 
 export class RootStore {
   patchStore: PatchStore;
@@ -30,6 +31,7 @@ export class RootStore {
       selectedPortInfo: computed,
       loadPatch: action,
       clearPatch: action,
+      loadDemoAnimation: action,
     });
 
     // Initialize default buses for a new patch
@@ -174,7 +176,6 @@ export class RootStore {
   }
 
   loadDemoAnimation(): void {
-    this.clearPatch();
-    // TODO: Add demo blocks here
+    this.loadPatch(breathingDotsPatch as Patch);
   }
 }

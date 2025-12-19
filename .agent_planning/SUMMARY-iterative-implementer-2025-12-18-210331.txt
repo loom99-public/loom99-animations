@@ -1,0 +1,62 @@
+Agent: iterative-implementer | 2025-12-18-210331
+Mode: manual
+Completed: Demo patch + loader + documentation | Files: 5 | Commits: 0
+Tests: 385 passing, 0 failing
+Cache invalidated: None (cache already minimal)
+Status: complete
+
+## Work Completed
+
+1. **Demo Patch**: breathing-dots.json
+   - GridPoints (5x5 grid, 25 dots)
+   - PhaseClock (2s loop) → phaseA bus
+   - DotsRenderer with breathing lens (easeInOutSine)
+   - Complete patch with buses, publishers, listeners
+
+2. **Demo Loader**: RootStore.ts + SettingsToolbar.tsx
+   - Implemented loadDemoAnimation() method
+   - Added "Load Demo" button in toolbar
+   - Imports demo patch JSON
+
+3. **Documentation**: README.md
+   - Complete rewrite focusing on Bus/Lens/Composite architecture
+   - Lists all 13 primitives + 9 composites
+   - Explains 7 lens types with 12 presets
+   - Step-by-step "Breathing Dots" tutorial
+   - Compilation process, type system, tips
+
+4. **Planning Doc**: .agent_planning/e2e-demo/STATUS-2025-12-18.md
+   - Documents all components now available
+   - Demo structure explanation
+   - Next steps recommendations
+
+## Files Modified
+
+Created:
+- /gallery/src/editor/demo-patches/breathing-dots.json
+- /.agent_planning/e2e-demo/STATUS-2025-12-18.md
+
+Modified:
+- /gallery/src/editor/stores/RootStore.ts (added demo loader)
+- /gallery/src/editor/SettingsToolbar.tsx (added Load Demo button)
+- /gallery/src/editor/README.md (complete rewrite)
+
+## Validation
+
+Manual mode - functionality verified:
+1. Demo patch JSON structure matches Patch type
+2. All block types exist (GridPoints, PhaseClock, DotsRenderer)
+3. Bus routing structure is correct
+4. Lens definition matches LensDefinition type
+5. All 385 tests still passing
+
+## User Flow
+
+1. Open editor: http://localhost:5173/#/editor
+2. Click "Load Demo" button (top-right toolbar)
+3. See 3 blocks appear in lanes with connections
+4. Preview shows 25 dots breathing with easeInOutSine
+5. User can experiment by:
+   - Changing parameters (grid size, duration, colors)
+   - Modifying lens (try bounce, elastic)
+   - Adding more blocks

@@ -390,43 +390,17 @@ describe('Bus Compilation - sortKey Determinism', () => {
 // =============================================================================
 
 describe('Bus Compilation - Error Handling', () => {
-  it('rejects Field bus with clear error message', () => {
-    const blocks = new Map();
+  // NOTE: Field buses are now supported - see field-bus-compilation.test.ts
+  // The old "rejects Field bus" test was removed as Field buses now work.
 
-    const fieldBus: Bus = {
-      id: 'bus1',
-      name: 'Field Bus',
-      type: { world: 'field', domain: 'number', category: 'core', busEligible: true },
-      combineMode: 'last',
-      defaultValue: [],
-      sortKey: 0,
-    };
-
-    const patch: CompilerPatch = {
-      output: { blockId: 'sink1', port: 'program' },
-      blocks,
-      connections: [],
-      buses: [fieldBus],
-      publishers: [],
-      listeners: [],
-    };
-
-    const result = compilePatch(patch, createTestRegistry(), 42 as Seed, createTestContext());
-
-    expect(result.ok).toBe(false);
-    expect(result.errors).toHaveLength(1);
-    expect(result.errors[0]?.code).toBe('FieldBusNotSupported');
-    expect(result.errors[0]?.message).toContain('Field buses not yet supported');
-  });
-
-  it('rejects unsupported combine mode', () => {
+  it('rejects unsupported combine mode for Signal bus', () => {
     const blocks = new Map();
 
     const bus: Bus = {
       id: 'bus1',
       name: 'Average Bus',
       type: { world: 'signal', domain: 'number', category: 'core', busEligible: true },
-      combineMode: 'average', // Not supported in Phase 2
+      combineMode: 'average', // Not supported for Signal buses (only Field buses)
       defaultValue: 0,
       sortKey: 0,
     };

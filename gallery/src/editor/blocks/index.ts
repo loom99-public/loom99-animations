@@ -14,6 +14,7 @@ export * from './math';
 export * from './program';
 export * from './adapters';
 export * from './fx';
+export * from './domain';  // Domain primitives (Phase 3)
 
 // Re-export all registry functions
 export * from './registry';

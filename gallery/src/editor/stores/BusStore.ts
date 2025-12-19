@@ -38,6 +38,7 @@ export class BusStore {
       updateListener: action,
       removeListener: action,
       reorderPublisher: action,
+      createDefaultBuses: action,
     });
   }
 
@@ -51,6 +52,59 @@ export class BusStore {
   // =============================================================================
   // Actions - Bus Management
   // =============================================================================
+
+  /**
+   * Create default buses for a new patch.
+   * Only creates if no buses exist yet.
+   *
+   * Default buses (Signal world only):
+   * - phaseA: signal:phase (primary phase source)
+   * - phaseB: signal:phase (secondary phase source)
+   * - energy: signal:number (accumulated energy)
+   * - pulse: signal:trigger (discrete trigger events)
+   * - palette: signal:color (color bias/palette signal)
+   */
+  createDefaultBuses(): void {
+    // Only create if no buses exist
+    if (this.buses.length > 0) {
+      return;
+    }
+
+    const defaults: Array<{
+      name: string;
+      world: 'signal';
+      domain: 'phase' | 'number' | 'trigger' | 'color';
+      combineMode: BusCombineMode;
+      defaultValue: unknown;
+    }> = [
+      { name: 'phaseA', world: 'signal', domain: 'phase', combineMode: 'last', defaultValue: 0 },
+      { name: 'phaseB', world: 'signal', domain: 'phase', combineMode: 'last', defaultValue: 0 },
+      { name: 'energy', world: 'signal', domain: 'number', combineMode: 'sum', defaultValue: 0 },
+      { name: 'pulse', world: 'signal', domain: 'trigger', combineMode: 'last', defaultValue: false },
+      { name: 'palette', world: 'signal', domain: 'color', combineMode: 'last', defaultValue: '#000000' },
+    ];
+
+    defaults.forEach((def) => {
+      const typeDesc: TypeDescriptor = {
+        world: def.world,
+        domain: def.domain,
+        category: 'core',
+        busEligible: true,
+      };
+
+      const bus: Bus = {
+        id: this.root.generateId('bus'),
+        name: def.name,
+        type: typeDesc,
+        combineMode: def.combineMode,
+        defaultValue: def.defaultValue,
+        sortKey: this.buses.length,
+        origin: 'built-in',
+      };
+
+      this.buses.push(bus);
+    });
+  }
 
   /**
    * Create a new bus.
@@ -74,6 +128,7 @@ export class BusStore {
       combineMode,
       defaultValue,
       sortKey: this.buses.length,
+      origin: 'user', // User-created buses
     };
 
     this.buses.push(bus);

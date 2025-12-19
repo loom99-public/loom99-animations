@@ -6,3 +6,7 @@
 
 ## Cache Contents
 - Bus transformation requirements from planning documents
+
+## Invalidated (2025-12-18)
+- project-structure.md - Modified editor blocks system
+- compiler-architecture.md - Added new primitives and composite

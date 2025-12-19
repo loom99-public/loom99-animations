@@ -115,6 +115,23 @@ import {
 // Sinks - output terminals
 import { OutputProgramBlock, DebugOutputBlock } from './sinks';
 
+// Domain primitives (Phase 3)
+import {
+  DomainNBlock,
+  PositionMapGridBlock,
+  PositionMapCircleBlock,
+  PositionMapLineBlock,
+  FieldConstNumberBlock,
+  FieldConstColorBlock,
+  FieldHash01ByIdBlock,
+  FieldMapNumberBlock,
+  FieldMapVec2Block,
+  FieldZipNumberBlock,
+  PhaseClockBlock,
+  TriggerOnWrapBlock,
+  RenderInstances2DBlock,
+} from './domain';
+
 // =============================================================================
 // Registry
 // =============================================================================
@@ -224,6 +241,21 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   // Sinks
   outputProgram: OutputProgramBlock,
   debugOutput: DebugOutputBlock,
+
+  // Domain primitives (Phase 3)
+  DomainN: DomainNBlock,
+  PositionMapGrid: PositionMapGridBlock,
+  PositionMapCircle: PositionMapCircleBlock,
+  PositionMapLine: PositionMapLineBlock,
+  FieldConstNumber: FieldConstNumberBlock,
+  FieldConstColor: FieldConstColorBlock,
+  FieldHash01ById: FieldHash01ByIdBlock,
+  FieldMapNumber: FieldMapNumberBlock,
+  FieldMapVec2: FieldMapVec2Block,
+  FieldZipNumber: FieldZipNumberBlock,
+  PhaseClock: PhaseClockBlock,
+  TriggerOnWrap: TriggerOnWrapBlock,
+  RenderInstances2D: RenderInstances2DBlock,
 };
 
 /**
@@ -254,3 +286,4 @@ export * from './render';
 export * from './adapters';
 export * from './sinks';
 export * from './helpers';
+export * from './domain';

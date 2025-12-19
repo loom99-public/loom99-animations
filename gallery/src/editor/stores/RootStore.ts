@@ -31,6 +31,9 @@ export class RootStore {
       loadPatch: action,
       clearPatch: action,
     });
+
+    // Initialize default buses for a new patch
+    this.busStore.createDefaultBuses();
   }
 
   generateId(prefix: string): string {
@@ -126,6 +129,9 @@ export class RootStore {
       this.busStore.listeners = [];
     }
 
+    // Create default buses if none exist in loaded patch
+    this.busStore.createDefaultBuses();
+
     if ('composites' in patch && Array.isArray((patch as any).composites)) {
       this.compositeStore.composites = (patch as any).composites;
     } else {
@@ -139,7 +145,7 @@ export class RootStore {
     );
     this.nextId = maxId + 1;
   }
-  
+
   private migrateBlockParams(type: string, params: Record<string, unknown>): Record<string, unknown> {
     if (type === 'SVGPathSource' && params.target) {
         const target = String(params.target);
@@ -162,6 +168,9 @@ export class RootStore {
     for (const lane of this.patchStore.lanes) {
       lane.blockIds = [];
     }
+
+    // Create default buses for new empty patch
+    this.busStore.createDefaultBuses();
   }
 
   loadDemoAnimation(): void {

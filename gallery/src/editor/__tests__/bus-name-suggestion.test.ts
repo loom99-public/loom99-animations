@@ -12,6 +12,8 @@ describe('Bus Name Auto-suggestion (WI-11)', () => {
 
   beforeEach(() => {
     store = new RootStore();
+    // Clear default buses for clean test slate
+    store.busStore.buses = [];
   });
 
   describe('Default names by domain', () => {

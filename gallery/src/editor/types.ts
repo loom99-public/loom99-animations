@@ -142,6 +142,9 @@ export interface Bus {
 
   /** Sort key for deterministic publisher ordering */
   sortKey: number;
+
+  /** Origin: built-in (auto-created defaults) or user (user-created) */
+  readonly origin?: 'built-in' | 'user';
 }
 
 /**

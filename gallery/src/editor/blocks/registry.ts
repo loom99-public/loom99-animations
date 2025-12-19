@@ -11,6 +11,7 @@ import * as MathBlocks from './math';
 import * as ProgramBlocks from './program';
 import * as AdapterBlocks from './adapters';
 import * as FxBlocks from './fx';
+import * as DomainBlocks from './domain';
 
 // Import composite bridge for optional composite support
 import { getCompositeBlockDefinitions } from '../composite-bridge';
@@ -26,6 +27,7 @@ const ALL_INDIVIDUAL_BLOCKS: BlockDefinition[] = [
   ...Object.values(ProgramBlocks),
   ...Object.values(AdapterBlocks),
   ...Object.values(FxBlocks),
+  ...Object.values(DomainBlocks),
 ].filter((block): block is BlockDefinition => (block as BlockDefinition).type !== undefined);
 
 

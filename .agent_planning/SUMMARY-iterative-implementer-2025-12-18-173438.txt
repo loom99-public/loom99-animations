@@ -1,0 +1,22 @@
+Agent: iterative-implementer | 2025-12-18T17:34:38Z
+Mode: manual
+Completed: 3 primitives (PhaseClock, RenderInstances2D, GridPoints) | Files: 4 | Commits: 1
+Tests: N/A (manual mode - no tests specified)
+Cache invalidated: project-structure.md, compiler-architecture.md
+Status: complete
+
+Implementation Details:
+- PhaseClock: Time-based phase progression with loop/once/pingpong modes
+- RenderInstances2D: Materializes Domain + Fields into visual circles
+- GridPoints: Composite combining DomainN + PositionMapGrid
+
+Files Modified:
+- gallery/src/editor/blocks/time.ts (added PhaseClock)
+- gallery/src/editor/blocks/render.ts (added RenderInstances2D)
+- gallery/src/editor/domain-composites.ts (new file with GridPoints composite)
+- gallery/src/editor/composite-bridge.ts (import domain-composites)
+
+Next Steps:
+- Implement compiler support for these blocks in compiler/primitives/
+- Add UI integration tests
+- Test visual rendering of RenderInstances2D

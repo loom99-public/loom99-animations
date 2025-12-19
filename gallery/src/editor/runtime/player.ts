@@ -13,7 +13,7 @@
  */
 
 import type { RenderTree } from './renderTree';
-import type { CompileCtx, RuntimeCtx, Program, Seed, TimelineHint, CuePoint } from '../compiler/types';
+import type { CompileCtx, RuntimeCtx, Program, Seed, TimelineHint, CuePoint, TimeModel } from '../compiler/types';
 
 // =============================================================================
 // Types
@@ -42,6 +42,12 @@ export interface Scene {
 
 export type PlayState = 'playing' | 'paused';
 
+/**
+ * @deprecated LoopMode is deprecated. Looping behavior is now determined by TimeModel.
+ * - Cyclic time models loop automatically
+ * - Finite time models pause at end
+ * - Infinite time models advance unbounded
+ */
 export type LoopMode = 'none' | 'loop' | 'pingpong';
 
 export interface PlayerOptions {
@@ -50,6 +56,7 @@ export interface PlayerOptions {
   onFrame: (tree: RenderTree, tMs: number) => void;
   onStateChange?: (state: PlayState) => void;
   onTimeChange?: (tMs: number) => void;
+  /** @deprecated Use TimeModel instead. Looping is now structural. */
   onLoopModeChange?: (mode: LoopMode) => void;
   onTimelineChange?: (hint: TimelineHint | null) => void;
   onCuePointsChange?: (cuePoints: readonly CuePoint[]) => void;
@@ -85,6 +92,9 @@ export class Player {
   private currentTimeline: TimelineHint | null = null;
   private cuePoints: readonly CuePoint[] = [];
   private autoApplyTimeline: boolean;
+
+  // TimeModel from compiler (Phase 3: TimeRoot)
+  private timeModel: TimeModel | null = null;
 
   private onFrame: (tree: RenderTree, tMs: number) => void;
   private onStateChange?: (state: PlayState) => void;
@@ -145,6 +155,8 @@ export class Player {
 
   /**
    * Set loop mode.
+   * @deprecated Use TimeModel for looping behavior. This is only for backward compatibility.
+   * When TimeModel is set, loopMode is ignored.
    */
   setLoopMode(mode: LoopMode): void {
     this.loopMode = mode;
@@ -154,6 +166,7 @@ export class Player {
 
   /**
    * Get current loop mode.
+   * @deprecated Use getTimeModel() instead. When TimeModel is set, loopMode is ignored.
    */
   getLoopMode(): LoopMode {
     return this.loopMode;
@@ -313,6 +326,52 @@ export class Player {
   }
 
   // ===========================================================================
+  // TimeModel (Phase 3: TimeRoot)
+  // ===========================================================================
+
+  /**
+   * Apply a TimeModel from the compiler.
+   *
+   * This sets maxTime based on the time model kind:
+   * - finite: uses durationMs
+   * - cyclic: uses periodMs
+   * - infinite: uses windowMs
+   *
+   * The Player no longer wraps time; signals handle their own phase/looping.
+   */
+  applyTimeModel(model: TimeModel): void {
+    this.timeModel = model;
+
+    switch (model.kind) {
+      case 'finite':
+        this.maxTime = model.durationMs;
+        // Extract cue points if available
+        if (model.cuePoints) {
+          this.cuePoints = model.cuePoints;
+          this.onCuePointsChange?.(this.cuePoints);
+        }
+        break;
+      case 'cyclic':
+        this.maxTime = model.periodMs;
+        // Apply loop mode from model if specified
+        if (model.mode) {
+          this.setLoopMode(model.mode);
+        }
+        break;
+      case 'infinite':
+        this.maxTime = model.windowMs;
+        break;
+    }
+  }
+
+  /**
+   * Get the current time model.
+   */
+  getTimeModel(): TimeModel | null {
+    return this.timeModel;
+  }
+
+  // ===========================================================================
   // Playback Control
   // ===========================================================================
 
@@ -389,26 +448,62 @@ export class Player {
     this.lastFrameMs = now;
     this.tMs += dt;
 
-    // Handle looping
-    if (this.loopMode === 'loop') {
-      if (this.tMs >= this.maxTime) {
-        this.tMs = 0;
-      } else if (this.tMs < 0) {
-        this.tMs = this.maxTime;
-      }
-    } else if (this.loopMode === 'pingpong') {
-      if (this.tMs >= this.maxTime) {
-        this.tMs = this.maxTime;
-        this.playDirection = -1;
-      } else if (this.tMs <= 0) {
-        this.tMs = 0;
-        this.playDirection = 1;
+    // Time wrapping is determined by TimeModel, not loopMode.
+    // - cyclic: wrap for continuous loop
+    // - finite: pause at end
+    // - infinite: advance unbounded
+    if (this.timeModel) {
+      switch (this.timeModel.kind) {
+        case 'cyclic':
+          // Cyclic time models wrap continuously
+          if (this.tMs >= this.maxTime) {
+            this.tMs = this.tMs % this.maxTime;
+          } else if (this.tMs < 0) {
+            this.tMs = this.maxTime + (this.tMs % this.maxTime);
+          }
+          break;
+
+        case 'finite':
+          // Finite animations pause at end (no player-level looping)
+          if (this.tMs >= this.maxTime) {
+            this.tMs = this.maxTime;
+            this.pause();
+          } else if (this.tMs < 0) {
+            this.tMs = 0;
+          }
+          break;
+
+        case 'infinite':
+          // Infinite: time advances unbounded, no wrapping
+          // Just clamp to non-negative
+          if (this.tMs < 0) {
+            this.tMs = 0;
+          }
+          break;
       }
     } else {
-      // No loop - clamp at max
-      if (this.tMs >= this.maxTime) {
-        this.tMs = this.maxTime;
-        this.pause();
+      // Legacy behavior when no TimeModel is set (backward compatibility)
+      // Default to loop behavior to match pre-TimeModel expectations
+      if (this.loopMode === 'loop') {
+        if (this.tMs >= this.maxTime) {
+          this.tMs = 0;
+        } else if (this.tMs < 0) {
+          this.tMs = this.maxTime;
+        }
+      } else if (this.loopMode === 'pingpong') {
+        if (this.tMs >= this.maxTime) {
+          this.tMs = this.maxTime;
+          this.playDirection = -1;
+        } else if (this.tMs <= 0) {
+          this.tMs = 0;
+          this.playDirection = 1;
+        }
+      } else {
+        // No loop - clamp at max
+        if (this.tMs >= this.maxTime) {
+          this.tMs = this.maxTime;
+          this.pause();
+        }
       }
     }
 

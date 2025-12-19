@@ -16,5 +16,13 @@ export { FieldMapNumberBlock } from './FieldMapNumber';
 export { FieldMapVec2Block } from './FieldMapVec2';
 export { FieldZipNumberBlock } from './FieldZipNumber';
 export { PhaseClockBlock } from './PhaseClock';
+export { PhaseClockLegacyBlock } from './PhaseClockLegacy';
 export { TriggerOnWrapBlock } from './TriggerOnWrap';
 export { RenderInstances2DBlock } from './RenderInstances2D';
+
+// TimeRoot blocks (Phase 3: TimeRoot)
+export {
+  FiniteTimeRootBlock,
+  CycleTimeRootBlock,
+  InfiniteTimeRootBlock,
+} from './TimeRoot';

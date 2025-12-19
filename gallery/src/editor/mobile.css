@@ -6,19 +6,45 @@
  */
 
 /* ============================================================================
+   Medium screens (1024px - 1400px): Adjust column sizes, preview above controls
+   ========================================================================= */
+
+@media (max-width: 1400px) {
+  /* Right panel: stack preview above controls */
+  .editor-right-panel {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0;
+  }
+
+  /* Preview panel takes a fixed/min height at top */
+  .editor-right-panel .editor-preview-wrapper {
+    order: 1;
+    min-height: 200px;
+    max-height: 280px;
+    border-bottom: 1px solid #1a1a2e;
+  }
+
+  /* Controls take remaining space below */
+  .editor-right-panel .editor-control-surface {
+    order: 2;
+  }
+}
+
+/* ============================================================================
    Tablet (768px - 1024px): Adjust column sizes
    ========================================================================= */
 
 @media (max-width: 1024px) {
   /* Narrow the sidebars on tablet */
   .editor-main {
-    grid-template-columns: 240px minmax(0, 1fr) 300px;
+    grid-template-columns: 220px minmax(0, 1fr) 280px;
   }
 
-  /* Smaller block library */
-  .block-library {
-    width: 220px;
-    min-width: 220px;
+  /* Right panel: stack preview above controls */
+  .editor-right-panel .editor-preview-wrapper {
+    min-height: 180px;
+    max-height: 240px;
   }
 }
 

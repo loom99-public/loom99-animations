@@ -578,3 +578,235 @@ export const FieldZipNumber = createBlock({
   laneKind: 'Fields',
   priority: 12,
 });
+
+// =============================================================================
+// Time/Phase Blocks
+// =============================================================================
+
+/**
+ * PhaseClock - Derived clock that transforms upstream time into phase.
+ *
+ * Generates phase [0,1] and progress u [0,1] from upstream time signal.
+ * Requires a TimeRoot input for explicit time management.
+ */
+export const PhaseClock = createBlock({
+  type: 'PhaseClock',
+  label: 'Phase Clock',
+  form: 'primitive',
+  subcategory: 'Time',
+  category: 'Time',
+  description: 'Derived clock: transforms upstream time into phase [0,1]',
+  inputs: [
+    input('tIn', 'Time In', 'Signal<time>'),
+  ],
+  outputs: [
+    output('phase', 'Phase', 'Signal<phase>'),
+    output('u', 'Progress', 'Signal<Unit>'),
+  ],
+  paramSchema: [
+    {
+      key: 'period',
+      label: 'Period (s)',
+      type: 'number',
+      min: 0.1,
+      max: 60.0,
+      step: 0.1,
+      defaultValue: 3.0,
+    },
+    {
+      key: 'mode',
+      label: 'Mode',
+      type: 'select',
+      options: [
+        { value: 'loop', label: 'Loop' },
+        { value: 'once', label: 'Once' },
+        { value: 'pingpong', label: 'Ping-Pong' },
+      ],
+      defaultValue: 'loop',
+    },
+  ],
+  color: '#6366F1',
+  laneKind: 'Phase',
+  priority: 0,
+});
+
+/**
+ * PhaseClockLegacy - Legacy time-based phase progression.
+ *
+ * @deprecated Use PhaseClock with TimeRoot input instead.
+ *
+ * This block owns its own time, which conflicts with TimeRoot-based time management.
+ * Kept for backward compatibility with existing patches.
+ */
+export const PhaseClockLegacy = createBlock({
+  type: 'PhaseClockLegacy',
+  label: 'Phase Clock (Legacy)',
+  form: 'primitive',
+  subcategory: 'Time',
+  category: 'Time',
+  description: 'Deprecated. Use new PhaseClock with TimeRoot.',
+  inputs: [],
+  outputs: [
+    output('phase', 'Phase', 'Signal<number>'),
+  ],
+  paramSchema: [
+    {
+      key: 'duration',
+      label: 'Duration (s)',
+      type: 'number',
+      min: 0.1,
+      max: 10.0,
+      step: 0.1,
+      defaultValue: 3.0,
+    },
+    {
+      key: 'mode',
+      label: 'Mode',
+      type: 'select',
+      options: [
+        { value: 'loop', label: 'Loop' },
+        { value: 'once', label: 'Once' },
+        { value: 'pingpong', label: 'Ping-Pong' },
+      ],
+      defaultValue: 'loop',
+    },
+    {
+      key: 'offset',
+      label: 'Offset (s)',
+      type: 'number',
+      min: -10.0,
+      max: 10.0,
+      step: 0.1,
+      defaultValue: 0.0,
+    },
+  ],
+  color: '#9CA3AF', // Gray to indicate deprecated
+  laneKind: 'Phase',
+  priority: 100, // Lower priority than new PhaseClock
+});
+
+/**
+ * TriggerOnWrap - Detects when a phase signal wraps from 1 to 0.
+ *
+ * Useful for converting continuous phase into discrete rhythm events.
+ */
+export const TriggerOnWrap = createBlock({
+  type: 'TriggerOnWrap',
+  label: 'Trigger On Wrap',
+  form: 'primitive',
+  subcategory: 'Time',
+  category: 'Events',
+  description: 'Emit a trigger when phase wraps from 1 to 0',
+  inputs: [
+    input('phase', 'Phase', 'Signal<number>'),
+  ],
+  outputs: [
+    output('trigger', 'Trigger', 'Signal<Unit>'),
+  ],
+  paramSchema: [],
+  color: '#F59E0B',
+  laneKind: 'Phase',
+  priority: 1,
+});
+
+// =============================================================================
+// Render Blocks
+// =============================================================================
+
+/**
+ * RenderInstances2D - Materialize Domain + Fields into rendered circles.
+ *
+ * This is the main renderer that takes domain, positions, radius, and color
+ * and produces a RenderTree of circles.
+ */
+export const RenderInstances2D = createBlock({
+  type: 'RenderInstances2D',
+  label: 'Render 2D Instances',
+  form: 'primitive',
+  subcategory: 'Render',
+  category: 'Render',
+  description: 'Materialize Domain + Fields into circles',
+  inputs: [
+    input('domain', 'Domain', 'Domain'),
+    input('positions', 'Positions', 'Field<vec2>'),
+    input('radius', 'Radius', 'Field<number>'),
+    input('color', 'Color', 'Field<color>'),
+  ],
+  outputs: [
+    output('render', 'Render', 'RenderTree'),
+  ],
+  paramSchema: [
+    {
+      key: 'opacity',
+      label: 'Opacity',
+      type: 'number',
+      min: 0,
+      max: 1,
+      step: 0.1,
+      defaultValue: 1.0,
+    },
+    {
+      key: 'glow',
+      label: 'Glow',
+      type: 'boolean',
+      defaultValue: false,
+    },
+    {
+      key: 'glowIntensity',
+      label: 'Glow Intensity',
+      type: 'number',
+      min: 0.5,
+      max: 5,
+      step: 0.1,
+      defaultValue: 2.0,
+    },
+  ],
+  color: '#EF4444',
+  laneKind: 'Output',
+  priority: 0,
+});
+
+// =============================================================================
+// Macros (Recipe Starters)
+// =============================================================================
+
+/**
+ * Helper to create macro block definitions.
+ */
+function createMacro(config: {
+  type: string;
+  label: string;
+  description: string;
+  priority: number;
+  color?: string;
+}): import('./types').BlockDefinition {
+  return {
+    type: config.type,
+    label: config.label,
+    form: 'macro',
+    subcategory: 'Animation Styles',
+    category: 'Macros',
+    description: config.description,
+    inputs: [],
+    outputs: [],
+    defaultParams: {},
+    paramSchema: [],
+    color: config.color || '#fbbf24',
+    laneKind: 'Fields', // Macros can be dropped anywhere, but Fields is a reasonable default
+    priority: config.priority,
+  };
+}
+
+/**
+ * Breathing Dots macro - Grid of dots with pulsing size animation.
+ *
+ * Uses domain composites: GridPoints + PhaseClock + DotsRenderer.
+ * The PhaseClock drives radius via the bus system.
+ */
+export const MacroBreathingDots = createMacro({
+  type: 'macro:breathingDots',
+  label: 'Breathing Dots',
+  description: 'Grid of glowing dots that pulse in size. Uses domain primitives and bus-driven animation.',
+  priority: -100,
+  color: '#00ccff',
+});

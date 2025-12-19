@@ -15,6 +15,7 @@
 import type {
   Artifact,
   BlockId,
+  BlockInstance,
   BlockRegistry,
   CompileCtx,
   CompileError,
@@ -28,9 +29,12 @@ import type {
   RenderTree,
   RuntimeCtx,
   Seed,
+  TimeModel,
   ValueKind,
 } from './types';
 import { compileBusAwarePatch, isBusAwarePatch } from './compileBusAware';
+import { getFeatureFlags } from './featureFlags';
+import { getBlockDefinition } from '../blocks';
 
 // =============================================================================
 // Main Compiler Entry Point
@@ -69,6 +73,12 @@ function compilePatchWireOnly(
       ok: false,
       errors: [{ code: 'EmptyPatch', message: 'Patch is empty - add some blocks to compile.' }],
     };
+  }
+
+  // 0.5) Validate TimeRoot constraint (if feature flag enabled)
+  const timeRootErrors = validateTimeRootConstraint(patch);
+  if (timeRootErrors.length > 0) {
+    return { ok: false, errors: timeRootErrors };
   }
 
   // 1) Validate block types exist in registry
@@ -280,9 +290,12 @@ function compilePatchWireOnly(
     return { ok: false, errors };
   }
 
+  // Infer TimeModel from the patch
+  const timeModel = inferTimeModel(patch, compiledPortMap);
+
   // Accept both RenderTreeProgram and RenderTree (wrap RenderTree into a Program)
   if (outArt.kind === 'RenderTreeProgram') {
-    return { ok: true, program: outArt.value, errors: [], compiledPortMap };
+    return { ok: true, program: outArt.value, timeModel, errors: [], compiledPortMap };
   }
 
   if (outArt.kind === 'RenderTree') {
@@ -292,7 +305,7 @@ function compilePatchWireOnly(
       signal: renderFn,
       event: () => [],
     };
-    return { ok: true, program, errors: [], compiledPortMap };
+    return { ok: true, program, timeModel, errors: [], compiledPortMap };
   }
 
   errors.push({
@@ -301,6 +314,163 @@ function compilePatchWireOnly(
     where: { blockId: outputRef.blockId, port: outputRef.port },
   });
   return { ok: false, errors };
+}
+
+// =============================================================================
+// TimeRoot Detection and TimeModel Inference
+// =============================================================================
+
+/**
+ * Find all TimeRoot blocks in the patch.
+ */
+function findTimeRootBlocks(patch: CompilerPatch): BlockInstance[] {
+  const timeRootBlocks: BlockInstance[] = [];
+
+  for (const block of patch.blocks.values()) {
+    const blockDef = getBlockDefinition(block.type);
+    if (blockDef?.category === 'TimeRoot') {
+      timeRootBlocks.push(block);
+    }
+  }
+
+  return timeRootBlocks;
+}
+
+/**
+ * Validate TimeRoot constraint: exactly one TimeRoot per patch.
+ * Returns errors if validation fails, empty array if valid.
+ *
+ * Only enforced when `requireTimeRoot` feature flag is enabled.
+ */
+export function validateTimeRootConstraint(patch: CompilerPatch): CompileError[] {
+  const flags = getFeatureFlags();
+  if (!flags.requireTimeRoot) {
+    return []; // Skip validation in legacy mode
+  }
+
+  const timeRootBlocks = findTimeRootBlocks(patch);
+  const errors: CompileError[] = [];
+
+  if (timeRootBlocks.length === 0) {
+    errors.push({
+      code: 'MissingTimeRoot',
+      message: 'Patch must contain exactly one TimeRoot block (FiniteTimeRoot, CycleTimeRoot, or InfiniteTimeRoot)',
+    });
+  }
+
+  if (timeRootBlocks.length > 1) {
+    errors.push({
+      code: 'MultipleTimeRoots',
+      message: `Patch contains ${timeRootBlocks.length} TimeRoot blocks - only one is allowed`,
+      where: { blockId: timeRootBlocks[0]!.id },
+    });
+  }
+
+  return errors;
+}
+
+/**
+ * Infer TimeModel from a TimeRoot block.
+ */
+function inferTimeModelFromTimeRoot(block: BlockInstance): TimeModel {
+  switch (block.type) {
+    case 'FiniteTimeRoot': {
+      const durationMs = Number(block.params.durationMs ?? 5000);
+      return {
+        kind: 'finite',
+        durationMs,
+        cuePoints: [
+          { tMs: 0, label: 'Start', kind: 'marker' },
+          { tMs: durationMs, label: 'End', kind: 'marker' },
+        ],
+      };
+    }
+    case 'CycleTimeRoot': {
+      const periodMs = Number(block.params.periodMs ?? 3000);
+      const mode = String(block.params.mode ?? 'loop') as 'loop' | 'pingpong';
+      return {
+        kind: 'cyclic',
+        periodMs,
+        phaseDomain: '0..1',
+        mode,
+      };
+    }
+    case 'InfiniteTimeRoot': {
+      const windowMs = Number(block.params.windowMs ?? 10000);
+      return {
+        kind: 'infinite',
+        windowMs,
+      };
+    }
+    default:
+      // Unknown TimeRoot type - use infinite fallback
+      return { kind: 'infinite', windowMs: 10000 };
+  }
+}
+
+/**
+ * Infer TimeModel from the compiled patch.
+ *
+ * Inference rules (in priority order):
+ * 1. TimeRoot blocks → Use explicit TimeRoot configuration
+ * 2. PhaseMachine → FiniteTimeModel (duration = entrance + hold + exit)
+ * 3. PhaseClock with loop mode → CyclicTimeModel
+ * 4. Otherwise → InfiniteTimeModel with 10s default window
+ */
+function inferTimeModel(
+  patch: CompilerPatch,
+  _compiledPortMap: Map<string, Artifact>
+): TimeModel {
+  // Check for explicit TimeRoot blocks first (Phase 3: TimeRoot)
+  const timeRootBlocks = findTimeRootBlocks(patch);
+  if (timeRootBlocks.length === 1) {
+    return inferTimeModelFromTimeRoot(timeRootBlocks[0]!);
+  }
+
+  // Legacy inference: Check for PhaseMachine (implies finite duration)
+  for (const block of patch.blocks.values()) {
+    if (block.type === 'PhaseMachine') {
+      const entranceDuration = Number(block.params.entranceDuration ?? 2.5) * 1000;
+      const holdDuration = Number(block.params.holdDuration ?? 2.0) * 1000;
+      const exitDuration = Number(block.params.exitDuration ?? 0.5) * 1000;
+      const totalDuration = entranceDuration + holdDuration + exitDuration;
+
+      return {
+        kind: 'finite',
+        durationMs: totalDuration,
+        cuePoints: [
+          { tMs: 0, label: 'Entrance Start', kind: 'phase' },
+          { tMs: entranceDuration, label: 'Hold Start', kind: 'phase' },
+          { tMs: entranceDuration + holdDuration, label: 'Exit Start', kind: 'phase' },
+          { tMs: totalDuration, label: 'End', kind: 'phase' },
+        ],
+      };
+    }
+  }
+
+  // Legacy inference: Check for PhaseClock with loop mode (implies cyclic time)
+  for (const block of patch.blocks.values()) {
+    if (block.type === 'PhaseClock') {
+      const mode = String(block.params.mode ?? 'loop');
+      const durationSec = Number(block.params.duration ?? 3.0);
+      const periodMs = durationSec * 1000;
+
+      if (mode === 'loop' || mode === 'pingpong') {
+        return {
+          kind: 'cyclic',
+          periodMs,
+          phaseDomain: '0..1',
+          mode: mode as 'loop' | 'pingpong',
+        };
+      }
+    }
+  }
+
+  // Default: infinite time model
+  return {
+    kind: 'infinite',
+    windowMs: 10000, // 10 second default preview window
+  };
 }
 
 // =============================================================================

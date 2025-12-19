@@ -6,8 +6,8 @@
  */
 
 import type { BlockCompiler, TargetScene, Vec2 } from '../../../types';
-import type { LineData } from '../../../../data/pathData';
-import { pathLibrary } from '../../../pathLibrary';
+import type { LineData } from '../../../../../data/pathData';
+import { pathLibrary } from '../../../../pathLibrary';
 
 /**
  * Sample points along a path defined by LineData.

@@ -1,0 +1,320 @@
+/**
+ * TimeConsole Styles
+ *
+ * Mode-aware time control console with:
+ * - Mode badge (FINITE/CYCLE/INFINITE)
+ * - Mode-specific controls area
+ * - Always-present controls (Run/Freeze, Speed, Seed)
+ */
+
+/* =============================================================================
+   Container
+   ============================================================================= */
+
+.time-console {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #1a1a1a;
+  border-top: 1px solid #333;
+  flex-shrink: 0;
+}
+
+/* =============================================================================
+   Header with Mode Badge
+   ============================================================================= */
+
+.time-console-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.mode-badge.mode-finite {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+  border: 1px solid rgba(76, 175, 80, 0.4);
+}
+
+.mode-badge.mode-cyclic {
+  background: rgba(33, 150, 243, 0.2);
+  color: #2196f3;
+  border: 1px solid rgba(33, 150, 243, 0.4);
+}
+
+.mode-badge.mode-infinite {
+  background: rgba(156, 39, 176, 0.2);
+  color: #9c27b0;
+  border: 1px solid rgba(156, 39, 176, 0.4);
+}
+
+/* =============================================================================
+   Body (Mode-Specific Controls)
+   ============================================================================= */
+
+.time-console-body {
+  min-height: 48px;
+}
+
+/* =============================================================================
+   Finite Mode Controls
+   ============================================================================= */
+
+.finite-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.finite-readouts {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.finite-time-display,
+.finite-progress-display {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  font-size: 11px;
+  color: #888;
+}
+
+.finite-progress-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.finite-ended-badge {
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  background: rgba(255, 152, 0, 0.2);
+  color: #ff9800;
+  border: 1px solid rgba(255, 152, 0, 0.4);
+}
+
+.finite-scrubber {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.finite-time-label {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  font-size: 10px;
+  color: #666;
+  min-width: 45px;
+}
+
+.finite-time-start {
+  text-align: left;
+}
+
+.finite-time-end {
+  text-align: right;
+}
+
+.finite-scrubber-container {
+  position: relative;
+  flex: 1;
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.finite-scrubber-input {
+  flex: 1;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.finite-scrubber-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #4a9eff;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.finite-scrubber-input::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.finite-scrubber-input::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #4a9eff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+/* Cue point markers */
+.finite-cue-marker {
+  position: absolute;
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  width: 3px;
+  height: 18px;
+  border-radius: 1px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.7;
+}
+
+.finite-cue-marker.cue-phase {
+  background: #ffd93d;
+  height: 20px;
+}
+
+.finite-cue-marker.cue-beat {
+  background: #ff6b6b;
+  height: 16px;
+}
+
+.finite-cue-marker.cue-marker {
+  background: #4ecdc4;
+  height: 14px;
+}
+
+/* =============================================================================
+   Mode Placeholder (Cyclic/Infinite stubs)
+   ============================================================================= */
+
+.mode-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed #444;
+  border-radius: 6px;
+}
+
+.mode-placeholder-icon {
+  font-size: 24px;
+  opacity: 0.5;
+}
+
+.mode-placeholder-text {
+  font-size: 12px;
+  color: #888;
+  font-weight: 500;
+}
+
+.mode-placeholder-hint {
+  font-size: 10px;
+  color: #666;
+  font-style: italic;
+}
+
+/* =============================================================================
+   Always-Present Controls
+   ============================================================================= */
+
+.time-console-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #333;
+}
+
+.tc-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tc-btn:hover {
+  background: #333;
+  border-color: #4a9eff;
+}
+
+.tc-btn:active {
+  transform: scale(0.95);
+}
+
+.tc-btn.active {
+  background: #4a9eff;
+  border-color: #4a9eff;
+}
+
+.tc-divider {
+  width: 1px;
+  height: 24px;
+  background: #444;
+  margin: 0 4px;
+}
+
+.tc-setting {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tc-setting-label {
+  font-size: 11px;
+  color: #888;
+  min-width: 35px;
+}
+
+.tc-setting-input {
+  width: 55px;
+  padding: 4px 6px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 11px;
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.tc-setting-input:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+/* Remove spinners from number inputs */
+.tc-setting-input::-webkit-inner-spin-button,
+.tc-setting-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.tc-setting-input[type='number'] {
+  -moz-appearance: textfield;
+}

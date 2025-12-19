@@ -3,23 +3,21 @@
  */
 
 .block-library {
-  width: 260px;
-  min-width: 260px;
-  flex-shrink: 0;
+  width: 100%;
   height: 100%;
-  background: #1a1a1a;
-  border-right: 1px solid #333;
+  background: #0f0f1a;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
 .library-header {
-  padding: 12px;
-  border-bottom: 1px solid #333;
+  padding: 8px 12px;
+  border-bottom: 1px solid #1a1a2e;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .library-header h2 {
@@ -38,10 +36,10 @@
 .library-search {
   width: 100%;
   padding: 6px 10px;
-  background: #252525;
-  border: 1px solid #333;
+  background: #111827;
+  border: 1px solid #1a1a2e;
   border-radius: 4px;
-  color: #fff;
+  color: #e5e7eb;
   font-size: 12px;
   outline: none;
 }
@@ -57,7 +55,9 @@
 .library-categories {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 8px;
+  min-height: 0;
 }
 
 .tier {
@@ -104,7 +104,7 @@
   padding: 4px 4px;
   font-size: 10px;
   font-weight: 600;
-  color: #9ca3af;
+  color: #6b7280;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -113,8 +113,8 @@
 }
 
 .subcategory-header:hover {
-  background: #252525;
-  color: #cbd5e1;
+  background: #1a1a2e;
+  color: #9ca3af;
 }
 
 .subcategory-label {
@@ -130,7 +130,7 @@
   padding: 4px 4px;
   font-size: 10px;
   font-weight: 600;
-  color: #666;
+  color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   display: flex;
@@ -142,8 +142,8 @@
 }
 
 .category-label:hover {
-  background: #252525;
-  color: #888;
+  background: #1a1a2e;
+  color: #9ca3af;
 }
 
 .category-chevron {
@@ -154,8 +154,8 @@
 
 .category-count {
   font-size: 9px;
-  background: #333;
-  color: #888;
+  background: #1f2937;
+  color: #6b7280;
   padding: 1px 5px;
   border-radius: 8px;
   font-weight: 500;
@@ -180,16 +180,16 @@
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  background: #252525;
+  background: #111827;
   border-radius: 4px;
   cursor: grab;
   transition: background 0.1s, border-color 0.1s;
-  border: 1px solid transparent;
+  border: 1px solid #1a1a2e;
 }
 
 .block-item:hover {
-  background: #2d2d2d;
-  border-color: #444;
+  background: #1f2937;
+  border-color: #374151;
 }
 
 .block-item.selected {
@@ -306,8 +306,8 @@
 }
 
 .filtered-section-header.clickable:hover {
-  background: #252525;
-  color: #aaa;
+  background: #1a1a2e;
+  color: #9ca3af;
 }
 
 .filtered-section-chevron {
@@ -322,8 +322,8 @@
 
 .filtered-section-count {
   font-size: 9px;
-  background: #333;
-  color: #888;
+  background: #1f2937;
+  color: #6b7280;
   padding: 1px 5px;
   border-radius: 8px;
   font-weight: 500;
@@ -339,7 +339,7 @@
 }
 
 .filtered-section.other {
-  border-top: 1px solid #333;
+  border-top: 1px solid #1a1a2e;
   padding-top: 12px;
 }
 

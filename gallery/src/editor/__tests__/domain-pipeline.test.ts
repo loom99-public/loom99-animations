@@ -20,7 +20,7 @@ import {
   FieldHash01ByIdBlock,
   FieldMapNumberBlock,
   FieldZipNumberBlock,
-  PhaseClockBlock,
+  PhaseClockLegacyBlock,
   RenderInstances2DBlock,
 } from '../compiler/blocks/domain';
 import type { Artifact, CompileCtx, RuntimeCtx } from '../compiler/types';
@@ -333,9 +333,9 @@ describe('Domain Pipeline', () => {
     });
   });
 
-  describe('PhaseClock', () => {
+  describe('PhaseClockLegacy', () => {
     it('produces looping phase signal', () => {
-      const result = PhaseClockBlock.compile({
+      const result = PhaseClockLegacyBlock.compile({
         id: 'clock',
         params: { duration: 1, mode: 'loop', offset: 0 },
         inputs: {},
@@ -352,7 +352,7 @@ describe('Domain Pipeline', () => {
     });
 
     it('produces once phase signal', () => {
-      const result = PhaseClockBlock.compile({
+      const result = PhaseClockLegacyBlock.compile({
         id: 'clock-once',
         params: { duration: 1, mode: 'once', offset: 0 },
         inputs: {},
@@ -369,7 +369,7 @@ describe('Domain Pipeline', () => {
     });
 
     it('produces pingpong phase signal', () => {
-      const result = PhaseClockBlock.compile({
+      const result = PhaseClockLegacyBlock.compile({
         id: 'clock-pp',
         params: { duration: 1, mode: 'pingpong', offset: 0 },
         inputs: {},
@@ -605,7 +605,7 @@ describe('Domain Pipeline', () => {
         expect(tree.kind).toBe('effect');
 
         if (tree.kind === 'effect') {
-          expect(tree.effect).toEqual({ type: 'glow', blur: 10, intensity: 2 });
+          expect(tree.effect).toEqual({ kind: 'filter', filter: 'drop-shadow(0 0 20px currentColor)' });
           expect(tree.child.kind).toBe('group');
 
           if (tree.child.kind === 'group') {

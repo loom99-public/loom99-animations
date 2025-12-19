@@ -439,8 +439,8 @@ export const Editor = observer(() => {
   const [helpPanelCollapsed, setHelpPanelCollapsed] = useState(true); // collapsed by default
   const [helpPanelTopicId, setHelpPanelTopicId] = useState<HelpCenterTopicId>('overview');
 
-  // Controls panel collapsible state
-  const [controlsCollapsed, setControlsCollapsed] = useState(false);
+  // Controls panel collapsible state - collapsed by default
+  const [controlsCollapsed, setControlsCollapsed] = useState(true);
 
   // P1: Bay collective collapse logic
   const toggleBayCollective = () => {

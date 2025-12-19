@@ -1,0 +1,118 @@
+2025-12-19T02:56:25.619228 ============================================================
+2025-12-19T02:56:25.620103 init.py: SESSION START
+2025-12-19T02:56:25.620408 init.py: session_id=6beee901-5009-4782-9108-f016c7d80bdd
+2025-12-19T02:56:25.621105 init.py: cwd=/Users/bmf/code/loom99-animations
+2025-12-19T02:56:25.621290 init.py: hook_input keys=['session_id', 'transcript_path', 'cwd', 'hook_event_name', 'source']
+2025-12-19T02:56:25.622198 init.py: hook_event_name=SessionStart
+2025-12-19T02:56:25.622728 init.py: transcript_path=/Users/bmf/.claude/projects/-Users-bmf-code-loom99-animations/6beee901-5009-4782-9108-f016c7d80bdd.jsonl
+2025-12-19T02:56:25.623721 init.py: directory exists: .agent_planning/do-command-logs
+2025-12-19T02:56:25.624809 init.py: directory exists: .agent_planning/do-command-logs/partials
+2025-12-19T02:56:25.625957 init.py: initialization complete
+2025-12-19T03:10:25.512657 ------------------------------------------------------------
+2025-12-19T03:10:25.513238 aggregate-exec.py: STOP HOOK TRIGGERED
+2025-12-19T03:10:25.517979 aggregate-exec.py: session_id=6beee901-5009-4782-9108-f016c7d80bdd
+2025-12-19T03:10:25.518635 aggregate-exec.py: cwd=/Users/bmf/code/loom99-animations
+2025-12-19T03:10:25.518980 aggregate-exec.py: hook_input keys=['session_id', 'transcript_path', 'cwd', 'permission_mode', 'hook_event_name', 'stop_hook_active']
+2025-12-19T03:10:25.519607 aggregate-exec.py: hook_event_name=Stop
+2025-12-19T03:10:25.520111 aggregate-exec.py: permission_mode=bypassPermissions
+2025-12-19T03:10:25.520643 aggregate-exec.py: stop_hook_active=False
+2025-12-19T03:10:25.520925 aggregate-exec.py: checking partials_dir=.agent_planning/do-command-logs/partials
+2025-12-19T03:10:25.521927 aggregate-exec.py: scanning for partial files...
+2025-12-19T03:10:25.522807 aggregate-exec.py: found 0 files matching *-PARTIAL-*.txt
+2025-12-19T03:10:25.523047 aggregate-exec.py: no partial files, nothing to aggregate
+2025-12-19T03:34:39.371122 ------------------------------------------------------------
+2025-12-19T03:34:39.371332 aggregate-exec.py: STOP HOOK TRIGGERED
+2025-12-19T03:34:39.371492 aggregate-exec.py: session_id=6beee901-5009-4782-9108-f016c7d80bdd
+2025-12-19T03:34:39.371612 aggregate-exec.py: cwd=/Users/bmf/code/loom99-animations
+2025-12-19T03:34:39.371711 aggregate-exec.py: hook_input keys=['session_id', 'transcript_path', 'cwd', 'permission_mode', 'hook_event_name', 'stop_hook_active']
+2025-12-19T03:34:39.371819 aggregate-exec.py: hook_event_name=Stop
+2025-12-19T03:34:39.371927 aggregate-exec.py: permission_mode=bypassPermissions
+2025-12-19T03:34:39.372016 aggregate-exec.py: stop_hook_active=False
+2025-12-19T03:34:39.372171 aggregate-exec.py: checking partials_dir=.agent_planning/do-command-logs/partials
+2025-12-19T03:34:39.372325 aggregate-exec.py: scanning for partial files...
+2025-12-19T03:34:39.372622 aggregate-exec.py: found 0 files matching *-PARTIAL-*.txt
+2025-12-19T03:34:39.372710 aggregate-exec.py: no partial files, nothing to aggregate
+2025-12-19T03:35:16.970132 ------------------------------------------------------------
+2025-12-19T03:35:16.971451 aggregate-exec.py: STOP HOOK TRIGGERED
+2025-12-19T03:35:16.972179 aggregate-exec.py: session_id=6beee901-5009-4782-9108-f016c7d80bdd
+2025-12-19T03:35:16.972378 aggregate-exec.py: cwd=/Users/bmf/code/loom99-animations
+2025-12-19T03:35:16.972695 aggregate-exec.py: hook_input keys=['session_id', 'transcript_path', 'cwd', 'permission_mode', 'hook_event_name', 'stop_hook_active']
+2025-12-19T03:35:16.973191 aggregate-exec.py: hook_event_name=Stop
+2025-12-19T03:35:16.973936 aggregate-exec.py: permission_mode=bypassPermissions
+2025-12-19T03:35:16.974761 aggregate-exec.py: stop_hook_active=False
+2025-12-19T03:35:16.974956 aggregate-exec.py: checking partials_dir=.agent_planning/do-command-logs/partials
+2025-12-19T03:35:16.977348 aggregate-exec.py: scanning for partial files...
+2025-12-19T03:35:16.977874 aggregate-exec.py: found 0 files matching *-PARTIAL-*.txt
+2025-12-19T03:35:16.978211 aggregate-exec.py: no partial files, nothing to aggregate
+2025-12-19T03:40:30.668465 ------------------------------------------------------------
+2025-12-19T03:40:30.668734 aggregate-exec.py: STOP HOOK TRIGGERED
+2025-12-19T03:40:30.668845 aggregate-exec.py: session_id=6beee901-5009-4782-9108-f016c7d80bdd
+2025-12-19T03:40:30.668958 aggregate-exec.py: cwd=/Users/bmf/code/loom99-animations
+2025-12-19T03:40:30.669058 aggregate-exec.py: hook_input keys=['session_id', 'transcript_path', 'cwd', 'permission_mode', 'hook_event_name', 'stop_hook_active']
+2025-12-19T03:40:30.669152 aggregate-exec.py: hook_event_name=Stop
+2025-12-19T03:40:30.669233 aggregate-exec.py: permission_mode=bypassPermissions
+2025-12-19T03:40:30.669319 aggregate-exec.py: stop_hook_active=False
+2025-12-19T03:40:30.669473 aggregate-exec.py: checking partials_dir=.agent_planning/do-command-logs/partials
+2025-12-19T03:40:30.669610 aggregate-exec.py: scanning for partial files...
+2025-12-19T03:40:30.669915 aggregate-exec.py: found 0 files matching *-PARTIAL-*.txt
+2025-12-19T03:40:30.670041 aggregate-exec.py: no partial files, nothing to aggregate
+2025-12-19T03:55:25.434717 ------------------------------------------------------------
+2025-12-19T03:55:25.434915 aggregate-exec.py: STOP HOOK TRIGGERED
+2025-12-19T03:55:25.435034 aggregate-exec.py: session_id=6beee901-5009-4782-9108-f016c7d80bdd
+2025-12-19T03:55:25.435148 aggregate-exec.py: cwd=/Users/bmf/code/loom99-animations
+2025-12-19T03:55:25.435258 aggregate-exec.py: hook_input keys=['session_id', 'transcript_path', 'cwd', 'permission_mode', 'hook_event_name', 'stop_hook_active']
+2025-12-19T03:55:25.435389 aggregate-exec.py: hook_event_name=Stop
+2025-12-19T03:55:25.435481 aggregate-exec.py: permission_mode=bypassPermissions
+2025-12-19T03:55:25.435587 aggregate-exec.py: stop_hook_active=False
+2025-12-19T03:55:25.435696 aggregate-exec.py: checking partials_dir=.agent_planning/do-command-logs/partials
+2025-12-19T03:55:25.435791 aggregate-exec.py: scanning for partial files...
+2025-12-19T03:55:25.436009 aggregate-exec.py: found 0 files matching *-PARTIAL-*.txt
+2025-12-19T03:55:25.436097 aggregate-exec.py: no partial files, nothing to aggregate
+2025-12-19T03:56:42.515703 ------------------------------------------------------------
+2025-12-19T03:56:42.515956 aggregate-exec.py: STOP HOOK TRIGGERED
+2025-12-19T03:56:42.516199 aggregate-exec.py: session_id=6beee901-5009-4782-9108-f016c7d80bdd
+2025-12-19T03:56:42.516423 aggregate-exec.py: cwd=/Users/bmf/code/loom99-animations
+2025-12-19T03:56:42.516696 aggregate-exec.py: hook_input keys=['session_id', 'transcript_path', 'cwd', 'permission_mode', 'hook_event_name', 'stop_hook_active']
+2025-12-19T03:56:42.516841 aggregate-exec.py: hook_event_name=Stop
+2025-12-19T03:56:42.516985 aggregate-exec.py: permission_mode=bypassPermissions
+2025-12-19T03:56:42.517556 aggregate-exec.py: stop_hook_active=False
+2025-12-19T03:56:42.517727 aggregate-exec.py: checking partials_dir=.agent_planning/do-command-logs/partials
+2025-12-19T03:56:42.517987 aggregate-exec.py: scanning for partial files...
+2025-12-19T03:56:42.518355 aggregate-exec.py: found 0 files matching *-PARTIAL-*.txt
+2025-12-19T03:56:42.518502 aggregate-exec.py: no partial files, nothing to aggregate
+2025-12-19T04:11:14.181105 ------------------------------------------------------------
+2025-12-19T04:11:14.181264 aggregate-exec.py: STOP HOOK TRIGGERED
+2025-12-19T04:11:14.181359 aggregate-exec.py: session_id=6beee901-5009-4782-9108-f016c7d80bdd
+2025-12-19T04:11:14.181463 aggregate-exec.py: cwd=/Users/bmf/code/loom99-animations
+2025-12-19T04:11:14.181560 aggregate-exec.py: hook_input keys=['session_id', 'transcript_path', 'cwd', 'permission_mode', 'hook_event_name', 'stop_hook_active']
+2025-12-19T04:11:14.181682 aggregate-exec.py: hook_event_name=Stop
+2025-12-19T04:11:14.181786 aggregate-exec.py: permission_mode=bypassPermissions
+2025-12-19T04:11:14.181901 aggregate-exec.py: stop_hook_active=False
+2025-12-19T04:11:14.182001 aggregate-exec.py: checking partials_dir=.agent_planning/do-command-logs/partials
+2025-12-19T04:11:14.182084 aggregate-exec.py: scanning for partial files...
+2025-12-19T04:11:14.182329 aggregate-exec.py: found 0 files matching *-PARTIAL-*.txt
+2025-12-19T04:11:14.182449 aggregate-exec.py: no partial files, nothing to aggregate
+2025-12-19T04:16:56.914413 ------------------------------------------------------------
+2025-12-19T04:16:56.914664 aggregate-exec.py: STOP HOOK TRIGGERED
+2025-12-19T04:16:56.914902 aggregate-exec.py: session_id=6beee901-5009-4782-9108-f016c7d80bdd
+2025-12-19T04:16:56.915020 aggregate-exec.py: cwd=/Users/bmf/code/loom99-animations
+2025-12-19T04:16:56.915183 aggregate-exec.py: hook_input keys=['session_id', 'transcript_path', 'cwd', 'permission_mode', 'hook_event_name', 'stop_hook_active']
+2025-12-19T04:16:56.915324 aggregate-exec.py: hook_event_name=Stop
+2025-12-19T04:16:56.915419 aggregate-exec.py: permission_mode=bypassPermissions
+2025-12-19T04:16:56.915515 aggregate-exec.py: stop_hook_active=False
+2025-12-19T04:16:56.915688 aggregate-exec.py: checking partials_dir=.agent_planning/do-command-logs/partials
+2025-12-19T04:16:56.915821 aggregate-exec.py: scanning for partial files...
+2025-12-19T04:16:56.916137 aggregate-exec.py: found 0 files matching *-PARTIAL-*.txt
+2025-12-19T04:16:56.916291 aggregate-exec.py: no partial files, nothing to aggregate
+2025-12-19T04:19:07.699551 ------------------------------------------------------------
+2025-12-19T04:19:07.700255 aggregate-exec.py: STOP HOOK TRIGGERED
+2025-12-19T04:19:07.700439 aggregate-exec.py: session_id=6beee901-5009-4782-9108-f016c7d80bdd
+2025-12-19T04:19:07.700813 aggregate-exec.py: cwd=/Users/bmf/code/loom99-animations
+2025-12-19T04:19:07.701029 aggregate-exec.py: hook_input keys=['session_id', 'transcript_path', 'cwd', 'permission_mode', 'hook_event_name', 'stop_hook_active']
+2025-12-19T04:19:07.701271 aggregate-exec.py: hook_event_name=Stop
+2025-12-19T04:19:07.701602 aggregate-exec.py: permission_mode=bypassPermissions
+2025-12-19T04:19:07.701822 aggregate-exec.py: stop_hook_active=False
+2025-12-19T04:19:07.702060 aggregate-exec.py: checking partials_dir=.agent_planning/do-command-logs/partials
+2025-12-19T04:19:07.702184 aggregate-exec.py: scanning for partial files...
+2025-12-19T04:19:07.702859 aggregate-exec.py: found 0 files matching *-PARTIAL-*.txt
+2025-12-19T04:19:07.703020 aggregate-exec.py: no partial files, nothing to aggregate

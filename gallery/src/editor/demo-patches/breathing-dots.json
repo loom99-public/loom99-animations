@@ -37,7 +37,7 @@
     },
     {
       "id": "block-2",
-      "type": "PhaseClock",
+      "type": "PhaseClockLegacy",
       "label": "Phase Clock",
       "inputs": [],
       "outputs": [

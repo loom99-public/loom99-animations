@@ -31,6 +31,13 @@ export interface CompilerFeatureFlags {
    * When false, uses legacy time management.
    */
   timeCtxPropagation: boolean;
+
+  /**
+   * Require exactly one TimeRoot block per patch.
+   * When true, compiler rejects patches without TimeRoot or with multiple TimeRoots.
+   * When false, compiler infers TimeModel from legacy time blocks or uses infinite default.
+   */
+  requireTimeRoot: boolean;
 }
 
 /**
@@ -42,6 +49,7 @@ const DEFAULT_FLAGS: CompilerFeatureFlags = {
   strictStateValidation: false,
   busCompilation: false,
   timeCtxPropagation: false,
+  requireTimeRoot: false, // Legacy patches work without TimeRoot
 };
 
 /**
@@ -82,6 +90,7 @@ export function enableUnifiedArchitecture(): void {
     strictStateValidation: true,
     busCompilation: true,
     timeCtxPropagation: true,
+    requireTimeRoot: true, // Enforce TimeRoot in unified mode
   };
 }
 

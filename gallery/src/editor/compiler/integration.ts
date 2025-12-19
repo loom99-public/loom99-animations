@@ -8,11 +8,11 @@ import type {
   BlockInstance,
   BlockRegistry,
   CompileResult,
+  CompiledProgram,
   CompilerConnection,
   CompilerPatch,
-  Program,
-  RenderTree,
   Seed,
+  PortRef,
 } from './types';
 import { buildDecorations, emptyDecorations, type DecorationSet } from './error-decorations';
 import { getBlockDefinition } from '../blocks';
@@ -22,6 +22,101 @@ import { getFeatureFlags } from './featureFlags';
 // Unified compiler imports
 import { UnifiedCompiler, RuntimeAdapter } from './unified';
 import type { PatchDefinition as UnifiedPatchDef } from './unified';
+
+// =============================================================================
+// PortRef Rewrite Map (per Design Doc Section 7)
+// =============================================================================
+
+/**
+ * PortRefRewriteMap rewrites port references from composite boundary ports
+ * to their internal primitive ports after composite expansion.
+ *
+ * Design: CompositeTransparencyDesign.md Section 7
+ */
+export interface PortRefRewriteMap {
+  /**
+   * Rewrite a port reference. Returns:
+   * - The rewritten PortRef if the input targets a composite boundary
+   * - The same PortRef unchanged if it targets a primitive
+   * - null if the port reference is invalid (e.g., unmapped port)
+   */
+  rewrite(ref: PortRef): PortRef | null;
+
+  /**
+   * Check if a block ID was a composite that was expanded
+   */
+  wasComposite(blockId: string): boolean;
+
+  /**
+   * Get all mappings for debugging/testing
+   */
+  getAllMappings(): ReadonlyMap<string, PortRef>;
+}
+
+/**
+ * Create a mutable builder for PortRefRewriteMap.
+ */
+function createRewriteMapBuilder(): {
+  addMapping(compositeId: string, boundaryPort: string, internalRef: PortRef): void;
+  markComposite(compositeId: string): void;
+  build(): PortRefRewriteMap;
+} {
+  const mappings = new Map<string, PortRef>();
+  const expandedComposites = new Set<string>();
+
+  return {
+    addMapping(compositeId: string, boundaryPort: string, internalRef: PortRef) {
+      const key = `${compositeId}.${boundaryPort}`;
+      mappings.set(key, internalRef);
+    },
+
+    markComposite(compositeId: string) {
+      expandedComposites.add(compositeId);
+    },
+
+    build(): PortRefRewriteMap {
+      // Freeze the maps
+      const frozenMappings = new Map(mappings);
+      const frozenComposites = new Set(expandedComposites);
+
+      return {
+        rewrite(ref: PortRef): PortRef | null {
+          // If the block was not a composite, return ref unchanged
+          if (!frozenComposites.has(ref.blockId)) {
+            return ref;
+          }
+
+          // Look up the mapping
+          const key = `${ref.blockId}.${ref.port}`;
+          const mapped = frozenMappings.get(key);
+
+          if (!mapped) {
+            // Composite exists but port not mapped - this is an error
+            return null;
+          }
+
+          return mapped;
+        },
+
+        wasComposite(blockId: string): boolean {
+          return frozenComposites.has(blockId);
+        },
+
+        getAllMappings(): ReadonlyMap<string, PortRef> {
+          return frozenMappings;
+        },
+      };
+    },
+  };
+}
+
+/**
+ * Result of composite expansion including the rewrite map.
+ */
+export interface CompositeExpansionResult {
+  expandedPatch: CompilerPatch;
+  rewriteMap: PortRefRewriteMap;
+}
 
 // =============================================================================
 // Patch Conversion
@@ -59,12 +154,16 @@ export function editorToPatch(store: RootStore): CompilerPatch {
   return {
     blocks: convertBlocks(store.patchStore.blocks),
     connections: convertConnections(store.patchStore.connections),
+    // Include bus routing from BusStore
+    buses: store.busStore.buses,
+    publishers: store.busStore.publishers,
+    listeners: store.busStore.listeners,
     // output is auto-inferred
   };
 }
 
 // =============================================================================
-// Composite Expansion
+// Composite Expansion (per Design Doc Section 7)
 // =============================================================================
 
 function resolveParamValue(value: unknown, parentParams: Record<string, unknown>): unknown {
@@ -80,12 +179,20 @@ function resolveParamValue(value: unknown, parentParams: Record<string, unknown>
 /**
  * Expand blocks that declare primitiveGraph into their internal nodes/edges.
  * External connections are rewired to exposed input/output maps.
+ *
+ * Returns both the expanded patch and a PortRefRewriteMap that can be used
+ * to remap bus publishers/listeners that target composite boundary ports.
+ *
+ * Design: CompositeTransparencyDesign.md Section 7
  */
-function expandComposites(patch: CompilerPatch): CompilerPatch {
+function expandComposites(patch: CompilerPatch): CompositeExpansionResult {
   const queue: Array<[string, BlockInstance]> = Array.from(patch.blocks.entries());
   let connections = [...patch.connections];
   const newBlocks = new Map<string, BlockInstance>();
   const newConnections: CompilerConnection[] = [];
+
+  // Build the rewrite map as we expand composites
+  const rewriteBuilder = createRewriteMapBuilder();
 
   while (queue.length > 0) {
     const [blockId, block] = queue.shift()!;
@@ -99,6 +206,9 @@ function expandComposites(patch: CompilerPatch): CompilerPatch {
     }
 
     if (graph) {
+      // Mark this block as a composite that was expanded
+      rewriteBuilder.markComposite(blockId);
+
       const idMap = new Map<string, string>();
 
       // Create internal blocks
@@ -115,6 +225,30 @@ function expandComposites(patch: CompilerPatch): CompilerPatch {
           params: resolvedParams,
         };
         queue.push([newId, internalBlock]);
+      }
+
+      // Build rewrite mappings for INPUT ports (listeners target these)
+      for (const [boundaryPort, internalRef] of Object.entries(graph.inputMap)) {
+        const [node, port] = internalRef.split('.');
+        const internalBlockId = idMap.get(node);
+        if (internalBlockId) {
+          rewriteBuilder.addMapping(blockId, boundaryPort, {
+            blockId: internalBlockId,
+            port,
+          });
+        }
+      }
+
+      // Build rewrite mappings for OUTPUT ports (publishers target these)
+      for (const [boundaryPort, internalRef] of Object.entries(graph.outputMap)) {
+        const [node, port] = internalRef.split('.');
+        const internalBlockId = idMap.get(node);
+        if (internalBlockId) {
+          rewriteBuilder.addMapping(blockId, boundaryPort, {
+            blockId: internalBlockId,
+            port,
+          });
+        }
       }
 
       // Internal edges
@@ -188,7 +322,76 @@ function expandComposites(patch: CompilerPatch): CompilerPatch {
     newConnections.push(conn);
   }
 
-  return { blocks: newBlocks, connections: newConnections };
+  return {
+    expandedPatch: { blocks: newBlocks, connections: newConnections },
+    rewriteMap: rewriteBuilder.build(),
+  };
+}
+
+/**
+ * Apply the rewrite map to bus publishers and listeners.
+ * This rewrites port references from composite boundary ports to internal primitive ports.
+ *
+ * Design: CompositeTransparencyDesign.md Section 8
+ */
+function rewriteBusBindings(
+  patch: CompilerPatch,
+  rewriteMap: PortRefRewriteMap
+): { patch: CompilerPatch; errors: Array<{ code: string; message: string; where?: { blockId?: string; port?: string } }> } {
+  const errors: Array<{ code: string; message: string; where?: { blockId?: string; port?: string } }> = [];
+
+  // Rewrite publishers
+  const rewrittenPublishers = patch.publishers?.map((pub) => {
+    const ref: PortRef = { blockId: pub.from.blockId, port: pub.from.port };
+    const rewritten = rewriteMap.rewrite(ref);
+
+    if (rewritten === null) {
+      // Port not exposed by composite boundary
+      errors.push({
+        code: 'PortMissing',
+        message: `Publisher port not exposed by composite boundary: ${pub.from.blockId}.${pub.from.port}`,
+        where: { blockId: pub.from.blockId, port: pub.from.port },
+      });
+      return pub; // Return unchanged, error will prevent compilation
+    }
+
+    // Return publisher with rewritten port reference
+    return {
+      ...pub,
+      from: { blockId: rewritten.blockId, port: rewritten.port },
+    };
+  });
+
+  // Rewrite listeners
+  const rewrittenListeners = patch.listeners?.map((listener) => {
+    const ref: PortRef = { blockId: listener.to.blockId, port: listener.to.port };
+    const rewritten = rewriteMap.rewrite(ref);
+
+    if (rewritten === null) {
+      // Port not exposed by composite boundary
+      errors.push({
+        code: 'PortMissing',
+        message: `Listener port not exposed by composite boundary: ${listener.to.blockId}.${listener.to.port}`,
+        where: { blockId: listener.to.blockId, port: listener.to.port },
+      });
+      return listener; // Return unchanged, error will prevent compilation
+    }
+
+    // Return listener with rewritten port reference
+    return {
+      ...listener,
+      to: { blockId: rewritten.blockId, port: rewritten.port },
+    };
+  });
+
+  return {
+    patch: {
+      ...patch,
+      publishers: rewrittenPublishers,
+      listeners: rewrittenListeners,
+    },
+    errors,
+  };
 }
 
 // =============================================================================
@@ -294,8 +497,11 @@ export interface CompilerService {
   /** Compile the current patch */
   compile(): CompileResult;
 
-  /** Get the compiled program (if successful) */
-  getProgram(): Program<RenderTree> | null;
+  /**
+   * Get the compiled program with TimeModel (if successful).
+   * Returns CompiledProgram which includes both the program and its time topology.
+   */
+  getProgram(): CompiledProgram | null;
 
   /** Get the block registry */
   getRegistry(): BlockRegistry;
@@ -338,12 +544,50 @@ export function createCompilerService(store: RootStore): CompilerService {
 
       try {
         let patch = editorToPatch(store);
-        patch = expandComposites(patch);
+
+        // Step 1: Expand composites and build rewrite map
+        const { expandedPatch, rewriteMap } = expandComposites(patch);
+
+        // Step 2: Apply rewrite map to bus publishers/listeners
+        const { patch: rewrittenPatch, errors: rewriteErrors } = rewriteBusBindings(
+          {
+            ...expandedPatch,
+            buses: patch.buses,
+            publishers: patch.publishers,
+            listeners: patch.listeners,
+          },
+          rewriteMap
+        );
+
+        // If there were rewrite errors, fail early
+        if (rewriteErrors.length > 0) {
+          lastResult = {
+            ok: false,
+            errors: rewriteErrors.map((e) => ({
+              code: e.code as any,
+              message: e.message,
+              where: e.where,
+            })),
+          };
+          lastDecorations = buildDecorations(lastResult.errors);
+          return lastResult;
+        }
+
+        patch = rewrittenPatch;
 
         logStore.debug(
           'compiler',
           `Patch has ${patch.blocks.size} blocks and ${patch.connections.length} connections`
         );
+
+        // Log rewrite map stats for debugging
+        const mappingCount = rewriteMap.getAllMappings().size;
+        if (mappingCount > 0) {
+          logStore.debug(
+            'compiler',
+            `RewriteMap: ${mappingCount} port mappings from composite expansion`
+          );
+        }
 
         // Choose compiler based on feature flag
         const result = flags.useUnifiedCompiler
@@ -396,8 +640,14 @@ export function createCompilerService(store: RootStore): CompilerService {
       }
     },
 
-    getProgram(): Program<RenderTree> | null {
-      return lastResult?.program ?? null;
+    getProgram(): CompiledProgram | null {
+      if (!lastResult?.program || !lastResult?.timeModel) {
+        return null;
+      }
+      return {
+        program: lastResult.program,
+        timeModel: lastResult.timeModel,
+      };
     },
 
     getRegistry(): BlockRegistry {

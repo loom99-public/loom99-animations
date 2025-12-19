@@ -127,7 +127,7 @@ export const RenderInstances2DBlock: BlockCompiler = {
             kind: 'shape',
             id: `circle-${domain.elements[i]}`,
             geom: {
-              type: 'circle',
+              kind: 'circle',
               cx: pos.x,
               cy: pos.y,
               r,
@@ -152,9 +152,8 @@ export const RenderInstances2DBlock: BlockCompiler = {
           kind: 'effect',
           id: 'glow-wrapper',
           effect: {
-            type: 'glow',
-            blur: 10,
-            intensity: glowIntensity,
+            kind: 'filter',
+            filter: `drop-shadow(0 0 ${10 * glowIntensity}px currentColor)`,
           },
           child: children,
         };

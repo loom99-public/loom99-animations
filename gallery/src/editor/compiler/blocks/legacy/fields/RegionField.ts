@@ -6,7 +6,7 @@
  */
 
 import type { BlockCompiler, Field, Vec2 } from '../../../types';
-import { createPRNG } from '../../../../anim-v4/core/rand';
+import { createPRNG } from '../../../../../anim-v4/core/rand';
 
 export const RegionFieldBlock: BlockCompiler = {
   type: 'regionField',

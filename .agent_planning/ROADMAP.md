@@ -55,7 +55,53 @@ Last updated: 2025-12-19
 
 ---
 
-## Phase 3: Phase & Loop Primitives
+## Phase 3: TimeRoot & Time Topology
+
+**Goal:** Make time topology explicit and authoritative. The patch defines time, not the player.
+
+### Topics
+
+- **timemodel-types** [PROPOSED]
+  - TimeModel types: FiniteTimeModel, CyclicTimeModel, InfiniteTimeModel
+  - CompiledProgram interface with program + timeModel
+  - Compiler returns TimeModel as first-class artifact
+  - Player consumes TimeModel to configure itself
+  - Spec: `feature_planning_docs/TimeRoot/0-PlayerTimeDesign.md`
+  - Directory: `.agent_planning/time-model/`
+
+- **timeroot-blocks** [PROPOSED]
+  - FiniteTimeRoot, CycleTimeRoot, InfiniteTimeRoot blocks
+  - Exactly one TimeRoot per patch (compile error otherwise)
+  - TimeRoot defines patch topology: finite/cyclic/infinite
+  - Compiler validates no conflicting topologies
+  - Required outputs: timeModel, systemTime
+  - Spec: `feature_planning_docs/TimeRoot/1-PlayerTimeConstraints.md`
+  - Directory: `.agent_planning/timeroot-blocks/`
+
+- **phaseclock-redesign** [PROPOSED]
+  - PhaseClock becomes secondary/derived clock (never topology)
+  - Takes tIn (Signal<time>) OR phaseIn (Signal<phase>)
+  - Outputs: phase, u, wrap, cycleIndex
+  - Modes: loop/pingpong/once (local, not patch-level)
+  - No longer competes with player for time control
+  - Scrub-safe classification
+  - Spec: `feature_planning_docs/TimeRoot/3-PlayerTimePhaseClockChanges.md`
+  - Directory: `.agent_planning/phaseclock-redesign/`
+
+- **timeroot-ui** [PROPOSED]
+  - Time Console replaces linear timeline
+  - Finite: bounded progress bar (start/end)
+  - Cyclic: phase ring with period display
+  - Infinite: sliding window scope
+  - Run/Freeze, Speed, Seed controls (always present)
+  - TimeRoot picker in editor header
+  - Scrubbing never resets state
+  - Spec: `feature_planning_docs/TimeRoot/4-PlayerTimeRootUI.md`
+  - Directory: `.agent_planning/timeroot-ui/`
+
+---
+
+## Phase 3.5: Phase & Loop Primitives
 
 **Goal:** Make looping structural, not a UI trick.
 

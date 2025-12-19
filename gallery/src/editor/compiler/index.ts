@@ -51,6 +51,13 @@ export type {
   CompileErrorCode,
   CompileError,
   CompileResult,
+
+  // TimeModel (Phase 3: TimeRoot)
+  TimeModel,
+  FiniteTimeModel,
+  CyclicTimeModel,
+  InfiniteTimeModel,
+  CompiledProgram,
 } from './types';
 
 // Block implementations (domain blocks only)
@@ -76,6 +83,8 @@ export {
   type CompilerService,
   type AutoCompileOptions,
   type Viewport,
+  type PortRefRewriteMap,
+  type CompositeExpansionResult,
 } from './integration';
 
 // Error decorations (Slice 2.5)

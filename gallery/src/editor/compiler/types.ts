@@ -47,6 +47,8 @@ export interface CuePoint {
 /**
  * TimelineHint describes the temporal structure of a program.
  * Programs can optionally expose this to inform the player.
+ *
+ * @deprecated Use TimeModel instead. TimelineHint is kept for backward compatibility.
  */
 export type TimelineHint =
   | {
@@ -60,6 +62,77 @@ export type TimelineHint =
       recommendedLoop?: 'loop' | 'none';
       windowMs?: number; // Suggested preview window
     };
+
+// =============================================================================
+// TimeModel: Authoritative Time Topology
+// =============================================================================
+
+/**
+ * TimeModel defines the temporal topology of a patch.
+ * This is the authoritative source of time information - the UI and player
+ * are driven by TimeModel, not by heuristics or player-side looping.
+ *
+ * Three variants:
+ * - FiniteTimeModel: Bounded duration with explicit start/end
+ * - CyclicTimeModel: Looping with a defined period
+ * - InfiniteTimeModel: Unbounded time with no inherent structure
+ *
+ * Reference: feature_planning_docs/TimeRoot/0-PlayerTimeDesign.md
+ */
+export type TimeModel =
+  | FiniteTimeModel
+  | CyclicTimeModel
+  | InfiniteTimeModel;
+
+/**
+ * Finite time model: bounded performance with known duration.
+ * Example: a logo entrance animation that plays once and stops.
+ */
+export interface FiniteTimeModel {
+  kind: 'finite';
+  /** Total duration in milliseconds */
+  durationMs: number;
+  /** Optional cue points for UI markers */
+  cuePoints?: readonly CuePoint[];
+}
+
+/**
+ * Cyclic time model: looping animation with a defined period.
+ * Example: an ambient background that loops every 4 seconds.
+ */
+export interface CyclicTimeModel {
+  kind: 'cyclic';
+  /** Period of one cycle in milliseconds */
+  periodMs: number;
+  /** Phase domain is always 0..1 (normalized) */
+  phaseDomain: '0..1';
+  /** Mode: loop (0→1→0→1) or pingpong (0→1→0→1) */
+  mode?: 'loop' | 'pingpong';
+}
+
+/**
+ * Infinite time model: unbounded time with no inherent structure.
+ * Example: a generative art piece that evolves indefinitely.
+ */
+export interface InfiniteTimeModel {
+  kind: 'infinite';
+  /** Suggested window size for preview in milliseconds */
+  windowMs: number;
+}
+
+/**
+ * CompiledProgram is the output of successful compilation.
+ * Contains both the runnable program and its time topology.
+ *
+ * This replaces the raw Program<RenderTree> return type, making
+ * TimeModel a first-class artifact of compilation.
+ */
+export interface CompiledProgram {
+  /** The runnable animation program */
+  program: Program<RenderTree>;
+  /** The time topology of the patch */
+  timeModel: TimeModel;
+}
 
 /**
  * Program is time-dependent: returns signal + event handlers.
@@ -136,6 +209,7 @@ export type ValueKind =
   | 'Signal:number'
   | 'Signal:Unit'
   | 'Signal:vec2'
+  | 'Signal:phase'
 
   // Special types
   | 'Domain'          // Per-element identity (Phase 3)
@@ -285,6 +359,7 @@ export type Artifact =
   | { kind: 'Signal:number'; value: (t: number, ctx: RuntimeCtx) => number }
   | { kind: 'Signal:Unit'; value: (t: number, ctx: RuntimeCtx) => number }
   | { kind: 'Signal:vec2'; value: (t: number, ctx: RuntimeCtx) => Vec2 }
+  | { kind: 'Signal:phase'; value: (t: number, ctx: RuntimeCtx) => number }
   | { kind: 'RenderNode'; value: DrawNode }
   | { kind: 'RenderNodeArray'; value: readonly DrawNode[] }
   | { kind: 'RenderTree'; value: (tMs: number, ctx: RuntimeCtx) => DrawNode }
@@ -361,7 +436,11 @@ export type CompileErrorCode =
   | 'AdapterError'
   | 'BusEvaluationError'
   | 'FieldBusNotSupported'
-  | 'UnsupportedCombineMode';
+  | 'UnsupportedCombineMode'
+  // Phase 3: TimeRoot additions
+  | 'MissingTimeRoot'
+  | 'MultipleTimeRoots'
+  | 'ConflictingTimeTopology';
 
 export interface CompileError {
   code: CompileErrorCode;
@@ -372,6 +451,8 @@ export interface CompileError {
 export interface CompileResult {
   ok: boolean;
   program?: Program<RenderTree>;
+  /** TimeModel inferred from the patch (present when ok === true) */
+  timeModel?: TimeModel;
   errors: readonly CompileError[];
   compiledPortMap?: Map<string, Artifact>;
 }

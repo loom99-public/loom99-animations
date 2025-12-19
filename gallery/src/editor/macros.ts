@@ -9,7 +9,7 @@
  * modules and patch cables, ready to tweak.
  */
 
-import type { LaneKind } from './types';
+import type { LaneKind, LensType } from './types';
 
 /**
  * A block placement in a macro expansion.
@@ -39,6 +39,37 @@ export interface MacroConnection {
 }
 
 /**
+ * A bus publisher definition in a macro expansion.
+ * Publishes a block output to a named bus.
+ */
+export interface MacroPublisher {
+  /** Block ref that produces the value */
+  fromRef: string;
+  /** Output port name on that block */
+  fromSlot: string;
+  /** Bus name to publish to (e.g., 'phaseA') */
+  busName: string;
+}
+
+/**
+ * A bus listener definition in a macro expansion.
+ * Subscribes a block input to a named bus.
+ */
+export interface MacroListener {
+  /** Bus name to listen from */
+  busName: string;
+  /** Block ref that receives the value */
+  toRef: string;
+  /** Input port name on that block */
+  toSlot: string;
+  /** Optional lens to transform the bus value */
+  lens?: {
+    type: LensType;
+    params: Record<string, unknown>;
+  };
+}
+
+/**
  * A macro expansion definition.
  */
 export interface MacroExpansion {
@@ -46,6 +77,10 @@ export interface MacroExpansion {
   blocks: MacroBlock[];
   /** Connections to wire */
   connections: MacroConnection[];
+  /** Bus publishers (optional) */
+  publishers?: MacroPublisher[];
+  /** Bus listeners (optional) */
+  listeners?: MacroListener[];
 }
 
 /**
@@ -693,6 +728,56 @@ export const MACRO_REGISTRY: Record<string, MacroExpansion> = {
       { fromRef: 'count', fromSlot: 'count', toRef: 'circles', toSlot: 'count' },
       { fromRef: 'glow', fromSlot: 'filter', toRef: 'circles', toSlot: 'filter' },
       { fromRef: 'circles', fromSlot: 'tree', toRef: 'canvas', toSlot: 'render' },
+    ],
+  },
+
+  // =============================================================================
+  // Domain-Based Macros (New System)
+  // =============================================================================
+
+  // Breathing Dots - Grid of dots with pulsing size animation
+  // Uses bus routing: PhaseClock → phaseA bus → RenderInstances2D radius (with scale lens)
+  // Note: Uses primitive blocks directly (not composites) so bus listeners work correctly
+  'macro:breathingDots': {
+    blocks: [
+      // Domain source - creates N elements with sequential IDs
+      { ref: 'domain', type: 'DomainN', laneKind: 'Fields', label: 'Domain',
+        params: { n: 25, seed: 42 } },
+
+      // Position layout - arranges elements in a grid
+      { ref: 'grid', type: 'PositionMapGrid', laneKind: 'Fields', label: 'Grid Layout',
+        params: { rows: 5, cols: 5, spacing: 60, originX: 400, originY: 300, order: 'row-major' } },
+
+      // Phase clock - drives the breathing animation (0→1 over 2 seconds, looping)
+      // Uses legacy PhaseClock for backward compatibility with existing patches
+      { ref: 'clock', type: 'PhaseClockLegacy', laneKind: 'Phase', label: 'Breathing Clock',
+        params: { duration: 2, mode: 'pingpong', offset: 0 } },
+
+      // Renderer - turns domain + positions into circles (radius driven by bus)
+      { ref: 'render', type: 'RenderInstances2D', laneKind: 'Program', label: 'Render Dots',
+        params: { opacity: 0.9, glow: true, glowIntensity: 1.5 } },
+    ],
+    connections: [
+      // Wire domain to grid layout
+      { fromRef: 'domain', fromSlot: 'domain', toRef: 'grid', toSlot: 'domain' },
+      // Wire domain and positions to renderer
+      { fromRef: 'domain', fromSlot: 'domain', toRef: 'render', toSlot: 'domain' },
+      { fromRef: 'grid', fromSlot: 'pos', toRef: 'render', toSlot: 'positions' },
+    ],
+    // Bus routing: phase signal → radius animation
+    publishers: [
+      // Publish PhaseClock's phase output to the phaseA bus
+      { fromRef: 'clock', fromSlot: 'phase', busName: 'phaseA' },
+    ],
+    listeners: [
+      // Listen on RenderInstances2D's radius input from phaseA bus
+      // Apply scale lens: phase 0-1 → radius 3-15 (scale=12, offset=3)
+      {
+        busName: 'phaseA',
+        toRef: 'render',
+        toSlot: 'radius',
+        lens: { type: 'scale', params: { scale: 12, offset: 3 } },
+      },
     ],
   },
 };

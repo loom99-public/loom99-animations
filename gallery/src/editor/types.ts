@@ -273,6 +273,8 @@ export type SlotType =
   | 'Signal<number>'    // Time-varying scalar
   | 'Signal<Unit>'      // Time-varying progress [0,1]
   | 'Signal<Time>'      // Time-varying time value (for local time)
+  | 'Signal<time>'      // Monotonic system time (TimeRoot output)
+  | 'Signal<phase>'     // Phase value 0..1 (TimeRoot output)
   | 'Signal<PhaseSample>' // Phase machine output
   | 'Event<string>'     // Discrete text events (typewriter)
   | 'Event<any>'        // Generic events
@@ -339,6 +341,7 @@ export const ALL_SUBCATEGORIES = [
   'Math',           // Arithmetic operations
   'Vector',         // Point/Vec2 operations
   'Time',           // Clock, phase, easing
+  'TimeRoot',       // Time topology blocks (Phase 3: TimeRoot)
   'Compose',        // Combining operations
   'Render',         // Drawing primitives
   'FX',             // Filters and effects
@@ -360,6 +363,7 @@ export const ALL_CATEGORIES = [
   'Fields',
   'Math',       // Scalar math blocks
   'Time',
+  'TimeRoot',   // Time topology blocks (Phase 3: TimeRoot)
   'Events',
   'Dynamics',
   'Compose',
@@ -796,6 +800,8 @@ export const SLOT_TYPE_TO_TYPE_DESC: Record<SlotType, TypeDesc> = {
   'Signal<Point>': { world: 'signal', domain: 'vec2', category: 'core', busEligible: true, semantics: 'point' },
   'Signal<Unit>': { world: 'signal', domain: 'number', category: 'core', busEligible: true, semantics: 'unit(0..1)' },
   'Signal<Time>': { world: 'signal', domain: 'time', category: 'core', busEligible: true, unit: 'seconds' },
+  'Signal<time>': { world: 'signal', domain: 'time', category: 'core', busEligible: true, unit: 'ms', semantics: 'system-time' },
+  'Signal<phase>': { world: 'signal', domain: 'phase', category: 'core', busEligible: true, semantics: 'unit(0..1)' },
   'Signal<PhaseSample>': { world: 'signal', domain: 'phase', category: 'core', busEligible: true, semantics: 'sample' },
   'Event<string>': { world: 'signal', domain: 'trigger', category: 'core', busEligible: true, semantics: 'string' },
   'Event<any>': { world: 'signal', domain: 'trigger', category: 'core', busEligible: true },

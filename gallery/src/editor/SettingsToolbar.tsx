@@ -341,15 +341,6 @@ export const SettingsToolbar = observer(({ onShowHelp, onOpenPaths, isPathsModal
           Clear All
         </button>
 
-        {/* Load Demo button */}
-        <button
-          className="toolbar-action-btn toolbar-demo-btn"
-          onClick={() => store.loadDemoAnimation()}
-          title="Load demo: Breathing Dots animation"
-        >
-          Load Demo
-        </button>
-
         {/* Action buttons - disabled until Phase 6 */}
         <button
           className="toolbar-action-btn"

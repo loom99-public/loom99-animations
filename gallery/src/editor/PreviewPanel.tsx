@@ -7,6 +7,8 @@
  * - Program selection (proof programs or compiled)
  * - Hot swap when program changes
  * - Uses last good program on compilation errors
+ *
+ * Uses TimeConsole for mode-aware time controls based on TimeModel.
  */
 
 import { observer } from 'mobx-react-lite';
@@ -17,16 +19,16 @@ import {
   SvgRenderer,
   PROOF_PROGRAMS,
   type PlayState,
-  type LoopMode,
   type RenderTree,
   type Scene,
-  type TimelineHint,
   type CuePoint,
+  type TimeModel,
 } from './runtime';
 import type { CompilerService, Viewport } from './compiler';
 import type { Program } from './compiler/types';
 import { useStore } from './stores';
 import { logStore } from './logStore';
+import { TimeConsole } from './components/TimeConsole';
 import './PreviewPanel.css';
 
 interface PreviewPanelProps {
@@ -45,6 +47,14 @@ const DEFAULT_SCENE: Scene = {
 
 const DEFAULT_VIEWPORT: Viewport = { width: 800, height: 600 };
 
+/**
+ * Default TimeModel for when no program is compiled yet.
+ */
+const DEFAULT_TIME_MODEL: TimeModel = {
+  kind: 'infinite',
+  windowMs: 10000,
+};
+
 export const PreviewPanel = observer(({ compilerService, isPlaying, onShowHelp }: PreviewPanelProps) => {
   const store = useStore();
   const svgRef = useRef<SVGSVGElement>(null);
@@ -54,14 +64,12 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, onShowHelp }
 
   const [playState, setPlayState] = useState<PlayState>('playing');
   const [currentTime, setCurrentTime] = useState(0);
-  const [maxTime, setMaxTime] = useState(6000); // 6 seconds default
   const [hasCompiledProgram, setHasCompiledProgram] = useState(false);
   const [viewport, setViewport] = useState<Viewport>(
     compilerService?.getViewport() ?? DEFAULT_VIEWPORT
   );
-  const [loopMode, setLoopMode] = useState<LoopMode>('loop');
   const [cuePoints, setCuePoints] = useState<readonly CuePoint[]>([]);
-  const [timeline, setTimeline] = useState<TimelineHint | null>(null);
+  const [timeModel, setTimeModel] = useState<TimeModel>(DEFAULT_TIME_MODEL);
 
   // Speed and seed from store (with fallbacks)
   const speed = store.uiStore.settings.speed;
@@ -93,22 +101,10 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, onShowHelp }
         height,
         onStateChange: handleStateChange,
         onTimeChange: setCurrentTime,
-        onLoopModeChange: setLoopMode,
-        onTimelineChange: (hint) => {
-          setTimeline(hint);
-          // Update maxTime when timeline changes
-          if (hint?.kind === 'finite') {
-            setMaxTime(hint.durationMs);
-          } else if (hint?.kind === 'infinite' && hint.windowMs) {
-            setMaxTime(hint.windowMs);
-          }
-        },
         onCuePointsChange: setCuePoints,
         autoApplyTimeline: true,
       }
     );
-    player.setMaxTime(maxTime);
-    player.setLoopMode(loopMode);
     playerRef.current = player;
 
     // Set initial scene
@@ -116,14 +112,16 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, onShowHelp }
 
     // Set initial program from compiler service
     if (compilerService) {
-      const compiled = compilerService.getProgram();
-      if (compiled) {
+      const compiledProgram = compilerService.getProgram();
+      if (compiledProgram) {
         // Cast to runtime RenderTree type (structurally compatible)
-        const program = compiled as unknown as Program<RenderTree>;
+        const program = compiledProgram.program as unknown as Program<RenderTree>;
         player.setFactory(() => program);
+        player.applyTimeModel(compiledProgram.timeModel);
+        setTimeModel(compiledProgram.timeModel);
         lastGoodProgramRef.current = program;
         setHasCompiledProgram(true);
-        logStore.info('renderer', 'Loaded compiled program');
+        logStore.info('renderer', `Loaded compiled program (timeModel: ${compiledProgram.timeModel.kind})`);
       } else {
         // Fallback to proof program while waiting for compilation
         const program = PROOF_PROGRAMS.lineDrawing;
@@ -165,16 +163,18 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, onShowHelp }
     // Poll for changes (in future, use MobX reaction)
     const interval = setInterval(() => {
       // Check for program changes
-      const compiled = compilerService.getProgram();
-      if (compiled && compiled !== (lastGoodProgramRef.current as unknown)) {
+      const compiledProgram = compilerService.getProgram();
+      if (compiledProgram && compiledProgram.program !== (lastGoodProgramRef.current as unknown)) {
         const player = playerRef.current;
         if (player) {
           // Cast to runtime RenderTree type (structurally compatible)
-          const program = compiled as unknown as Program<RenderTree>;
+          const program = compiledProgram.program as unknown as Program<RenderTree>;
           player.setFactory(() => program);
+          player.applyTimeModel(compiledProgram.timeModel);
+          setTimeModel(compiledProgram.timeModel);
           lastGoodProgramRef.current = program;
           setHasCompiledProgram(true);
-          logStore.debug('renderer', 'Hot swapped to new compiled program');
+          logStore.debug('renderer', `Hot swapped to new compiled program (timeModel: ${compiledProgram.timeModel.kind})`);
         }
       }
 
@@ -189,44 +189,32 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, onShowHelp }
     return () => clearInterval(interval);
   }, [compilerService, viewport.width, viewport.height]);
 
-  const handlePlayPause = useCallback(() => {
-    playerRef.current?.toggle();
+  // TimeConsole callbacks
+  const handlePlay = useCallback(() => {
+    playerRef.current?.play();
+  }, []);
+
+  const handlePause = useCallback(() => {
+    playerRef.current?.pause();
   }, []);
 
   const handleReset = useCallback(() => {
     playerRef.current?.reset();
   }, []);
 
-  const handleScrub = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const tMs = parseFloat(e.target.value);
+  const handleScrub = useCallback((tMs: number) => {
     playerRef.current?.scrubTo(tMs);
   }, []);
 
-  const handleLoopModeToggle = useCallback(() => {
-    const modes: LoopMode[] = ['loop', 'pingpong', 'none'];
-    const currentIndex = modes.indexOf(loopMode);
-    const nextMode = modes[(currentIndex + 1) % modes.length];
-    setLoopMode(nextMode);
-    playerRef.current?.setLoopMode(nextMode);
-  }, [loopMode]);
-
-  const handleSpeedChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newSpeed = parseFloat(e.target.value) || 1;
-    const clampedSpeed = Math.max(0.1, Math.min(4, newSpeed));
-    store.uiStore.setSpeed(clampedSpeed);
-    playerRef.current?.setSpeed(clampedSpeed);
+  const handleSpeedChange = useCallback((newSpeed: number) => {
+    store.uiStore.setSpeed(newSpeed);
+    playerRef.current?.setSpeed(newSpeed);
   }, [store]);
 
-  const handleSeedChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newSeed = parseInt(e.target.value) || 0;
+  const handleSeedChange = useCallback((newSeed: number) => {
     store.uiStore.setSeed(newSeed);
     // Seed change triggers recompilation via autoCompile
   }, [store]);
-
-  const formatTime = (ms: number): string => {
-    const seconds = (ms / 1000).toFixed(2);
-    return `${seconds}s`;
-  };
 
   return (
     <div className="preview-panel">
@@ -256,102 +244,21 @@ export const PreviewPanel = observer(({ compilerService, isPlaying, onShowHelp }
         />
       </div>
 
-      <div className="preview-controls">
-        {/* Top row: Scrubber + time displays */}
-        <div className="preview-controls-scrubber-row">
-          <span className="preview-time">{formatTime(currentTime)}</span>
-
-          {/* Scrubber with cue point markers */}
-          <div className="preview-scrubber-container">
-            <input
-              type="range"
-              className="preview-scrubber"
-              min={0}
-              max={maxTime}
-              step={16}
-              value={currentTime}
-              onChange={handleScrub}
-            />
-            {/* Cue point markers */}
-            {cuePoints.map((cue, i) => {
-              const percent = maxTime > 0 ? (cue.tMs / maxTime) * 100 : 0;
-              return (
-                <div
-                  key={`cue-${i}`}
-                  className={`cue-marker cue-${cue.kind ?? 'marker'}`}
-                  style={{ left: `${percent}%` }}
-                  title={`${cue.label} (${formatTime(cue.tMs)})`}
-                />
-              );
-            })}
-          </div>
-
-          <span className="preview-time">{formatTime(maxTime)}</span>
-
-          {/* Timeline indicator */}
-          {timeline && (
-            <span className="timeline-indicator" title={timeline.kind === 'finite' ? 'Finite duration' : 'Infinite animation'}>
-              {timeline.kind === 'finite' ? '⏱' : '∞'}
-            </span>
-          )}
-        </div>
-
-        {/* Bottom row: Playback buttons + settings */}
-        <div className="preview-controls-buttons-row">
-          <button
-            className={`preview-btn ${playState === 'playing' ? 'active' : ''}`}
-            onClick={handlePlayPause}
-            title={playState === 'playing' ? 'Pause' : 'Play'}
-          >
-            {playState === 'playing' ? '⏸' : '▶'}
-          </button>
-
-          <button
-            className="preview-btn"
-            onClick={handleReset}
-            title="Reset"
-          >
-            ⏮
-          </button>
-
-          <button
-            className={`preview-btn ${loopMode !== 'none' ? 'active' : ''}`}
-            onClick={handleLoopModeToggle}
-            title={`Loop: ${loopMode}`}
-          >
-            {loopMode === 'loop' ? '🔁' : loopMode === 'pingpong' ? '🔀' : '➡️'}
-          </button>
-
-          <div className="preview-controls-divider" />
-
-          <div className="preview-setting">
-            <span className="preview-setting-label">Speed</span>
-            <input
-              type="number"
-              className="preview-setting-input"
-              value={speed}
-              onChange={handleSpeedChange}
-              min={0.1}
-              max={4}
-              step={0.1}
-              title="Playback speed (0.1 - 4x)"
-            />
-          </div>
-
-          <div className="preview-setting">
-            <span className="preview-setting-label">Seed</span>
-            <input
-              type="number"
-              className="preview-setting-input"
-              value={seed}
-              onChange={handleSeedChange}
-              min={0}
-              step={1}
-              title="Random seed (changes animation variation)"
-            />
-          </div>
-        </div>
-      </div>
+      {/* TimeConsole replaces old scrubber/buttons */}
+      <TimeConsole
+        timeModel={timeModel}
+        currentTime={currentTime}
+        playState={playState}
+        speed={speed}
+        seed={seed}
+        cuePoints={cuePoints}
+        onScrub={handleScrub}
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onReset={handleReset}
+        onSpeedChange={handleSpeedChange}
+        onSeedChange={handleSeedChange}
+      />
     </div>
   );
 });

@@ -3,11 +3,15 @@ import type { BlockDefinition, BlockTags, LaneKind, LaneFlavor, BlockCategory } 
 // Import domain blocks (new system only)
 import * as DomainBlocks from './domain';
 
+// Import TimeRoot blocks (Phase 3: TimeRoot)
+import * as TimeRootBlocks from './time-root';
+
 // Import composite bridge for optional composite support
 import { getCompositeBlockDefinitions } from '../composite-bridge';
 
 const ALL_INDIVIDUAL_BLOCKS: BlockDefinition[] = [
   ...Object.values(DomainBlocks),
+  ...Object.values(TimeRootBlocks),
 ].filter((block): block is BlockDefinition => (block as BlockDefinition).type !== undefined);
 
 

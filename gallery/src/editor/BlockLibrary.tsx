@@ -6,6 +6,7 @@ import { ALL_SUBCATEGORIES } from './types';
 import type { BlockSubcategory, BlockForm } from './types';
 import type { BlockDefinition } from './blocks/types';
 import { getBlockDefinitions, getBlocksForPalette, getBlockTags } from './blocks';
+import './BlockLibrary.css';
 
 // import { listCompositeDefinitions } from './composites'; // TODO: Refactor composites
 const listCompositeDefinitions = () => [];

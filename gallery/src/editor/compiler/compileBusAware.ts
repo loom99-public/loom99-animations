@@ -27,10 +27,12 @@ import type {
   RenderTree,
   RuntimeCtx,
   Seed,
+  TimeModel,
   Vec2,
 } from './types';
 import type { Bus, Publisher, Listener } from '../types';
 import { applyLens } from '../lenses';
+import { validateTimeRootConstraint } from './compile';
 
 // =============================================================================
 // Type Guards
@@ -457,6 +459,14 @@ export function compileBusAwarePatch(
   }
 
   // =============================================================================
+  // 0.5. Validate TimeRoot constraint (if feature flag enabled)
+  // =============================================================================
+  const timeRootErrors = validateTimeRootConstraint(patch);
+  if (timeRootErrors.length > 0) {
+    return { ok: false, errors: timeRootErrors };
+  }
+
+  // =============================================================================
   // 1. Validate combine modes (different for Signal vs Field buses)
   // =============================================================================
   for (const bus of buses) {
@@ -659,9 +669,12 @@ export function compileBusAwarePatch(
     return { ok: false, errors };
   }
 
+  // Infer TimeModel from the patch
+  const timeModel = inferTimeModel(patch);
+
   // Accept both RenderTreeProgram and RenderTree (wrap RenderTree into a Program)
   if (outArt.kind === 'RenderTreeProgram') {
-    return { ok: true, program: outArt.value, errors: [], compiledPortMap };
+    return { ok: true, program: outArt.value, timeModel, errors: [], compiledPortMap };
   }
 
   if (outArt.kind === 'RenderTree') {
@@ -671,7 +684,7 @@ export function compileBusAwarePatch(
       signal: renderFn,
       event: () => [],
     };
-    return { ok: true, program, errors: [], compiledPortMap };
+    return { ok: true, program, timeModel, errors: [], compiledPortMap };
   }
 
   errors.push({
@@ -680,6 +693,67 @@ export function compileBusAwarePatch(
     where: { blockId: outputRef.blockId, port: outputRef.port },
   });
   return { ok: false, errors };
+}
+
+// =============================================================================
+// TimeModel Inference
+// =============================================================================
+
+/**
+ * Infer TimeModel from the compiled patch.
+ *
+ * Inference rules (per PLAN-2024-12-19.md):
+ * 1. If patch has PhaseClock with mode='loop' → CyclicTimeModel
+ * 2. If patch has PhaseMachine → FiniteTimeModel with computed duration
+ * 3. Otherwise → InfiniteTimeModel with 10s default window
+ *
+ * This is a simple heuristic until explicit TimeRoot blocks are implemented.
+ */
+function inferTimeModel(patch: CompilerPatch): TimeModel {
+  // Check for PhaseMachine first (implies finite duration)
+  for (const block of patch.blocks.values()) {
+    if (block.type === 'PhaseMachine') {
+      const entranceDuration = Number(block.params.entranceDuration ?? 2.5) * 1000;
+      const holdDuration = Number(block.params.holdDuration ?? 2.0) * 1000;
+      const exitDuration = Number(block.params.exitDuration ?? 0.5) * 1000;
+      const totalDuration = entranceDuration + holdDuration + exitDuration;
+
+      return {
+        kind: 'finite',
+        durationMs: totalDuration,
+        cuePoints: [
+          { tMs: 0, label: 'Entrance Start', kind: 'phase' },
+          { tMs: entranceDuration, label: 'Hold Start', kind: 'phase' },
+          { tMs: entranceDuration + holdDuration, label: 'Exit Start', kind: 'phase' },
+          { tMs: totalDuration, label: 'End', kind: 'phase' },
+        ],
+      };
+    }
+  }
+
+  // Check for PhaseClock with loop mode (implies cyclic time)
+  for (const block of patch.blocks.values()) {
+    if (block.type === 'PhaseClock') {
+      const mode = String(block.params.mode ?? 'loop');
+      const durationSec = Number(block.params.duration ?? 3.0);
+      const periodMs = durationSec * 1000;
+
+      if (mode === 'loop' || mode === 'pingpong') {
+        return {
+          kind: 'cyclic',
+          periodMs,
+          phaseDomain: '0..1',
+          mode: mode as 'loop' | 'pingpong',
+        };
+      }
+    }
+  }
+
+  // Default: infinite time model
+  return {
+    kind: 'infinite',
+    windowMs: 10000, // 10 second default preview window
+  };
 }
 
 // =============================================================================

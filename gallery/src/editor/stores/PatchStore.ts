@@ -164,6 +164,7 @@ export class PatchStore {
 
   /**
    * Expand a macro into multiple blocks with connections.
+   * Also creates bus publishers and listeners if defined in the macro.
    */
   expandMacro(expansion: MacroExpansion): BlockId {
     // Clear the patch first - macros replace everything
@@ -203,6 +204,45 @@ export class PatchStore {
       const toId = refToId.get(conn.toRef);
       if (fromId && toId) {
         this.connect(fromId, conn.fromSlot, toId, conn.toSlot);
+      }
+    }
+
+    // Create bus publishers if defined
+    if (expansion.publishers) {
+      for (const pub of expansion.publishers) {
+        const blockId = refToId.get(pub.fromRef);
+        if (!blockId) continue;
+
+        // Find the bus by name
+        const bus = this.root.busStore.buses.find((b) => b.name === pub.busName);
+        if (!bus) {
+          console.warn(`Macro publisher: bus "${pub.busName}" not found`);
+          continue;
+        }
+
+        // Add publisher
+        this.root.busStore.addPublisher(bus.id, blockId, pub.fromSlot);
+      }
+    }
+
+    // Create bus listeners if defined
+    if (expansion.listeners) {
+      for (const lis of expansion.listeners) {
+        const blockId = refToId.get(lis.toRef);
+        if (!blockId) continue;
+
+        // Find the bus by name
+        const bus = this.root.busStore.buses.find((b) => b.name === lis.busName);
+        if (!bus) {
+          console.warn(`Macro listener: bus "${lis.busName}" not found`);
+          continue;
+        }
+
+        // Add listener with optional lens
+        const lensDefinition = lis.lens
+          ? { type: lis.lens.type, params: lis.lens.params }
+          : undefined;
+        this.root.busStore.addListener(bus.id, blockId, lis.toSlot, undefined, lensDefinition);
       }
     }
 

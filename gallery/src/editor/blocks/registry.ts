@@ -1,32 +1,12 @@
 import type { BlockDefinition, BlockTags, LaneKind, LaneFlavor, BlockCategory } from './types';
 
-// Import all individual block definitions
-import * as MacroBlocks from './macros';
-import * as SceneBlocks from './scene';
-import * as FieldBlocks from './fields';
-import * as TimeBlocks from './time';
-import * as ComposeBlocks from './compose';
-import * as RenderBlocks from './render';
-import * as MathBlocks from './math';
-import * as ProgramBlocks from './program';
-import * as AdapterBlocks from './adapters';
-import * as FxBlocks from './fx';
+// Import domain blocks (new system only)
 import * as DomainBlocks from './domain';
 
 // Import composite bridge for optional composite support
 import { getCompositeBlockDefinitions } from '../composite-bridge';
 
 const ALL_INDIVIDUAL_BLOCKS: BlockDefinition[] = [
-  ...Object.values(MacroBlocks),
-  ...Object.values(SceneBlocks),
-  ...Object.values(FieldBlocks),
-  ...Object.values(TimeBlocks),
-  ...Object.values(ComposeBlocks),
-  ...Object.values(RenderBlocks),
-  ...Object.values(MathBlocks),
-  ...Object.values(ProgramBlocks),
-  ...Object.values(AdapterBlocks),
-  ...Object.values(FxBlocks),
   ...Object.values(DomainBlocks),
 ].filter((block): block is BlockDefinition => (block as BlockDefinition).type !== undefined);
 

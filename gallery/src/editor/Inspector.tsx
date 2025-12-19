@@ -14,7 +14,7 @@ import { findCompatiblePorts, getConnectionsForPort, areTypesCompatible, describ
 import './Inspector.css';
 
 function formatFormLabel(form: BlockForm): string {
-  if (form === 'legacy-composite') return 'Legacy Composite';
+  
   return form.charAt(0).toUpperCase() + form.slice(1);
 }
 
@@ -561,7 +561,6 @@ const PortWiringPanel = observer(({
 function DefinitionPreview({ definition }: { definition: BlockDefinition }) {
   const tags = getBlockTags(definition);
   const isComposite = definition.form === 'composite';
-  const isLegacyComposite = definition.form === 'legacy-composite';
   const [showCompositeGraph, setShowCompositeGraph] = useState(false);
 
   return (
@@ -573,7 +572,6 @@ function DefinitionPreview({ definition }: { definition: BlockDefinition }) {
           <span className="block-tier-badge">{formatFormLabel(definition.form)}</span>
           <span className="block-subcategory-badge">{definition.subcategory}</span>
           {isComposite && <span className="block-composite-badge">Composite</span>}
-          {isLegacyComposite && <span className="block-legacy-badge">Legacy Composite</span>}
           <span
             className="block-category"
             style={{ backgroundColor: definition.color }}

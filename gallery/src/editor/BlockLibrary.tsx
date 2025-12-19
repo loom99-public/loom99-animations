@@ -10,12 +10,11 @@ import { getBlockDefinitions, getBlocksForPalette, getBlockTags } from './blocks
 // import { listCompositeDefinitions } from './composites'; // TODO: Refactor composites
 const listCompositeDefinitions = () => [];
 
-const FORM_ORDER: BlockForm[] = ['macro', 'composite', 'legacy-composite', 'primitive'];
+const FORM_ORDER: BlockForm[] = ['macro', 'composite', 'primitive'];
 
 const FORM_LABELS: Record<BlockForm, string> = {
   macro: 'Macros',
   composite: 'Composites',
-  'legacy-composite': 'Legacy Composites',
   primitive: 'Primitives',
 };
 

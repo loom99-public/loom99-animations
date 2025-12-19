@@ -7,7 +7,7 @@
  * Outputs: Field<number> of decay rate multipliers.
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 // type DecayCurve = 'linear' | 'exponential' | 'easeOut' | 'sudden';
 

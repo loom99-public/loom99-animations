@@ -4,7 +4,7 @@
  * Creates a noise-based Field<number> using seed.
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 export const NoiseFieldBlock: BlockCompiler = {
   type: 'noiseField',

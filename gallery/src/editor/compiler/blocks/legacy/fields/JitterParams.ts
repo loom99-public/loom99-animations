@@ -7,7 +7,7 @@
  * Outputs: Field<JitterConfig> with amplitude, frequency, and bounds.
  */
 
-import type { BlockCompiler } from '../../types';
+import type { BlockCompiler } from '../../../types';
 
 interface JitterConfig {
   amplitudeX: number;

@@ -5,9 +5,9 @@
  * For per-element rendering, use PerElementCircles instead.
  */
 
-import type { BlockCompiler } from '../../types';
-import type { ShapeNode } from '../../../runtime/renderTree';
-import { circle } from '../../../runtime/renderTree';
+import type { BlockCompiler } from '../../../types';
+import type { ShapeNode } from '../../../../runtime/renderTree';
+import { circle } from '../../../../runtime/renderTree';
 
 export const CircleNodeBlock: BlockCompiler = {
   type: 'circleNode',

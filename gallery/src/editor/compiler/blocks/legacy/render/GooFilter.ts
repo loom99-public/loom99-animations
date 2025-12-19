@@ -7,7 +7,7 @@
  * Outputs: FilterDef for SVG rendering.
  */
 
-import type { BlockCompiler } from '../../types';
+import type { BlockCompiler } from '../../../types';
 
 interface GooFilterConfig {
   id: string;

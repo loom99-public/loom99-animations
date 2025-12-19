@@ -4,8 +4,8 @@
  * Adds two scalar numbers.
  */
 
-import type { BlockCompiler } from '../../types';
-import { scalarNum } from '../helpers';
+import type { BlockCompiler } from '../../../types';
+import { scalarNum } from '../../helpers';
 
 export const MathAddScalarBlock: BlockCompiler = {
   type: 'math.addScalar',

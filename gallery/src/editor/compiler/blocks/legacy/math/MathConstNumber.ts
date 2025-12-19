@@ -4,7 +4,7 @@
  * Simple constant scalar number output.
  */
 
-import type { BlockCompiler } from '../../types';
+import type { BlockCompiler } from '../../../types';
 
 export const MathConstNumberBlock: BlockCompiler = {
   type: 'math.constNumber',

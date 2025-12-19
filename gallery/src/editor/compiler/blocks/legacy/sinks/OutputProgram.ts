@@ -5,7 +5,7 @@
  * Makes patch.output inference unnecessary and UI clearer.
  */
 
-import type { BlockCompiler } from '../../types';
+import type { BlockCompiler } from '../../../types';
 
 export const OutputProgramBlock: BlockCompiler = {
   type: 'outputProgram',

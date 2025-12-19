@@ -5,9 +5,9 @@
  * Used for testing the compiler pipeline.
  */
 
-import type { BlockCompiler, Program } from '../../types';
-import type { RenderTree } from '../../../runtime/renderTree';
-import { group } from '../../../runtime/renderTree';
+import type { BlockCompiler, Program } from '../../../types';
+import type { RenderTree } from '../../../../runtime/renderTree';
+import { group } from '../../../../runtime/renderTree';
 
 export const DebugOutputBlock: BlockCompiler = {
   type: 'debugOutput',

@@ -7,7 +7,7 @@
  * Outputs: Field<WobbleConfig> with amplitude, frequency, phase, decay.
  */
 
-import type { BlockCompiler } from '../../types';
+import type { BlockCompiler } from '../../../types';
 
 interface WobbleConfig {
   amplitude: number;

@@ -7,7 +7,7 @@
  * Outputs: Field<Point> of 2D positions.
  */
 
-import type { BlockCompiler } from '../../types';
+import type { BlockCompiler } from '../../../types';
 
 type Point = { x: number; y: number };
 type PointField = (seed: number, n: number) => readonly Point[];

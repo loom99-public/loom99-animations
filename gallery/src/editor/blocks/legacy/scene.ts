@@ -1,5 +1,5 @@
-import { createBlock } from './factory';
-import { input, output, getPathOptions } from './utils';
+import { createBlock } from '../factory';
+import { input, output, getPathOptions } from '../utils';
 
 export const SVGPathSource = createBlock({
   type: 'SVGPathSource',

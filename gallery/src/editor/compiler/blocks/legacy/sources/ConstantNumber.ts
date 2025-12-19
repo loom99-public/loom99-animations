@@ -4,7 +4,7 @@
  * Outputs a constant scalar number and its lifted Field form.
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 export const ConstantNumberBlock: BlockCompiler = {
   type: 'constNumber',

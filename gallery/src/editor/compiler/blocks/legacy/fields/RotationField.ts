@@ -7,7 +7,7 @@
  * Outputs: Field<number> of rotation angles in degrees.
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 type RotationMode = 'constant' | 'random' | 'sequential' | 'radial';
 

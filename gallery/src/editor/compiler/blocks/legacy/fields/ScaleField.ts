@@ -7,7 +7,7 @@
  * Outputs: Field<number> of scale multipliers.
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 type ScaleMode = 'constant' | 'random' | 'progressive' | 'alternating';
 

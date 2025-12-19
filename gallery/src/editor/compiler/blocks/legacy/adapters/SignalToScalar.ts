@@ -5,7 +5,7 @@
  * Useful for bridging world differences when a block expects a scalar.
  */
 
-import type { BlockCompiler, RuntimeCtx } from '../../types';
+import type { BlockCompiler, RuntimeCtx } from '../../../types';
 
 export const SignalToScalarNumberBlock: BlockCompiler = {
   type: 'signalToScalarNumber',

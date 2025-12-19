@@ -4,7 +4,7 @@
  * Creates a staggered delay Field<number> based on index.
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 export const StaggerFieldBlock: BlockCompiler = {
   type: 'staggerField',

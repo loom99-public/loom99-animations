@@ -5,7 +5,7 @@
  * Outputs: Field<Vec2> of positions.
  */
 
-import type { BlockCompiler, Field, Vec2 } from '../../types';
+import type { BlockCompiler, Field, Vec2 } from '../../../types';
 
 export const RadialOriginBlock: BlockCompiler = {
   type: 'RadialOrigin',

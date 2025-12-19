@@ -7,7 +7,7 @@
  * Outputs: Field<string> of easing function names.
  */
 
-import type { BlockCompiler } from '../../types';
+import type { BlockCompiler } from '../../../types';
 
 type EasingMode = 'constant' | 'random' | 'alternating' | 'progressive';
 

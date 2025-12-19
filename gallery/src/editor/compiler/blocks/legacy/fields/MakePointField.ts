@@ -4,7 +4,7 @@
  * Combines two Field<number> (x and y) into a Field<Point>.
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 export const MakePointFieldBlock: BlockCompiler = {
   type: 'makePointField',

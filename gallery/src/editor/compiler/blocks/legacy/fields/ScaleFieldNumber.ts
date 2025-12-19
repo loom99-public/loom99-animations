@@ -4,7 +4,7 @@
  * Multiplies a Field<number> by a scalar value.
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 export const ScaleFieldNumberBlock: BlockCompiler = {
   type: 'scaleFieldNumber',

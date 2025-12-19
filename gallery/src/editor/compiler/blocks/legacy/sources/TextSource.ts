@@ -7,7 +7,7 @@
  * Outputs: Scene with character positions and content.
  */
 
-import type { BlockCompiler } from '../../types';
+import type { BlockCompiler } from '../../../types';
 
 interface CharacterInfo {
   char: string;

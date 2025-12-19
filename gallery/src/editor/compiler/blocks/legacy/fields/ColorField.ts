@@ -7,7 +7,7 @@
  * Outputs: Field<string> of CSS color strings.
  */
 
-import type { BlockCompiler } from '../../types';
+import type { BlockCompiler } from '../../../types';
 
 type ColorMode = 'solid' | 'gradient' | 'randomHue' | 'rainbow';
 

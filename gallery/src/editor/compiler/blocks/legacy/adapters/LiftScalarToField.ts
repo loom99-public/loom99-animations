@@ -4,8 +4,8 @@
  * Lifts a Scalar:number to Field:number (broadcasts to all elements).
  */
 
-import type { BlockCompiler, Field } from '../../types';
-import { scalarNum } from '../helpers';
+import type { BlockCompiler, Field } from '../../../types';
+import { scalarNum } from '../../helpers';
 
 export const LiftScalarToFieldNumberBlock: BlockCompiler = {
   type: 'lift.scalarToFieldNumber',

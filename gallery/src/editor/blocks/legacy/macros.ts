@@ -1,4 +1,4 @@
-import type { BlockDefinition, BlockSubcategory } from './types';
+import type { BlockDefinition, BlockSubcategory } from '../types';
 
 // =============================================================================
 // Macro Factory Function

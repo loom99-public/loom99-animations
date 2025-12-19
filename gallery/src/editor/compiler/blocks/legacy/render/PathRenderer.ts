@@ -7,9 +7,9 @@
  * Outputs: RenderTree with path elements.
  */
 
-import type { BlockCompiler, RuntimeCtx } from '../../types';
-import type { DrawNode } from '../../../runtime/renderTree';
-import { group } from '../../../runtime/renderTree';
+import type { BlockCompiler, RuntimeCtx } from '../../../types';
+import type { DrawNode } from '../../../../runtime/renderTree';
+import { group } from '../../../../runtime/renderTree';
 
 export const PathRendererBlock: BlockCompiler = {
   type: 'PathRenderer',

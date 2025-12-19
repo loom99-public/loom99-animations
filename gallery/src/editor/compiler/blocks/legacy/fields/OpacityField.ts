@@ -7,7 +7,7 @@
  * Outputs: Field<number> of opacity values (0-1).
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 type OpacityMode = 'constant' | 'random' | 'fadeByIndex' | 'pulse';
 

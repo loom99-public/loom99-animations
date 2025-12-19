@@ -11,7 +11,7 @@ import type {
   Field,
   RuntimeCtx,
   Vec2,
-} from '../../types';
+} from '../../../types';
 
 function lerpVec2(a: Vec2, b: Vec2, t: number): Vec2 {
   return {

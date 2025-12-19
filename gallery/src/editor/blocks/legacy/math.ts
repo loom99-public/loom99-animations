@@ -1,5 +1,5 @@
-import { createBlock } from './factory';
-import { input, output } from './utils';
+import { createBlock } from '../factory';
+import { input, output } from '../utils';
 
 export const MathConstNumber = createBlock({
   type: 'math.constNumber',

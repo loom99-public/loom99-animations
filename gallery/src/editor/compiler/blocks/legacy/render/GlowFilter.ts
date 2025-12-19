@@ -5,7 +5,7 @@
  * In the Editor format, filters are CSS filter strings, not SVG filter definitions.
  */
 
-import type { BlockCompiler } from '../../types';
+import type { BlockCompiler } from '../../../types';
 
 export const GlowFilterBlock: BlockCompiler = {
   type: 'glowFilter',

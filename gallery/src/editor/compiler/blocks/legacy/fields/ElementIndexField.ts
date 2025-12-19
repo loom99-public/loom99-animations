@@ -4,7 +4,7 @@
  * Emits Field<number> where each element is its index (0..n-1).
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 export const ElementIndexFieldBlock: BlockCompiler = {
   type: 'elementIndexField',

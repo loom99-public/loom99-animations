@@ -5,7 +5,7 @@
  * Outputs: Field<number> of delays in seconds.
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 export const LinearStaggerBlock: BlockCompiler = {
   type: 'LinearStagger',

@@ -4,7 +4,7 @@
  * Divides two Field<number> element-wise (a / b).
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 export const DivFieldNumberBlock: BlockCompiler = {
   type: 'divFieldNumber',

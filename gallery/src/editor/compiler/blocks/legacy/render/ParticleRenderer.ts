@@ -5,8 +5,8 @@
  * Currently a pass-through. Glow effects are applied via CSS filter style.
  */
 
-import type { BlockCompiler, Program, RuntimeCtx } from '../../types';
-import type { RenderTree } from '../../../runtime/renderTree';
+import type { BlockCompiler, Program, RuntimeCtx } from '../../../types';
+import type { RenderTree } from '../../../../runtime/renderTree';
 
 export const ParticleRendererBlock: BlockCompiler = {
   type: 'ParticleRenderer',

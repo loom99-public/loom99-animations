@@ -5,8 +5,8 @@
  * Outputs: PhaseMachine that can sample phase at any time.
  */
 
-import type { BlockCompiler, PhaseMachine, PhaseSample } from '../../types';
-import { getEasing } from '../helpers';
+import type { BlockCompiler, PhaseMachine, PhaseSample } from '../../../types';
+import { getEasing } from '../../helpers';
 
 export const PhaseMachineBlock: BlockCompiler = {
   type: 'PhaseMachine',

@@ -7,9 +7,9 @@
  * Accepts RenderTreeProgram and outputs RenderTreeProgram with mask applied.
  */
 
-import type { BlockCompiler, RuntimeCtx, Program } from '../../types';
-import type { RenderTree, DrawNode } from '../../../runtime/renderTree';
-import { group } from '../../../runtime/renderTree';
+import type { BlockCompiler, RuntimeCtx, Program } from '../../../types';
+import type { RenderTree, DrawNode } from '../../../../runtime/renderTree';
+import { group } from '../../../../runtime/renderTree';
 
 type WipeDirection = 'left-to-right' | 'right-to-left' | 'top-to-bottom' | 'bottom-to-top' | 'radial';
 

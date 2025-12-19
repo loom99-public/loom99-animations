@@ -5,7 +5,7 @@
  * This is essentially a pass-through since SVGPathSource already samples.
  */
 
-import type { BlockCompiler, TargetScene } from '../../types';
+import type { BlockCompiler, TargetScene } from '../../../types';
 
 export const SamplePointsBlock: BlockCompiler = {
   type: 'SamplePoints',

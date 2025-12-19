@@ -7,7 +7,7 @@
  * Note: True RGB split requires SVG filters or canvas. This is a CSS approximation.
  */
 
-import type { BlockCompiler } from '../../types';
+import type { BlockCompiler } from '../../../types';
 
 export const RGBSplitFilterBlock: BlockCompiler = {
   type: 'RGBSplitFilter',

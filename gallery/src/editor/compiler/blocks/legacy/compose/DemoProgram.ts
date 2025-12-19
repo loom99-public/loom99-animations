@@ -5,9 +5,9 @@
  * Supports multiple variants: lineDrawing, pulsingLine, bouncingCircle, particles, oscillator.
  */
 
-import type { BlockCompiler, Program } from '../../types';
-import type { RenderTree, DrawNode } from '../../../runtime/renderTree';
-import { group, path, circle, withOpacity, withTransform2D } from '../../../runtime/renderTree';
+import type { BlockCompiler, Program } from '../../../types';
+import type { RenderTree, DrawNode } from '../../../../runtime/renderTree';
+import { group, path, circle, withOpacity, withTransform2D } from '../../../../runtime/renderTree';
 
 export const DemoProgramBlock: BlockCompiler = {
   type: 'demoProgram',

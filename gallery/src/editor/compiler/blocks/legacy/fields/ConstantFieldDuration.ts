@@ -4,7 +4,7 @@
  * Creates a Field<number> where all elements have the same duration value.
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 export const ConstantFieldDurationBlock: BlockCompiler = {
   type: 'constantFieldDuration',

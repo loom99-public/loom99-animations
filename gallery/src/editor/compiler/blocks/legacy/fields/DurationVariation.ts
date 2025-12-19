@@ -7,7 +7,7 @@
  * Outputs: Field<number> of durations in seconds.
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 export const DurationVariationBlock: BlockCompiler = {
   type: 'DurationVariation',

@@ -4,7 +4,7 @@
  * Outputs a constant Vec2 and its lifted Field form.
  */
 
-import type { BlockCompiler, Field, Vec2 } from '../../types';
+import type { BlockCompiler, Field, Vec2 } from '../../../types';
 
 export const ConstantVec2Block: BlockCompiler = {
   type: 'constVec2',

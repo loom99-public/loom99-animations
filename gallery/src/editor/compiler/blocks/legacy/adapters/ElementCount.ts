@@ -5,7 +5,7 @@
  * Outputs a scalar number that can be used for field sizing.
  */
 
-import type { BlockCompiler, TargetScene } from '../../types';
+import type { BlockCompiler, TargetScene } from '../../../types';
 
 export const ElementCountBlock: BlockCompiler = {
   type: 'elementCount',

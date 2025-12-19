@@ -16,8 +16,8 @@ import type {
   Field,
   PhaseMachine,
   RuntimeCtx,
-} from '../../types';
-import { clamp01, getEasing } from '../helpers';
+} from '../../../types';
+import { clamp01, getEasing } from '../../helpers';
 
 // Per-element progress array at runtime
 type ProgressArray = readonly number[];

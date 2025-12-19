@@ -4,7 +4,7 @@
  * Applies a function to each element of a Field<number>.
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 function getFn(name: string): (x: number) => number {
   switch (name) {

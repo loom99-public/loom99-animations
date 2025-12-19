@@ -1,5 +1,5 @@
-import { createBlock } from './factory';
-import { input, output, COMMON_PARAMS, coordinateParam } from './utils';
+import { createBlock } from '../factory';
+import { input, output, COMMON_PARAMS, coordinateParam } from '../utils';
 
 export const RadialOrigin = createBlock({
   type: 'RadialOrigin',

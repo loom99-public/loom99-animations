@@ -5,7 +5,7 @@
  * Pass-through adapter since SVGPathSource already produces TargetScene.
  */
 
-import type { BlockCompiler, TargetScene } from '../../types';
+import type { BlockCompiler, TargetScene } from '../../../types';
 
 export const SceneToTargetsBlock: BlockCompiler = {
   type: 'SceneToTargets',

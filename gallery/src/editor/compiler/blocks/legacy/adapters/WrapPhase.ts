@@ -4,7 +4,7 @@
  * Wraps Signal:Unit into [0,1) by taking fractional part.
  */
 
-import type { BlockCompiler, RuntimeCtx } from '../../types';
+import type { BlockCompiler, RuntimeCtx } from '../../../types';
 
 export const WrapPhaseBlock: BlockCompiler = {
   type: 'wrapPhase',

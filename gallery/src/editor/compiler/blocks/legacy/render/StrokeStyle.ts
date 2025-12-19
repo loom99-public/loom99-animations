@@ -7,7 +7,7 @@
  * Outputs: StrokeStyle configuration object.
  */
 
-import type { BlockCompiler } from '../../types';
+import type { BlockCompiler } from '../../../types';
 
 interface StrokeStyleConfig {
   width: number;

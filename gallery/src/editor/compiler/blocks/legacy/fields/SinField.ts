@@ -4,7 +4,7 @@
  * Applies Math.sin element-wise to a Field<number>.
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 export const SinFieldBlock: BlockCompiler = {
   type: 'sinFieldNumber',

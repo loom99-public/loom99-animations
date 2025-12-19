@@ -5,9 +5,9 @@
  * This is a high-level render block that handles the per-element iteration.
  */
 
-import type { BlockCompiler, RuntimeCtx, Vec2, Program } from '../../types';
-import type { RenderTree, DrawNode } from '../../../runtime/renderTree';
-import { circle, group, withOpacity } from '../../../runtime/renderTree';
+import type { BlockCompiler, RuntimeCtx, Vec2, Program } from '../../../types';
+import type { RenderTree, DrawNode } from '../../../../runtime/renderTree';
+import { circle, group, withOpacity } from '../../../../runtime/renderTree';
 
 export const PerElementCirclesBlock: BlockCompiler = {
   type: 'perElementCircles',

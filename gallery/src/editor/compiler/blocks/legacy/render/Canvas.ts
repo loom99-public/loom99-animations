@@ -5,8 +5,8 @@
  * externally on the SVG element. This block is a pass-through.
  */
 
-import type { BlockCompiler, Program, RuntimeCtx } from '../../types';
-import type { RenderTree } from '../../../runtime/renderTree';
+import type { BlockCompiler, Program, RuntimeCtx } from '../../../types';
+import type { RenderTree } from '../../../../runtime/renderTree';
 
 export const CanvasBlock: BlockCompiler = {
   type: 'canvas',

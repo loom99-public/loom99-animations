@@ -7,7 +7,7 @@
  * Outputs: Field<SpiralConfig> with radius, frequency, phase, decay.
  */
 
-import type { BlockCompiler } from '../../types';
+import type { BlockCompiler } from '../../../types';
 
 interface SpiralConfig {
   radius: number;

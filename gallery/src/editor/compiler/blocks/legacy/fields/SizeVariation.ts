@@ -7,7 +7,7 @@
  * Outputs: Field<number> of size multipliers (1.0 = base size).
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 type SizeMode = 'uniform' | 'random' | 'distanceFade' | 'pulse';
 

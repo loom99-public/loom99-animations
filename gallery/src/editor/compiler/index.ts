@@ -53,29 +53,8 @@ export type {
   CompileResult,
 } from './types';
 
-// Block implementations
+// Block implementations (domain blocks only)
 export {
-  // Constants
-  ConstantNumberBlock,
-  ConstantVec2Block,
-  // Field combinators
-  AddFieldNumberBlock,
-  MulFieldNumberBlock,
-  ScaleFieldNumberBlock,
-  MapFieldNumberBlock,
-  StaggerFieldBlock,
-  NoiseFieldBlock,
-  // Math scalar blocks (Slice 2.5)
-  MathConstNumberBlock,
-  MathAddScalarBlock,
-  MathMulScalarBlock,
-  MathSinScalarBlock,
-  // Lift blocks (Slice 2.5)
-  LiftScalarToFieldNumberBlock,
-  // Program blocks
-  DemoProgramBlock,
-  OutputProgramBlock,
-  DebugOutputBlock,
   // Registry
   DEFAULT_BLOCK_REGISTRY,
   createBlockRegistry,
@@ -147,4 +126,11 @@ export type { TimeCtx, TimeMode } from './unified/TimeCtx';
 
 // State blocks
 export { stateBlockRegistry } from './unified/StateBlock';
-export type { StateBlock, StateMemory, StateShape, ScrubPolicy } from './unified/StateBlock';
+export type { StateBlock, StateBlockDef } from './unified/StateBlock';
+
+// Export bus-aware compilation and runtime
+export {
+  compilePatchBusAware,
+  type BusAwarePatch,
+  type BusAwareCompileResult,
+} from './compileBusAware';

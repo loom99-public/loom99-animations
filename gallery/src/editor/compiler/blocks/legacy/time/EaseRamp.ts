@@ -5,8 +5,8 @@
  * Note: This is a placeholder - full signal support requires more infrastructure.
  */
 
-import type { BlockCompiler } from '../../types';
-import { getEasing } from '../helpers';
+import type { BlockCompiler } from '../../../types';
+import { getEasing } from '../../helpers';
 
 export const EaseRampBlock: BlockCompiler = {
   type: 'EaseRamp',

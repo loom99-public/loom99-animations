@@ -5,7 +5,7 @@
  * Uses seeded randomness for deterministic results.
  */
 
-import type { BlockCompiler, Field, Vec2 } from '../../types';
+import type { BlockCompiler, Field, Vec2 } from '../../../types';
 import { createPRNG } from '../../../../anim-v4/core/rand';
 
 export const RegionFieldBlock: BlockCompiler = {

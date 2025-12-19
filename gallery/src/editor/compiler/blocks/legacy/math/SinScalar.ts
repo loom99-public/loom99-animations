@@ -4,8 +4,8 @@
  * Computes sine of a scalar number.
  */
 
-import type { BlockCompiler } from '../../types';
-import { scalarNum } from '../helpers';
+import type { BlockCompiler } from '../../../types';
+import { scalarNum } from '../../helpers';
 
 export const MathSinScalarBlock: BlockCompiler = {
   type: 'math.sinScalar',

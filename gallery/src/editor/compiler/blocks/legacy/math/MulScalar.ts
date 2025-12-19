@@ -4,8 +4,8 @@
  * Multiplies two scalar numbers.
  */
 
-import type { BlockCompiler } from '../../types';
-import { scalarNum } from '../helpers';
+import type { BlockCompiler } from '../../../types';
+import { scalarNum } from '../../helpers';
 
 export const MathMulScalarBlock: BlockCompiler = {
   type: 'math.mulScalar',

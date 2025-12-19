@@ -5,7 +5,7 @@
  * Note: This is a simplified adapter; full signal support needs more infrastructure.
  */
 
-import type { BlockCompiler, Field, RuntimeCtx } from '../../types';
+import type { BlockCompiler, Field, RuntimeCtx } from '../../../types';
 
 export const FieldToSignalBlock: BlockCompiler = {
   type: 'FieldToSignal',

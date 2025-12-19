@@ -7,7 +7,7 @@
  * Outputs: Field<WaveConfig> with amplitude, frequency, phase based on index.
  */
 
-import type { BlockCompiler } from '../../types';
+import type { BlockCompiler } from '../../../types';
 
 interface WaveConfig {
   amplitudeY: number;

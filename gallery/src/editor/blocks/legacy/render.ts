@@ -1,5 +1,5 @@
-import { createBlock } from './factory';
-import { input, output } from './utils';
+import { createBlock } from '../factory';
+import { input, output } from '../utils';
 
 export const ParticleRenderer = createBlock({
   type: 'ParticleRenderer',
@@ -8,7 +8,7 @@ export const ParticleRenderer = createBlock({
   category: 'Render',
   description: 'Render particles as glowing circles',
   inputs: [input('program', 'Program', 'Program')],
-  outputs: [output('render', 'Render', 'RenderTree')],
+  outputs: [output('render', 'Render', 'Render')],
   paramSchema: [
     { key: 'radius', label: 'Radius', type: 'number', min: 0.5, max: 10, step: 0.5, defaultValue: 2.5 },
     { key: 'glow', label: 'Glow', type: 'boolean', defaultValue: true },
@@ -82,7 +82,7 @@ export const RenderTreeAssemble = createBlock({
     input('root', 'Root', 'RenderNode'),
     input('filter', 'Filter', 'FilterDef'),
   ],
-  outputs: [output('tree', 'Tree', 'RenderTree')],
+  outputs: [output('tree', 'Render', 'Render')],
   color: '#ef4444',
   laneKind: 'Program',
   priority: 5,
@@ -99,7 +99,7 @@ export const PerElementCircles = createBlock({
     input('count', 'Count', 'ElementCount'),
     input('filter', 'Filter', 'FilterDef'),
   ],
-  outputs: [output('tree', 'Tree', 'RenderTree')],
+  outputs: [output('tree', 'Render', 'Render')],
   paramSchema: [
     { key: 'radius', label: 'Radius', type: 'number', min: 0.5, max: 50, step: 0.5, defaultValue: 5 },
     { key: 'fill', label: 'Fill', type: 'color', defaultValue: '#ffffff' },
@@ -120,7 +120,7 @@ export const PathRenderer = createBlock({
     input('paths', 'Paths', 'Field<Path>'),
     input('progress', 'Progress', 'Signal<Unit>'),
   ],
-  outputs: [output('tree', 'Tree', 'RenderTree')],
+  outputs: [output('tree', 'Render', 'Render')],
   paramSchema: [
     { key: 'strokeWidth', label: 'Stroke Width', type: 'number', min: 1, max: 20, step: 1, defaultValue: 4 },
     { key: 'strokeColor', label: 'Stroke Color', type: 'color', defaultValue: '#ffffff' },
@@ -149,10 +149,10 @@ export const MaskReveal = createBlock({
   category: 'Render',
   description: 'Wipe/reveal mask transition - clips content with animated mask',
   inputs: [
-    input('content', 'Content', 'RenderTree'),
+    input('content', 'Content', 'Render'),
     input('progress', 'Progress', 'Signal<Unit>'),
   ],
-  outputs: [output('tree', 'Tree', 'RenderTree')],
+  outputs: [output('tree', 'Render', 'Render')],
   paramSchema: [
     {
       key: 'direction',
@@ -235,7 +235,7 @@ export const Canvas = createBlock({
   form: 'primitive',
   category: 'Render',
   description: 'Final render output - displays the animation',
-  inputs: [input('render', 'Render', 'RenderTree')],
+  inputs: [input('render', 'Render', 'Render')],
   paramSchema: [
     { key: 'width', label: 'Width', type: 'number', min: 100, max: 1920, step: 10, defaultValue: 400 },
     { key: 'height', label: 'Height', type: 'number', min: 100, max: 1080, step: 10, defaultValue: 300 },

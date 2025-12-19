@@ -5,7 +5,7 @@
  * This is the primary animation driver - outputs [0,1] over each phase.
  */
 
-import type { BlockCompiler, PhaseMachine, RuntimeCtx } from '../../types';
+import type { BlockCompiler, PhaseMachine, RuntimeCtx } from '../../../types';
 
 export const PhaseProgressBlock: BlockCompiler = {
   type: 'phaseProgress',

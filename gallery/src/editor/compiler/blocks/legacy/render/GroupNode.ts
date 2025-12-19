@@ -5,9 +5,9 @@
  * This is for static grouping - for per-element arrays, the array is passed directly.
  */
 
-import type { BlockCompiler } from '../../types';
-import type { DrawNode, GroupNode } from '../../../runtime/renderTree';
-import { group } from '../../../runtime/renderTree';
+import type { BlockCompiler } from '../../../types';
+import type { DrawNode, GroupNode } from '../../../../runtime/renderTree';
+import { group } from '../../../../runtime/renderTree';
 
 export const GroupNodeBlock: BlockCompiler = {
   type: 'groupNode',

@@ -5,8 +5,8 @@
  * In the Editor format, RenderTree is simply a DrawNode.
  */
 
-import type { BlockCompiler, RuntimeCtx, Program } from '../../types';
-import type { RenderTree, DrawNode } from '../../../runtime/renderTree';
+import type { BlockCompiler, RuntimeCtx, Program } from '../../../types';
+import type { RenderTree, DrawNode } from '../../../../runtime/renderTree';
 
 export const RenderTreeAssembleBlock: BlockCompiler = {
   type: 'renderTreeAssemble',

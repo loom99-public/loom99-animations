@@ -1,5 +1,5 @@
-import { createBlock } from './factory';
-import { output } from './utils';
+import { createBlock } from '../factory';
+import { output } from '../utils';
 
 export const StrokeStyle = createBlock({
   type: 'StrokeStyle',

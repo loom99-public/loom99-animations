@@ -4,7 +4,7 @@
  * Emits Field<number> with per-element random jitter in range [-amp, amp].
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 export const RandomJitterFieldBlock: BlockCompiler = {
   type: 'randomJitterField',

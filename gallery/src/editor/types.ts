@@ -277,7 +277,8 @@ export type SlotType =
   | 'Event<string>'     // Discrete text events (typewriter)
   | 'Event<any>'        // Generic events
   | 'Program'           // Compiled animation program
-  | 'RenderTree'        // Final render output
+  | 'Render'            // Final render output (user-facing unified type)
+  | 'RenderTree'        // Final render output (internal/legacy)
   | 'RenderNode'        // Single render node
   | 'RenderNode[]'      // Array of render nodes
   | 'FilterDef'         // SVG filter definition
@@ -311,7 +312,7 @@ export type BlockType = string; // e.g., 'RadialOrigin', 'PhaseMachine', 'Partic
  * - 'legacy-composite': Existing blocks to be migrated to composite definitions
  * - 'macro': Expands into visible blocks when added to patch
  */
-export type BlockForm = 'primitive' | 'composite' | 'legacy-composite' | 'macro';
+export type BlockForm = 'primitive' | 'composite' | 'macro';
 
 /**
  * Top-level block categories (form groupings).
@@ -813,6 +814,7 @@ export const SLOT_TYPE_TO_TYPE_DESC: Record<SlotType, TypeDesc> = {
   'Field<Wave>': { world: 'field', domain: 'number', category: 'internal', busEligible: false, semantics: 'wave' },
   'Field<Jitter>': { world: 'field', domain: 'number', category: 'internal', busEligible: false, semantics: 'jitter' },
   'Program': { world: 'signal', domain: 'program', category: 'internal', busEligible: false },
+  'Render': { world: 'field', domain: 'renderTree', category: 'internal', busEligible: false },
   'RenderTree': { world: 'field', domain: 'renderTree', category: 'internal', busEligible: false },
   'RenderNode': { world: 'field', domain: 'renderNode', category: 'internal', busEligible: false },
   'RenderNode[]': { world: 'field', domain: 'renderNode', category: 'internal', busEligible: false, semantics: 'array' },

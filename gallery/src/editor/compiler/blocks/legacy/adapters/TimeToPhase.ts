@@ -4,8 +4,8 @@
  * Converts Signal:Time (seconds) into a cyclic Signal:Unit (0..1) using a period.
  */
 
-import type { BlockCompiler, RuntimeCtx } from '../../types';
-import { scalarNum } from '../helpers';
+import type { BlockCompiler, RuntimeCtx } from '../../../types';
+import { scalarNum } from '../../helpers';
 
 export const TimeToPhaseBlock: BlockCompiler = {
   type: 'timeToPhase',

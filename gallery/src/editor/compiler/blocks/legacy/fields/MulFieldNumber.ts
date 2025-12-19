@@ -4,7 +4,7 @@
  * Multiplies two Field<number> element-wise.
  */
 
-import type { BlockCompiler, Field } from '../../types';
+import type { BlockCompiler, Field } from '../../../types';
 
 export const MulFieldNumberBlock: BlockCompiler = {
   type: 'mulFieldNumber',

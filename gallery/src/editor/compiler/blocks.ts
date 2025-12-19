@@ -2,7 +2,7 @@
  * Block Compilers
  *
  * Re-exports from modular blocks/ directory for backwards compatibility.
- * The actual implementations are organized by data flow stage in blocks/.
+ * Legacy blocks have been moved to blocks/legacy/.
  *
  * @see blocks/index.ts for the registry and organization
  */
@@ -13,13 +13,6 @@ export {
   registerDynamicBlock,
 } from './blocks/index';
 
-// Re-export all individual blocks for direct access
-export * from './blocks/sources';
-export * from './blocks/fields';
-export * from './blocks/time';
-export * from './blocks/math';
-export * from './blocks/compose';
-export * from './blocks/render';
-export * from './blocks/adapters';
-export * from './blocks/sinks';
+// Re-export domain blocks and helpers
+export * from './blocks/domain';
 export * from './blocks/helpers';

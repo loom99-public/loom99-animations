@@ -4,8 +4,8 @@
  * Lifts a Scalar<number> into a constant Signal<number>.
  */
 
-import type { BlockCompiler, RuntimeCtx } from '../../types';
-import { scalarNum } from '../helpers';
+import type { BlockCompiler, RuntimeCtx } from '../../../types';
+import { scalarNum } from '../../helpers';
 
 export const ScalarToSignalNumberBlock: BlockCompiler = {
   type: 'scalarToSignalNumber',

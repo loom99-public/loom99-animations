@@ -11,6 +11,7 @@ import type {
   TypeDescriptor,
   BusCombineMode,
   BlockId,
+  LensDefinition,
 } from '../types';
 import type { RootStore } from './RootStore';
 
@@ -173,7 +174,8 @@ export class BusStore {
     busId: string,
     blockId: BlockId,
     port: string,
-    adapterChain?: AdapterStep[]
+    adapterChain?: AdapterStep[],
+    lens?: LensDefinition
   ): string {
     const bus = this.buses.find(b => b.id === busId);
     if (!bus) {
@@ -186,6 +188,7 @@ export class BusStore {
       to: { blockId, port },
       adapterChain,
       enabled: true,
+      lens,
     };
 
     this.listeners.push(listener);
@@ -195,13 +198,17 @@ export class BusStore {
   /**
    * Update listener properties.
    */
-  updateListener(listenerId: string, updates: Partial<Pick<Listener, 'enabled'>>): void {
+  updateListener(listenerId: string, updates: Partial<Pick<Listener, 'enabled' | 'lens'>>): void {
     const listener = this.listeners.find(l => l.id === listenerId);
     if (!listener) {
       throw new Error(`Listener ${listenerId} not found`);
     }
 
     if (updates.enabled !== undefined) listener.enabled = updates.enabled;
+    // Handle lens update - undefined means keep current, null means remove lens
+    if ('lens' in updates) {
+      (listener as { lens?: LensDefinition }).lens = updates.lens ?? undefined;
+    }
   }
 
   /**
@@ -252,7 +259,7 @@ export class BusStore {
    * Get all listeners for a bus.
    */
   getListenersByBus(busId: string): Listener[] {
-    return this.listeners.filter(l => l.id === busId);
+    return this.listeners.filter(l => l.busId === busId);
   }
 
   /**

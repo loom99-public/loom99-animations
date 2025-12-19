@@ -163,3 +163,84 @@
   background: #2a2a2a;
   transform: scale(0.98);
 }
+
+/* Back button for lens stage */
+.bus-picker-back-btn {
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  color: #888;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.bus-picker-back-btn:hover {
+  background: #3a3a3a;
+  color: #fff;
+}
+
+.bus-picker-header-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bus-picker-bus-name {
+  font-size: 11px;
+  color: #4f46e5;
+  font-weight: 500;
+}
+
+/* Lens panel */
+.bus-picker-lens-panel {
+  padding: 12px;
+}
+
+.bus-picker-lens-hint {
+  margin: 0 0 12px 0;
+  font-size: 11px;
+  color: #888;
+  line-height: 1.4;
+}
+
+/* Footer with action buttons */
+.bus-picker-footer--actions {
+  display: flex;
+  gap: 8px;
+}
+
+.bus-picker-skip-btn,
+.bus-picker-apply-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.bus-picker-skip-btn {
+  background: transparent;
+  border: 1px solid #3a3a3a;
+  color: #888;
+}
+
+.bus-picker-skip-btn:hover {
+  background: #3a3a3a;
+  color: #ccc;
+}
+
+.bus-picker-apply-btn {
+  background: #4f46e5;
+  border: 1px solid #4f46e5;
+  color: #fff;
+}
+
+.bus-picker-apply-btn:hover {
+  background: #5b52f0;
+  border-color: #5b52f0;
+}

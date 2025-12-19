@@ -138,6 +138,7 @@ export type ValueKind =
   | 'Signal:vec2'
 
   // Special types
+  | 'Domain'          // Per-element identity (Phase 3)
   | 'PhaseMachine'
   | 'TargetScene'
   | 'Scene'
@@ -226,6 +227,11 @@ import type { Bus, Publisher, Listener } from '../types';
 // Re-export for consumers
 export type { Bus, Publisher, Listener };
 
+// Import Domain from unified compiler
+import type { Domain } from './unified/Domain';
+// Re-export Domain for consumers
+export type { Domain };
+
 /**
  * Extended CompilerPatch with optional bus support.
  * Maintains backward compatibility with existing wire-only patches.
@@ -292,6 +298,9 @@ export type Artifact =
 
   // Phase 2: Field expression artifacts for lazy evaluation
   | { kind: 'FieldExpr'; value: unknown }
+
+  // Phase 3: Domain for per-element identity
+  | { kind: 'Domain'; value: Domain }
 
   | { kind: 'Error'; message: string; where?: { blockId?: string; port?: string } };
 

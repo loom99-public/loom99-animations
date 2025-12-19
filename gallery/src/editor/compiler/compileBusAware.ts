@@ -2,13 +2,14 @@
  * Bus-Aware Patch Compiler
  *
  * Compiles patches that contain buses as well as wires.
- * Phase 2 implementation: Signal buses only, Field buses deferred.
+ * Phase 3 implementation: Signal AND Field buses.
  *
  * Key differences from wire-only compilation:
  * 1. Buses are first-class graph nodes
  * 2. Multi-pass compilation (blocks → buses → blocks using buses)
  * 3. Publisher ordering by sortKey for deterministic results
  * 4. Default values when buses have no publishers
+ * 5. Field buses support per-element combination (sum, average, max, min, last)
  */
 
 import type {
@@ -23,20 +24,32 @@ import type {
   Seed,
   RuntimeCtx,
   Vec2,
+  Field,
 } from './types';
 import type { Bus, Publisher, Listener } from '../types';
+import { applyLens } from '../lenses';
 
 // =============================================================================
 // Type Guards
 // =============================================================================
 
 /**
- * Check if a bus is a Field bus (not yet supported in Phase 2).
+ * Check if a bus is a Field bus.
  */
 function isFieldBus(bus: Bus): boolean {
-  // Field buses have 'field' world
   return bus.type.world === 'field';
 }
+
+/**
+ * Supported combine modes for Signal buses.
+ */
+const SIGNAL_COMBINE_MODES = ['last', 'sum'] as const;
+
+/**
+ * Supported combine modes for Field buses.
+ * Fields support additional modes because per-element combination is natural.
+ */
+const FIELD_COMBINE_MODES = ['last', 'sum', 'average', 'max', 'min'] as const;
 
 
 /**
@@ -171,7 +184,138 @@ function combineSignalArtifacts(
   // Unsupported combine mode
   return {
     kind: 'Error',
-    message: `Unsupported combine mode: ${mode}. Phase 2 supports: last, sum`,
+    message: `Unsupported combine mode: ${mode}. Signal buses support: last, sum`,
+  };
+}
+
+// =============================================================================
+// Field Combination
+// =============================================================================
+
+/**
+ * Combine Field artifacts using the bus's combine mode.
+ * Fields support: 'last', 'sum', 'average', 'max', 'min'
+ *
+ * Field combination is lazy: we return a new Field that evaluates
+ * all source fields and combines them per-element at evaluation time.
+ */
+function combineFieldArtifacts(
+  artifacts: Artifact[],
+  mode: string,
+  defaultValue: unknown
+): Artifact {
+  // No publishers: return constant field with default value
+  if (artifacts.length === 0) {
+    if (typeof defaultValue === 'number') {
+      const constField: Field<number> = (_seed, n, _ctx) => {
+        const result: number[] = [];
+        for (let i = 0; i < n; i++) {
+          result.push(defaultValue);
+        }
+        return result;
+      };
+      return { kind: 'Field:number', value: constField };
+    }
+    // Fallback for non-number defaults
+    return {
+      kind: 'Error',
+      message: `Default value type not supported for Field bus: ${typeof defaultValue}`,
+    };
+  }
+
+  // Single publisher: return as-is
+  if (artifacts.length === 1) {
+    return artifacts[0]!;
+  }
+
+  // Multiple publishers: combine based on mode
+  const first = artifacts[0]!;
+
+  // Ensure all artifacts are Field:number
+  if (first.kind !== 'Field:number') {
+    return {
+      kind: 'Error',
+      message: `Field combination only supports Field:number, got ${first.kind}`,
+    };
+  }
+
+  const fields = artifacts.map(a => (a as { kind: 'Field:number'; value: Field<number> }).value);
+
+  if (mode === 'last') {
+    // Highest sortKey wins (last in sorted array)
+    return artifacts[artifacts.length - 1]!;
+  }
+
+  if (mode === 'sum') {
+    const combined: Field<number> = (seed, n, ctx) => {
+      const allValues = fields.map(f => f(seed, n, ctx));
+      const result: number[] = [];
+      for (let i = 0; i < n; i++) {
+        let sum = 0;
+        for (const vals of allValues) {
+          sum += vals[i] ?? 0;
+        }
+        result.push(sum);
+      }
+      return result;
+    };
+    return { kind: 'Field:number', value: combined };
+  }
+
+  if (mode === 'average') {
+    const combined: Field<number> = (seed, n, ctx) => {
+      const allValues = fields.map(f => f(seed, n, ctx));
+      const result: number[] = [];
+      for (let i = 0; i < n; i++) {
+        let sum = 0;
+        for (const vals of allValues) {
+          sum += vals[i] ?? 0;
+        }
+        result.push(sum / fields.length);
+      }
+      return result;
+    };
+    return { kind: 'Field:number', value: combined };
+  }
+
+  if (mode === 'max') {
+    const combined: Field<number> = (seed, n, ctx) => {
+      const allValues = fields.map(f => f(seed, n, ctx));
+      const result: number[] = [];
+      for (let i = 0; i < n; i++) {
+        let maxVal = -Infinity;
+        for (const vals of allValues) {
+          const v = vals[i] ?? -Infinity;
+          if (v > maxVal) maxVal = v;
+        }
+        result.push(maxVal);
+      }
+      return result;
+    };
+    return { kind: 'Field:number', value: combined };
+  }
+
+  if (mode === 'min') {
+    const combined: Field<number> = (seed, n, ctx) => {
+      const allValues = fields.map(f => f(seed, n, ctx));
+      const result: number[] = [];
+      for (let i = 0; i < n; i++) {
+        let minVal = Infinity;
+        for (const vals of allValues) {
+          const v = vals[i] ?? Infinity;
+          if (v < minVal) minVal = v;
+        }
+        result.push(minVal);
+      }
+      return result;
+    };
+    return { kind: 'Field:number', value: combined };
+  }
+
+  // Unsupported combine mode
+  return {
+    kind: 'Error',
+    message: `Unsupported combine mode: ${mode}. Field buses support: last, sum, average, max, min`,
   };
 }
 
@@ -286,7 +430,7 @@ function topoSortBlocksWithBuses(
 
 /**
  * Compile a patch with buses.
- * Phase 2: Signal buses only.
+ * Phase 3: Signal AND Field buses.
  */
 export function compileBusAwarePatch(
   patch: CompilerPatch,
@@ -310,35 +454,33 @@ export function compileBusAwarePatch(
   }
 
   // =============================================================================
-  // 1. Validate: Only Signal buses, no Field buses yet
+  // 1. Validate combine modes (different for Signal vs Field buses)
   // =============================================================================
   for (const bus of buses) {
     if (isFieldBus(bus)) {
-      errors.push({
-        code: 'FieldBusNotSupported',
-        message: `Field buses not yet supported. Use Signal buses. Bus "${bus.name}" has type ${bus.type.world}:${bus.type.domain}.`,
-        where: { busId: bus.id },
-      });
+      // Field buses support more combine modes
+      if (!(FIELD_COMBINE_MODES as readonly string[]).includes(bus.combineMode)) {
+        errors.push({
+          code: 'UnsupportedCombineMode',
+          message: `Combine mode "${bus.combineMode}" not supported for Field bus. Supported: ${FIELD_COMBINE_MODES.join(', ')}.`,
+          where: { busId: bus.id },
+        });
+      }
+    } else {
+      // Signal buses only support last and sum
+      if (!(SIGNAL_COMBINE_MODES as readonly string[]).includes(bus.combineMode)) {
+        errors.push({
+          code: 'UnsupportedCombineMode',
+          message: `Combine mode "${bus.combineMode}" not supported for Signal bus. Supported: ${SIGNAL_COMBINE_MODES.join(', ')}.`,
+          where: { busId: bus.id },
+        });
+      }
     }
   }
   if (errors.length) return { ok: false, errors };
 
   // =============================================================================
-  // 2. Validate combine modes
-  // =============================================================================
-  for (const bus of buses) {
-    if (bus.combineMode !== 'last' && bus.combineMode !== 'sum') {
-      errors.push({
-        code: 'UnsupportedCombineMode',
-        message: `Combine mode "${bus.combineMode}" not yet supported. Phase 2 supports: last, sum.`,
-        where: { busId: bus.id },
-      });
-    }
-  }
-  if (errors.length) return { ok: false, errors };
-
-  // =============================================================================
-  // 3. Validate block types exist in registry
+  // 2. Validate block types exist in registry
   // =============================================================================
   for (const [id, b] of patch.blocks.entries()) {
     if (!registry[b.type]) {
@@ -352,7 +494,7 @@ export function compileBusAwarePatch(
   if (errors.length) return { ok: false, errors };
 
   // =============================================================================
-  // 4. Build wire connection indices
+  // 3. Build wire connection indices
   // =============================================================================
   const incoming = indexIncoming(patch.connections);
 
@@ -369,13 +511,13 @@ export function compileBusAwarePatch(
   if (errors.length) return { ok: false, errors };
 
   // =============================================================================
-  // 5. Topological sort blocks (wire AND bus dependencies)
+  // 4. Topological sort blocks (wire AND bus dependencies)
   // =============================================================================
   const order = topoSortBlocksWithBuses(patch, publishers, listeners, errors);
   if (errors.length) return { ok: false, errors };
 
   // =============================================================================
-  // 6. Compile blocks in topo order
+  // 5. Compile blocks in topo order
   // =============================================================================
   const compiledPortMap = new Map<string, Artifact>();
 
@@ -424,7 +566,13 @@ export function compileBusAwarePatch(
 
         if (busListener) {
           // Input comes from a bus - get the bus value
-          const busArtifact = getBusValue(busListener.busId, buses, publishers, compiledPortMap, errors);
+          let busArtifact = getBusValue(busListener.busId, buses, publishers, compiledPortMap, errors);
+
+          // Apply lens transformation if configured
+          if (busListener.lens && busArtifact.kind !== 'Error') {
+            busArtifact = applyLens(busArtifact, busListener.lens);
+          }
+
           inputs[p.name] = busArtifact;
         } else if (p.required) {
           // No connection at all for required input
@@ -488,7 +636,7 @@ export function compileBusAwarePatch(
   }
 
   // =============================================================================
-  // 7. Resolve final output port
+  // 6. Resolve final output port
   // =============================================================================
   const outputRef = patch.output ?? inferOutputPort(patch, registry, compiledPortMap);
   if (!outputRef) {
@@ -576,8 +724,12 @@ function getBusValue(
     artifacts.push(artifact);
   }
 
-  // Combine artifacts using bus's combine mode
-  return combineSignalArtifacts(artifacts, bus.combineMode, bus.defaultValue);
+  // Combine artifacts using bus's combine mode - dispatch based on bus world
+  if (isFieldBus(bus)) {
+    return combineFieldArtifacts(artifacts, bus.combineMode, bus.defaultValue);
+  } else {
+    return combineSignalArtifacts(artifacts, bus.combineMode, bus.defaultValue);
+  }
 }
 
 // =============================================================================

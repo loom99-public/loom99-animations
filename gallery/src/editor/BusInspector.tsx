@@ -6,9 +6,11 @@
  */
 
 import { observer } from 'mobx-react-lite';
+import { useState } from 'react';
 import { useStore } from './stores';
-import type { Bus, Publisher, Listener, CoreDomain, BusCombineMode } from './types';
+import type { Bus, Publisher, Listener, CoreDomain, BusCombineMode, LensDefinition } from './types';
 import { formatTypeDesc, getCombineModesForDomain } from './types';
+import { LensSelector, LensBadge } from './components/LensSelector';
 import './BusInspector.css';
 
 interface BusInspectorProps {
@@ -161,7 +163,7 @@ function PublisherItem({
 }
 
 /**
- * Listener list item.
+ * Listener list item with lens display and editing.
  */
 function ListenerItem({
   listener,
@@ -169,41 +171,67 @@ function ListenerItem({
   listener: Listener;
 }) {
   const store = useStore();
+  const [isEditingLens, setIsEditingLens] = useState(false);
   const block = store.patchStore.blocks.find(b => b.id === listener.to.blockId);
   const blockName = block?.label ?? 'Unknown Block';
   const portName = listener.to.port;
 
   const handleJumpToBlock = () => {
     store.uiStore.selectBlock(listener.to.blockId);
-    // TODO: Scroll PatchBay to show block
   };
 
   const handleToggleEnabled = () => {
     store.busStore.updateListener(listener.id, { enabled: !listener.enabled });
   };
 
+  const handleEditLens = () => {
+    setIsEditingLens(!isEditingLens);
+  };
+
+  const handleLensChange = (lens: LensDefinition | undefined) => {
+    store.busStore.updateListener(listener.id, { lens });
+  };
+
   return (
-    <li className={`bus-routing-item ${!listener.enabled ? 'disabled' : ''}`}>
-      <div className="routing-item-info">
-        <span className="routing-block-name">{blockName}</span>
-        <span className="routing-port-name">{portName}</span>
+    <li className={`bus-routing-item ${!listener.enabled ? 'disabled' : ''} ${isEditingLens ? 'expanded' : ''}`}>
+      <div className="routing-item-row">
+        <div className="routing-item-info">
+          <span className="routing-block-name">{blockName}</span>
+          <span className="routing-port-name">{portName}</span>
+          <LensBadge lens={listener.lens} />
+        </div>
+        <div className="routing-item-actions">
+          <button
+            className={`routing-lens-btn ${listener.lens ? 'has-lens' : ''}`}
+            onClick={handleEditLens}
+            title={listener.lens ? 'Edit lens' : 'Add lens'}
+          >
+            {listener.lens ? '🔧' : '+🔧'}
+          </button>
+          <button
+            className="routing-toggle-btn"
+            onClick={handleToggleEnabled}
+            title={listener.enabled ? 'Disable' : 'Enable'}
+          >
+            {listener.enabled ? '✓' : '○'}
+          </button>
+          <button
+            className="routing-jump-btn"
+            onClick={handleJumpToBlock}
+            title="Jump to block"
+          >
+            →
+          </button>
+        </div>
       </div>
-      <div className="routing-item-actions">
-        <button
-          className="routing-toggle-btn"
-          onClick={handleToggleEnabled}
-          title={listener.enabled ? 'Disable' : 'Enable'}
-        >
-          {listener.enabled ? '✓' : '○'}
-        </button>
-        <button
-          className="routing-jump-btn"
-          onClick={handleJumpToBlock}
-          title="Jump to block"
-        >
-          →
-        </button>
-      </div>
+      {isEditingLens && (
+        <div className="routing-item-lens-editor">
+          <LensSelector
+            value={listener.lens}
+            onChange={handleLensChange}
+          />
+        </div>
+      )}
     </li>
   );
 }

@@ -193,6 +193,30 @@ export interface Publisher {
 }
 
 /**
+ * Lens types for transforming bus values at the listener side.
+ * Lenses enable "binding phase/energy produces pleasing motion immediately".
+ */
+export type LensType =
+  | 'ease'              // Apply easing curve (0-1 input)
+  | 'slew'              // Rate-limited smoothing
+  | 'quantize'          // Snap to discrete steps
+  | 'scale'             // Linear scale + offset
+  | 'warp'              // Phase warping (speed up/slow down parts of cycle)
+  | 'broadcast'         // Lift scalar signal to constant field
+  | 'perElementOffset'; // Add per-element phase offset to signal
+
+/**
+ * Lens definition - transformation applied between bus value and target parameter.
+ */
+export interface LensDefinition {
+  /** Type of lens to apply */
+  readonly type: LensType;
+
+  /** Lens-specific parameters */
+  readonly params: Record<string, unknown>;
+}
+
+/**
  * Listener - connects a bus to an input.
  */
 export interface Listener {
@@ -210,6 +234,9 @@ export interface Listener {
 
   /** Whether this listener is active */
   enabled: boolean;
+
+  /** Optional lens to transform the bus value before applying */
+  readonly lens?: LensDefinition;
 }
 
 // =============================================================================
@@ -224,12 +251,15 @@ export type SlotType =
   | 'Scene'
   | 'SceneTargets'      // Sampled points from scene
   | 'SceneStrokes'      // Path segments for line drawing
+  | 'Domain'            // Per-element identity (Phase 3)
   | 'Scalar:number'     // Compile-time constant number
   | 'Scalar:vec2'       // Compile-time constant vec2
   | 'Field<Point>'      // Per-element positions
+  | 'Field<vec2>'       // Per-element positions (alias)
   | 'Field<Duration>'   // Per-element delays/durations
   | 'Field<number>'     // Per-element scalars (radius, opacity)
-  | 'Field<HSL>'        // Per-element colors
+  | 'Field<color>'      // Per-element colors
+  | 'Field<HSL>'        // Per-element colors (HSL)
   | 'Field<string>'     // Per-element strings (colors, easing names)
   | 'Field<Path>'       // Per-element path data
   | 'Field<Wobble>'     // Per-element wobble parameters
@@ -755,6 +785,8 @@ export const SLOT_TYPE_TO_TYPE_DESC: Record<SlotType, TypeDesc> = {
   'Scalar:number': { world: 'signal', domain: 'number', category: 'core', busEligible: true, semantics: 'scalar' },
   'Scalar:vec2': { world: 'signal', domain: 'vec2', category: 'core', busEligible: true, semantics: 'scalar' },
   'Field<number>': { world: 'field', domain: 'number', category: 'core', busEligible: true },
+  'Field<vec2>': { world: 'field', domain: 'vec2', category: 'core', busEligible: true, semantics: 'position' },
+  'Field<color>': { world: 'field', domain: 'color', category: 'core', busEligible: true },
   'Field<string>': { world: 'field', domain: 'color', category: 'core', busEligible: true, semantics: 'hex-color' },
   'Signal<number>': { world: 'signal', domain: 'number', category: 'core', busEligible: true },
   'Signal<Point>': { world: 'signal', domain: 'vec2', category: 'core', busEligible: true, semantics: 'point' },
@@ -764,6 +796,9 @@ export const SLOT_TYPE_TO_TYPE_DESC: Record<SlotType, TypeDesc> = {
   'Event<string>': { world: 'signal', domain: 'trigger', category: 'core', busEligible: true, semantics: 'string' },
   'Event<any>': { world: 'signal', domain: 'trigger', category: 'core', busEligible: true },
   'ElementCount': { world: 'signal', domain: 'number', category: 'core', busEligible: true, semantics: 'count' },
+
+  // Special types (Phase 3)
+  'Domain': { world: 'field', domain: 'elementCount', category: 'internal', busEligible: false, semantics: 'domain' },
 
   // Internal types (not bus-eligible by default)
   'Field<Point>': { world: 'field', domain: 'point', category: 'internal', busEligible: false, semantics: 'position' },

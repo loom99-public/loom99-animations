@@ -269,3 +269,67 @@
   align-items: center;
   gap: 8px;
 }
+
+/* Expandable listener item with lens editing */
+.bus-routing-item {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.bus-routing-item .routing-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.bus-routing-item.expanded {
+  background: #252d3b;
+  border-color: #4f46e5;
+}
+
+.routing-item-info {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Lens button */
+.routing-lens-btn {
+  background: transparent;
+  border: 1px solid #374151;
+  color: #9ca3af;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+  min-width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.routing-lens-btn:hover {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+.routing-lens-btn.has-lens {
+  background: #312e81;
+  border-color: #4f46e5;
+  color: #c7d2fe;
+}
+
+.routing-lens-btn.has-lens:hover {
+  background: #3730a3;
+}
+
+/* Lens editor panel */
+.routing-item-lens-editor {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #374151;
+}

@@ -7,7 +7,7 @@
  * Takes:
  *   - Domain: element identity
  *   - positions: Field<vec2> - per-element positions
- *   - radius: Field<number> - per-element radii (optional)
+ *   - radius: Field<number> OR Signal<number> - per-element radii or broadcast radius (optional)
  *   - color: Field<color> - per-element colors (optional)
  *
  * Produces:
@@ -65,11 +65,22 @@ export const RenderInstances2DBlock: BlockCompiler = {
     const domain = domainArtifact.value as Domain;
     const positionField = positionsArtifact.value as Field<Vec2>;
 
-    // Optional radius field - default to constant if not provided
+    // Radius input: accept EITHER Field<number> OR Signal<number>
+    // - Field<number>: per-element radii (static or varied)
+    // - Signal<number>: broadcast same animated value to all elements
     const radiusArtifact = inputs.radius;
-    const radiusField: Field<number> = radiusArtifact?.kind === 'Field:number'
-      ? radiusArtifact.value as Field<number>
-      : (_seed, n) => new Array(n).fill(5);
+    let radiusMode: 'field' | 'signal' | 'default' = 'default';
+    let radiusField: Field<number> | undefined;
+    let radiusSignal: ((t: number, ctx: RuntimeCtx) => number) | undefined;
+
+    if (radiusArtifact?.kind === 'Field:number') {
+      radiusMode = 'field';
+      radiusField = radiusArtifact.value as Field<number>;
+    } else if (radiusArtifact?.kind === 'Signal:number') {
+      radiusMode = 'signal';
+      radiusSignal = radiusArtifact.value as (t: number, ctx: RuntimeCtx) => number;
+    }
+    // else: radiusMode === 'default', use constant 5
 
     // Optional color field - default to white if not provided
     const colorArtifact = inputs.color;
@@ -83,14 +94,26 @@ export const RenderInstances2DBlock: BlockCompiler = {
     const glowIntensity = Number(params.glowIntensity ?? 2.0);
 
     // Create the render function - evaluates fields at render time
-    const renderFn = (_tMs: number, _ctx: RuntimeCtx): DrawNode => {
+    const renderFn = (tMs: number, ctx: RuntimeCtx): DrawNode => {
       const n = domain.elements.length;
       const seed = 0; // Fixed seed for consistent rendering
 
-      // Evaluate all fields
+      // Evaluate fields
       const positions = positionField(seed, n, DEFAULT_CTX);
-      const radii = radiusField(seed, n, DEFAULT_CTX);
       const colors = colorField(seed, n, DEFAULT_CTX);
+
+      // Radius: evaluate based on mode
+      let radii: readonly number[];
+      if (radiusMode === 'field') {
+        radii = radiusField!(seed, n, DEFAULT_CTX);
+      } else if (radiusMode === 'signal') {
+        // Sample signal once and broadcast to all elements
+        const broadcastRadius = radiusSignal!(tMs, ctx);
+        radii = new Array(n).fill(broadcastRadius);
+      } else {
+        // Default: constant radius of 5
+        radii = new Array(n).fill(5);
+      }
 
       // Build circle nodes
       const circles: DrawNode[] = [];

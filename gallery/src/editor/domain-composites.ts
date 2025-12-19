@@ -541,6 +541,7 @@ export const WaveDisplace = registerComposite({
  * DotsRenderer - Full rendering pipeline: size scatter + color + RenderInstances2D.
  *
  * Combines multiple fields into a complete dots visualization.
+ * Now supports optional radius input for bus-driven animation.
  */
 export const DotsRenderer = registerComposite({
   id: 'DotsRenderer',
@@ -593,12 +594,14 @@ export const DotsRenderer = registerComposite({
     edges: [
       { from: 'sizeHash.u', to: 'sizeScale.x' },
       { from: 'sizeScale.y', to: 'sizeOffset.x' },
-      { from: 'sizeOffset.y', to: 'render.radius' },
+      // NOTE: Removed automatic wiring to render.radius to allow bus override
+      // { from: 'sizeOffset.y', to: 'render.radius' },
       { from: 'color.out', to: 'render.color' },
     ],
     inputMap: {
       domain: 'sizeHash.domain',
       positions: 'render.positions',
+      radius: 'render.radius', // New: exposed radius input for bus-driven animation
     },
     outputMap: {
       render: 'render.render',
@@ -620,6 +623,14 @@ export const DotsRenderer = registerComposite({
       slotType: 'Field<vec2>',
       nodeId: 'render',
       nodePort: 'positions',
+    },
+    {
+      id: 'radius',
+      label: 'Radius',
+      direction: 'input',
+      slotType: 'Field<number>',
+      nodeId: 'render',
+      nodePort: 'radius',
     },
   ],
   exposedOutputs: [

@@ -1,0 +1,48 @@
+Agent: iterative-implementer | 2025-12-18-211945
+Mode: manual
+Completed: DotsRenderer bus-driven animation support | Files: 3 | Commits: 0 (pending)
+Cache invalidated: composite-rendering.md, render-blocks.md
+Status: complete
+
+## Changes Made
+
+1. **DotsRenderer composite** (domain-composites.ts)
+   - Added `radius` as exposed optional input
+   - Removed automatic internal wiring from size pipeline to render.radius
+   - Now supports bus-driven animation via external connections
+   - Internal size generation pipeline remains available but not auto-connected
+
+2. **RenderInstances2D block** (RenderInstances2D.ts)
+   - Enhanced to accept EITHER Field<number> OR Signal<number> for radius
+   - Signal<number>: samples once per frame and broadcasts to all elements
+   - Field<number>: per-element static/varied radii (original behavior)
+   - Default: constant radius of 5 if not connected
+
+3. **breathing-dots demo patch** (breathing-dots.json)
+   - Updated radius listener to use `scale` lens instead of `ease`
+   - Configured scale: {scale: 12, offset: 8} to map phase [0,1] → radius [8, 20]
+   - Result: dots now animate (breathing effect) as intended
+
+## Technical Approach
+
+The core challenge was that Fields are compile-time/per-element values, while
+Signals are runtime-varying. To support bus-driven animation of radius:
+
+- Modified RenderInstances2D to detect Signal:number artifacts at compile time
+- When signal detected, store reference and sample it in renderFn (per-frame)
+- Broadcast the sampled scalar value to all elements as constant array
+- Maintains backward compatibility with Field<number> inputs
+
+This enables the "binding phase produces pleasing motion immediately" goal
+without requiring systemic changes to the Field type system.
+
+## Validation
+
+- All 385 tests pass
+- Demo patch now supports animated radius via phaseA bus
+- Backward compatible: existing patches with Field<number> radius unaffected
+- Type-safe at runtime: proper artifact.kind checks
+
+## Ready for Evaluation
+
+YES - Changes enable bus-driven animation for DotsRenderer composite as specified.

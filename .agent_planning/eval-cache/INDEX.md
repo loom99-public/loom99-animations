@@ -10,3 +10,5 @@
 ## Invalidated (2025-12-18)
 - project-structure.md - Modified editor blocks system
 - compiler-architecture.md - Added new primitives and composite
+- composite-rendering.md - DotsRenderer now supports Signal:number radius input (2025-12-18 21:19)
+- render-blocks.md - RenderInstances2D accepts Signal:number for animated broadcast values (2025-12-18 21:19)

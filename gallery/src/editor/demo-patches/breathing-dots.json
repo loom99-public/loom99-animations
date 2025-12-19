@@ -71,6 +71,12 @@
           "label": "Positions",
           "type": "Field<vec2>",
           "direction": "input"
+        },
+        {
+          "id": "radius",
+          "label": "Radius",
+          "type": "Field<number>",
+          "direction": "input"
         }
       ],
       "outputs": [
@@ -205,9 +211,10 @@
       },
       "enabled": true,
       "lens": {
-        "type": "ease",
+        "type": "scale",
         "params": {
-          "easing": "easeInOutSine"
+          "scale": 12,
+          "offset": 8
         }
       }
     }

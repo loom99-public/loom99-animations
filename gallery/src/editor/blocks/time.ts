@@ -61,3 +61,55 @@ export const PhaseProgress = createBlock({
   laneKind: 'Phase',
   priority: 2,
 });
+
+/**
+ * PhaseClock - Simple time-based phase progression.
+ *
+ * Produces a Signal<number> that drives animation timing.
+ * Supports loop/once/pingpong modes for different playback styles.
+ */
+export const PhaseClock = createBlock({
+  type: 'PhaseClock',
+  label: 'Phase Clock',
+  form: 'primitive',
+  subcategory: 'Time',
+  category: 'Time',
+  description: 'Time-based phase progression with loop modes',
+  outputs: [
+    output('phase', 'Phase', 'Signal<number>'),
+  ],
+  paramSchema: [
+    {
+      key: 'duration',
+      label: 'Duration (s)',
+      type: 'number',
+      min: 0.1,
+      max: 10.0,
+      step: 0.1,
+      defaultValue: 3.0,
+    },
+    {
+      key: 'mode',
+      label: 'Mode',
+      type: 'select',
+      options: [
+        { value: 'loop', label: 'Loop' },
+        { value: 'once', label: 'Once' },
+        { value: 'pingpong', label: 'Ping-Pong' },
+      ],
+      defaultValue: 'loop',
+    },
+    {
+      key: 'offset',
+      label: 'Offset (s)',
+      type: 'number',
+      min: -10.0,
+      max: 10.0,
+      step: 0.1,
+      defaultValue: 0.0,
+    },
+  ],
+  color: '#22c55e',
+  laneKind: 'Phase',
+  priority: 3,
+});

@@ -10,6 +10,9 @@ import type { CompoundGraph } from './blocks/types';
 import type { CompositeDefinition, CompositeGraph } from './composites';
 import { listCompositeDefinitions } from './composites';
 
+// Import domain composites to trigger registration
+import './domain-composites';
+
 // =============================================================================
 // Type Conversion Functions
 // =============================================================================

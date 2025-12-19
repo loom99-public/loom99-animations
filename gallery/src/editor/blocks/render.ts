@@ -176,6 +176,59 @@ export const MaskReveal = createBlock({
   priority: 9,
 });
 
+/**
+ * RenderInstances2D - Materialize Field data into renderable output.
+ *
+ * This is the sink that turns Domain + Fields into visual circles.
+ * Takes per-element positions, radius, and color, and produces a RenderTreeProgram.
+ */
+export const RenderInstances2D = createBlock({
+  type: 'RenderInstances2D',
+  label: 'Render 2D Instances',
+  form: 'primitive',
+  subcategory: 'Render',
+  category: 'Render',
+  description: 'Materialize Domain + Fields into circles',
+  inputs: [
+    input('domain', 'Domain', 'Domain'),
+    input('positions', 'Positions', 'Field<vec2>'),
+    input('radius', 'Radius', 'Field<number>'),
+    input('color', 'Color', 'Field<color>'),
+  ],
+  outputs: [
+    output('render', 'Render', 'RenderTree'),
+  ],
+  paramSchema: [
+    {
+      key: 'opacity',
+      label: 'Opacity',
+      type: 'number',
+      min: 0,
+      max: 1,
+      step: 0.1,
+      defaultValue: 1.0,
+    },
+    {
+      key: 'glow',
+      label: 'Glow',
+      type: 'boolean',
+      defaultValue: false,
+    },
+    {
+      key: 'glowIntensity',
+      label: 'Glow Intensity',
+      type: 'number',
+      min: 0.5,
+      max: 5,
+      step: 0.1,
+      defaultValue: 2.0,
+    },
+  ],
+  color: '#ef4444',
+  laneKind: 'Program',
+  priority: 7,
+});
+
 export const Canvas = createBlock({
   type: 'canvas',
   label: 'Canvas',

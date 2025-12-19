@@ -33,6 +33,7 @@ import { ControlSurfaceStore, ControlSurfacePanel, generateSurfaceForMacro } fro
 import type { BlockDefinition } from './blocks';
 import type { LaneId } from './types';
 import './Editor.css';
+import './mobile.css';
 import { HelpCenterModal, HelpPanel, type HelpCenterTopicId } from './HelpCenter';
 
 type HelpTopic = 'intro' | 'library' | 'inspector' | 'preview' | 'patch' | 'controlSurface';

@@ -1,0 +1,7 @@
+Agent: work-evaluator | 2025-12-18-210536
+Scope: work/e2e-demo
+Verdict: INCOMPLETE
+Criteria: 9/10 working | Breaks found: 2 | Ambiguities: 2
+Previous issues: N/A (no previous evaluation)
+Missing checks: 3 specified
+Cache updated: No updates needed (no eval-cache exists yet)

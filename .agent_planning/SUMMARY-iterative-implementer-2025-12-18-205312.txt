@@ -1,0 +1,52 @@
+Agent: iterative-implementer | 2025-12-18-205312
+Mode: manual
+Completed: Default Buses Implementation | Files: 4 | Commits: 1
+Cache invalidated: None (no cache entries affected)
+Status: complete
+
+Implementation Details:
+
+1. Extended Bus interface with origin?: 'built-in' | 'user' field
+   - File: gallery/src/editor/types.ts
+   - Added optional origin field to Bus interface at line 147
+
+2. Added createDefaultBuses() method to BusStore
+   - File: gallery/src/editor/stores/BusStore.ts
+   - Creates 5 default buses only if buses.length === 0:
+     * phaseA: signal:phase, combine=last, silent=0
+     * phaseB: signal:phase, combine=last, silent=0
+     * energy: signal:number, combine=sum, silent=0
+     * pulse: signal:trigger, combine=last, silent=false
+     * palette: signal:color, combine=last, silent='#000000'
+   - All marked with origin: 'built-in'
+
+3. Updated createBus() to mark user buses
+   - File: gallery/src/editor/stores/BusStore.ts
+   - Set origin: 'user' for all user-created buses at line 131
+
+4. Integrated default bus creation into RootStore
+   - File: gallery/src/editor/stores/RootStore.ts
+   - Called in constructor (line 36)
+   - Called in loadPatch() after loading buses (line 133)
+   - Called in clearPatch() after clearing buses (line 173)
+
+5. Enhanced BusBoard UI to group by origin
+   - File: gallery/src/editor/BusBoard.tsx
+   - Separate groups: "Default Signals" and "Custom Signals"
+   - Built-in buses pinned at top of listing
+   - Updated groupBuses() function lines 30-77
+
+6. Fixed test suite
+   - File: gallery/src/editor/__tests__/bus-name-suggestion.test.ts
+   - Added buses = [] in beforeEach() to clear defaults (line 16)
+   - All 385 tests passing
+
+Validation: Manual (no tests existed for this specific feature)
+- Verified all 385 existing tests still pass
+- Implementation follows spec in feature_planning_docs/Full-System-Design/Materialization-DefaultBuses.md
+
+Technical notes:
+- Default buses only created when buses.length === 0 (idempotent)
+- Prevents silent injection into existing patches
+- Users can delete/rename default buses freely
+- UI clearly distinguishes built-in vs custom buses

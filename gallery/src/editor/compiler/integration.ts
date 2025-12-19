@@ -16,7 +16,7 @@ import type {
 } from './types';
 import { buildDecorations, emptyDecorations, type DecorationSet } from './error-decorations';
 import { getBlockDefinition } from '../blocks';
-import { getCompositeCompilers } from '../composite-bridge';
+import { registerAllComposites, getCompositeCompilers } from '../composite-bridge';
 import { getFeatureFlags } from './featureFlags';
 
 // Unified compiler imports
@@ -296,7 +296,10 @@ export interface CompilerService {
  * Create a compiler service for an EditorStore.
  */
 export function createCompilerService(store: RootStore): CompilerService {
-  // Register all composite compilers
+  // Register all composite compilers from domain-composites.ts
+  // This must be called before getCompositeCompilers() to populate the registry
+  registerAllComposites();
+
   const compositeCompilers = getCompositeCompilers();
   for (const [blockType, compiler] of Object.entries(compositeCompilers)) {
     registerDynamicBlock(blockType, compiler);
